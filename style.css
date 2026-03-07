@@ -43,14 +43,14 @@ body.modal-open { overflow:hidden; }
 /* ── BACKGROUND — flat, no gradients ───────── */
 .space-bg {
     position:fixed; inset:0; z-index:-4;
-    background:#141414;
+    background:#000000;
 }
 /* subtle grid texture */
 .space-bg::after {
     content:''; position:absolute; inset:0;
     background-image:
-        linear-gradient(rgba(207,207,207,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(207,207,207,.03) 1px, transparent 1px);
+        linear-gradient(rgba(255, 255, 255, 0.116) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.116) 1px, transparent 1px);
     background-size:40px 40px;
 }
 
