@@ -1949,7 +1949,7 @@ window.getSkinById = getSkinById;
 window.openSkins = openSkins;
 window.completeCPASkinFor = completeCPASkinFor;
 window.state = state;
-window.handleTap = handleTap;
+
 
 
 
