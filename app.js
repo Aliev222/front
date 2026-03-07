@@ -1917,6 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==================== GLOBAL FUNCTIONS ====================
 window.state = state;
 window.handleTap = handleTap;
+window.recoverEnergy = recoverEnergy;
 window.upgradeBoost = upgradeBoost;
 window.upgradeAll = upgradeAll;
 window.openGame = openGame;
@@ -1949,8 +1950,7 @@ window.openSkins = openSkins;
 window.completeCPASkinFor = completeCPASkinFor;
 window.state = state;
 window.handleTap = handleTap;
-window.recoverEnergy = recoverEnergy;  // ← ДОБАВЬ ЭТУ СТРОКУ
-window.upgradeBoost = upgradeBoost;
-window.upgradeAll = upgradeAll;
+
+
 
 console.log('✅ Ryoho Clicker fully initialized with new architecture');
