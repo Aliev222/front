@@ -20,7 +20,33 @@ const CLICK_BATCH_INTERVAL = 1000; // Отправка кликов раз в с
 const MAX_CACHE_AGE = 30000; // 30 секунд
 
 // ==================== РЕКЛАМА И CPA ====================
+// ==================== ИНИЦИАЛИЗАЦИЯ RICHADS ====================
+// Ждем загрузки скрипта и создаем контроллер
+function initRichAds() {
+    if (typeof TelegramAdsController !== 'undefined') {
+        window.TelegramAdsController = new TelegramAdsController();
+        window.TelegramAdsController.initialize({
+            pubId: "792361",
+            appId: "1396",
+            debug: false
+        });
+        console.log('✅ RichAds инициализирован', window.TelegramAdsController);
+        return true;
+    }
+    return false;
+}
 
+// Пробуем сразу
+if (!initRichAds()) {
+    // Если не получилось - пробуем через секунду
+    setTimeout(() => {
+        if (initRichAds()) {
+            console.log('✅ RichAds инициализирован с задержкой');
+        } else {
+            console.log('❌ RichAds не загрузился');
+        }
+    }, 1000);
+}
 // Конфигурация рекламы
 const ADS_CONFIG = {
     guid: 'ТВОЙ_GUID_ОТ_МЕНЕДЖЕРА', // Получишь после регистрации
