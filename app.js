@@ -13,7 +13,7 @@ if (tg) {
 }
 
 // ==================== CONSTANTS ====================
-const API_URL = 'https://ryoho.onrender.com';
+const API_URL = 'https://spirix.vercel.app';
 const FULL_RECHARGE_TIME = 600000; // 10 минут в миллисекундах
 const PASSIVE_INCOME_INTERVAL = 3600000; // 1 час
 const CLICK_BATCH_INTERVAL = 1000; // Отправка кликов раз в секунду

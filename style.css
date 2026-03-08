@@ -205,19 +205,22 @@ body.modal-open { overflow:hidden; }
 
 /* ── MAIN CLICK BUTTON ─────────────────────── */
 .click-button {
-    width: 80vw;
-    height: 80vw;
-    max-width: 450px;
-    max-height: 450px;
-    border-radius:50%;
-    background:var(--bg-card);
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; position:relative;
-    border:2px solid var(--purple);
+    width: min(80vmin, 450px);
+    height: min(80vmin, 450px);
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer; 
+    position: relative;
+    border: 2px solid var(--purple);
     box-shadow: 0 0 0 8px rgba(127,73,180,.08), 0 0 40px rgba(127,73,180,.12);
-    animation:ghostLevitate 3s ease-in-out infinite;
-    transition:transform .08s, box-shadow .08s;
-    touch-action:manipulation; user-select:none; z-index:2;
+    animation: ghostLevitate 3s ease-in-out infinite;
+    transition: transform .08s, box-shadow .08s;
+    touch-action: manipulation; 
+    user-select: none; 
+    z-index: 2;
 }
 .click-button::before {
     content:''; position:absolute; inset:-10px; border-radius:50%;
@@ -228,6 +231,12 @@ body.modal-open { overflow:hidden; }
     content:''; position:absolute; inset:-22px; border-radius:50%;
     border:1px solid rgba(127,73,180,.07);
     animation:auraBreath 3s ease-in-out infinite 1.2s;
+}
+@media (max-width: 480px) {
+    .click-button {
+        width: min(70vmin, 350px);
+        height: min(70vmin, 350px);
+    }
 }
 @keyframes auraBreath {
     0%,100%{opacity:.3;transform:scale(1)}
