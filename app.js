@@ -43,42 +43,47 @@ async function initAds() {
     }
 }
 
+
 // Показ награждаемого видео
 async function showRewardedAd(rewardType, rewardCallback) {
+    // Проверяем, инициализирован ли TelegramAdsController
+    if (!window.TelegramAdsController) {
+        console.log('⚠️ TelegramAdsController не инициализирован');
+        // Fallback на старую систему
+        return showLegacyRewardedAd(rewardType, rewardCallback);
+    }
+    
     try {
-        const ads = await initAds();
-        if (!ads) {
-            // Fallback на старую систему
-            return showLegacyRewardedAd(rewardType, rewardCallback);
-        }
+        // Показываем нативную рекламу (rewarded)
+        await window.TelegramAdsController.triggerNativeNotification();
         
-        const done = await ads.show({
-            onAdShow: () => console.log('Ad shown'),
-            onAdClick: () => console.log('Ad clicked'),
-            onAdComplete: () => console.log('Ad completed')
-        });
+        // Если дошли сюда - реклама успешно показана
+        console.log('✅ Реклама показана, начисляем награду');
         
-        if (done) {
-            // Начисляем награду
-            await rewardCallback();
-            showToast('🎁 Награда получена!');
-            
-            // Отправляем статистику на сервер
-            await fetch(`${API_URL}/api/ad-watched`, {
+        // Начисляем награду
+        await rewardCallback();
+        showToast('🎁 Награда получена!');
+        
+        // Отправляем статистику на сервер (если нужно)
+        if (userId) {
+            fetch(`${API_URL}/api/ad-watched`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: userId,
                     reward_type: rewardType
                 })
-            });
-            
-            return true;
+            }).catch(e => console.log('Ad stats error:', e));
         }
+        
+        return true;
+        
     } catch (error) {
         console.error('Ad error:', error);
         showToast('❌ Реклама не загрузилась', true);
-        return false;
+        
+        // Пробуем старую систему как запасной вариант
+        return showLegacyRewardedAd(rewardType, rewardCallback);
     }
 }
 
@@ -98,6 +103,29 @@ async function showLegacyRewardedAd(rewardType, rewardCallback) {
         console.error('Legacy ad error:', e);
         return false;
     }
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ RICHADS ====================
+if (typeof TelegramAdsController !== 'undefined') {
+    window.TelegramAdsController = new TelegramAdsController();
+    window.TelegramAdsController.initialize({
+        pubId: "792361",
+        appId: "1396",
+        debug: false
+    });
+    console.log('✅ RichAds инициализирован');
+} else {
+    console.log('⚠️ RichAds не загружен, проверь подключение скрипта');
+}
+
+function showInterstitialAd() {
+    window.TelegramAdsController.triggerInterstitialBanner()
+        .then((result) => {
+            console.log('✅ Реклама показана', result);
+        })
+        .catch((result) => {
+            console.log('❌ Ошибка показа', result);
+        });
 }
 
 // ==================== CPA-ЗАДАНИЯ ====================
