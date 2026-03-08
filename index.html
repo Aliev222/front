@@ -10,14 +10,21 @@
     <link rel="stylesheet" href="style.css">
     
     <!-- Telegram WebApp (обязательно) -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- RichAds (НОВАЯ РЕКЛАМА) -->
-    <!-- <script src="httpы://richinfo.co/richpartners/telegram/js/tg-ob.js"></script> -->
-    
-
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>      
     <script src='//libtl.com/sdk.js' data-zone='10655027' data-sdk='show_10655027'></script>
     
+    
+
+    <script>
+    // Rewarded interstitial
+    show_10655027().then(() => {
+        // Сюда вставь свою функцию награды
+        alert('Ты посмотрел рекламу!');
+    });
+    </script>
+
+        
+
     <!-- Твой основной скрипт -->
     <script src="app.js" defer></script>
     
