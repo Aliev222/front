@@ -19,63 +19,43 @@ const PASSIVE_INCOME_INTERVAL = 3600000; // 1 час
 const CLICK_BATCH_INTERVAL = 1000; // Отправка кликов раз в секунду
 const MAX_CACHE_AGE = 30000; // 30 секунд
 
-// ==================== РЕКЛАМА И CPA ====================
-// ==================== ИНИЦИАЛИЗАЦИЯ RICHADS ====================
-// Ждем загрузки скрипта и создаем контроллер
+// ==================== RICHADS ИНИЦИАЛИЗАЦИЯ ====================
 function initRichAds() {
     if (typeof TelegramAdsController !== 'undefined') {
-        window.TelegramAdsController = new TelegramAdsController();
-        window.TelegramAdsController.initialize({
-            pubId: "792361",
-            appId: "1396",
-            debug: false
-        });
-        console.log('✅ RichAds инициализирован', window.TelegramAdsController);
-        return true;
+        try {
+            window.TelegramAdsController = new TelegramAdsController();
+            window.TelegramAdsController.initialize({
+                pubId: "792361",
+                appId: "1396",
+                debug: false
+            });
+            console.log('✅ RichAds инициализирован', window.TelegramAdsController);
+            return true;
+        } catch (e) {
+            console.error('❌ Ошибка инициализации RichAds:', e);
+            return false;
+        }
     }
     return false;
 }
 
-// Пробуем сразу
+// Пробуем инициализировать сразу
 if (!initRichAds()) {
     // Если не получилось - пробуем через секунду
     setTimeout(() => {
         if (initRichAds()) {
             console.log('✅ RichAds инициализирован с задержкой');
         } else {
-            console.log('❌ RichAds не загрузился');
+            console.log('❌ RichAds не загрузился, проверь подключение скрипта tg-ob.js');
         }
     }, 1000);
 }
-// Конфигурация рекламы
-const ADS_CONFIG = {
-    guid: 'ТВОЙ_GUID_ОТ_МЕНЕДЖЕРА', // Получишь после регистрации
-    debug: false // true для тестов
-};
 
-let adsInstance = null;
-
-// Инициализация рекламы
-async function initAds() {
-    if (adsInstance) return adsInstance;
-    
-    try {
-        adsInstance = await window.entryAds?.(ADS_CONFIG);
-        console.log('✅ AdsPaw initialized');
-        return adsInstance;
-    } catch (e) {
-        console.error('Ads init error:', e);
-        return null;
-    }
-}
-
-
-// Показ награждаемого видео
+// ==================== РЕКЛАМА (ОСНОВНАЯ ФУНКЦИЯ) ====================
 async function showRewardedAd(rewardType, rewardCallback) {
     // Проверяем, инициализирован ли TelegramAdsController
     if (!window.TelegramAdsController) {
         console.log('⚠️ TelegramAdsController не инициализирован');
-        // Fallback на старую систему
         return showLegacyRewardedAd(rewardType, rewardCallback);
     }
     
@@ -83,14 +63,13 @@ async function showRewardedAd(rewardType, rewardCallback) {
         // Показываем нативную рекламу (rewarded)
         await window.TelegramAdsController.triggerNativeNotification();
         
-        // Если дошли сюда - реклама успешно показана
         console.log('✅ Реклама показана, начисляем награду');
         
         // Начисляем награду
         await rewardCallback();
         showToast('🎁 Награда получена!');
         
-        // Отправляем статистику на сервер (если нужно)
+        // Отправляем статистику на сервер
         if (userId) {
             fetch(`${API_URL}/api/ad-watched`, {
                 method: 'POST',
@@ -107,13 +86,11 @@ async function showRewardedAd(rewardType, rewardCallback) {
     } catch (error) {
         console.error('Ad error:', error);
         showToast('❌ Реклама не загрузилась', true);
-        
-        // Пробуем старую систему как запасной вариант
         return showLegacyRewardedAd(rewardType, rewardCallback);
     }
 }
 
-// Старая система как запасной вариант
+// ==================== СТАРАЯ СИСТЕМА (ЗАПАСНОЙ ВАРИАНТ) ====================
 async function showLegacyRewardedAd(rewardType, rewardCallback) {
     if (typeof window.show_10655027 !== 'function') {
         showToast('❌ Реклама временно недоступна', true);
@@ -131,32 +108,23 @@ async function showLegacyRewardedAd(rewardType, rewardCallback) {
     }
 }
 
-// ==================== ИНИЦИАЛИЗАЦИЯ RICHADS ====================
-if (typeof TelegramAdsController !== 'undefined') {
-    window.TelegramAdsController = new TelegramAdsController();
-    window.TelegramAdsController.initialize({
-        pubId: "792361",
-        appId: "1396",
-        debug: false
-    });
-    console.log('✅ RichAds инициализирован');
-} else {
-    console.log('⚠️ RichAds не загружен, проверь подключение скрипта');
-}
-
+// ==================== МЕЖСТРАНИЧНАЯ РЕКЛАМА ====================
 function showInterstitialAd() {
+    if (!window.TelegramAdsController) {
+        console.log('⚠️ TelegramAdsController не инициализирован');
+        return;
+    }
+    
     window.TelegramAdsController.triggerInterstitialBanner()
         .then((result) => {
-            console.log('✅ Реклама показана', result);
+            console.log('✅ Межстраничная реклама показана', result);
         })
         .catch((result) => {
-            console.log('❌ Ошибка показа', result);
+            console.log('❌ Ошибка показа межстраничной рекламы', result);
         });
 }
 
 // ==================== CPA-ЗАДАНИЯ ====================
-
-// Массив CPA-офферов (можно загружать с сервера)
 const CPA_OFFERS = [
     {
         id: 'cpa_casino_1',
@@ -187,7 +155,6 @@ const CPA_OFFERS = [
     }
 ];
 
-// Добавление CPA-заданий в Tasks
 function renderCPATasks() {
     return CPA_OFFERS.map(offer => `
         <div class="cpa-task-card" style="border-left-color: ${offer.color}">
@@ -204,12 +171,10 @@ function renderCPATasks() {
     `).join('');
 }
 
-// Открытие CPA-задания
 async function openCPATask(offerId) {
     const offer = CPA_OFFERS.find(o => o.id === offerId);
     if (!offer) return;
     
-    // Сохраняем начало перехода
     const cpaStart = {
         offerId,
         startTime: Date.now(),
@@ -217,13 +182,9 @@ async function openCPATask(offerId) {
     };
     localStorage.setItem(`cpa_${offerId}`, JSON.stringify(cpaStart));
     
-    // Открываем ссылку
     window.open(offer.url, '_blank');
-    
-    // Показываем уведомление
     showToast('✅ Переход выполнен! Награда после подтверждения');
     
-    // Отправляем на сервер
     try {
         await fetch(`${API_URL}/api/cpa-click`, {
             method: 'POST',
@@ -237,11 +198,9 @@ async function openCPATask(offerId) {
         console.error('CPA click error:', e);
     }
     
-    // Начинаем проверять статус
     startCPAVerification(offerId);
 }
 
-// Проверка статуса CPA
 function startCPAVerification(offerId) {
     const checkInterval = setInterval(async () => {
         try {
@@ -259,14 +218,11 @@ function startCPAVerification(offerId) {
                 if (data.completed) {
                     clearInterval(checkInterval);
                     
-                    // Начисляем награду
                     const offer = CPA_OFFERS.find(o => o.id === offerId);
                     if (offer) {
                         state.coins += offer.reward;
                         updateUI();
                         showToast(`💰 +${formatNumber(offer.reward)} монет!`);
-                        
-                        // Удаляем из localStorage
                         localStorage.removeItem(`cpa_${offerId}`);
                     }
                 }
@@ -274,15 +230,10 @@ function startCPAVerification(offerId) {
         } catch (e) {
             console.error('CPA verification error:', e);
         }
-    }, 5000); // Проверяем каждые 5 секунд
+    }, 5000);
     
-    // Останавливаем через 30 минут
     setTimeout(() => clearInterval(checkInterval), 30 * 60 * 1000);
 }
-
-
-
-
 
 // ==================== STATE ====================
 const state = {
@@ -438,19 +389,15 @@ const updateUI = () => {
     pendingUIUpdate = true;
     
     requestAnimationFrame(() => {
-        // Баланс
         const coinEl = document.getElementById('coinBalance');
         if (coinEl) coinEl.textContent = formatNumber(state.coins);
 
-        // Доход в час
         const hourEl = document.getElementById('profitPerHour');
         if (hourEl) hourEl.textContent = formatNumber(state.profitPerHour);
         
-        // Доход за клик
         const tapEl = document.getElementById('profitPerTap');
         if (tapEl) tapEl.textContent = state.profitPerTap;
 
-        // Энергия
         const energyFill = document.getElementById('energyFill');
         const energyText = document.getElementById('energyText');
         const maxEnergyEl = document.getElementById('maxEnergyText');
@@ -462,7 +409,6 @@ const updateUI = () => {
             maxEnergyEl.textContent = state.maxEnergy;
         }
 
-        // Время восстановления
         const missing = state.maxEnergy - state.energy;
         const regenEl = document.getElementById('energyRegenInfo');
         if (regenEl) {
@@ -476,12 +422,10 @@ const updateUI = () => {
             }
         }
 
-        // Уровень
         state.globalLevel = state.levels.multitap;
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) globalLevelEl.textContent = state.globalLevel;
 
-        // Цена глобального апгрейда
         const globalPriceEl = document.getElementById('globalPrice');
         if (globalPriceEl) {
             const total = (state.prices.multitap || 0) + 
@@ -495,44 +439,33 @@ const updateUI = () => {
 };
 
 // ==================== ENERGY RECOVERY ====================
-// ==================== ENERGY RECOVERY ====================
-let energyUpdateInterval = null;
-
 const startEnergyRecovery = () => {
-    // Очищаем предыдущий интервал
     if (recoveryInterval) {
         clearInterval(recoveryInterval);
         recoveryInterval = null;
     }
     
-    // Рассчитываем интервал: полное восстановление за 10 минут
-    // FULL_RECHARGE_TIME = 600000 мс (10 минут)
     const intervalMs = FULL_RECHARGE_TIME / state.maxEnergy;
     console.log(`⚡ Energy recovery started: +1 every ${intervalMs}ms (${state.maxEnergy} max energy)`);
     
-    // Запускаем новый интервал
     recoveryInterval = setInterval(() => {
         recoverEnergy();
     }, intervalMs);
 };
 
 const recoverEnergy = async () => {
-    // ========== КРИТИЧЕСКИ ВАЖНО: ПРОВЕРКА MEGA BOOST ==========
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
-    // ЕСЛИ БУСТ АКТИВЕН - ВООБЩЕ НИЧЕГО НЕ ДЕЛАЕМ!
     if (megaBoostActive) {
         console.log('⚡ Mega Boost active - energy recovery SKIPPED');
-        return; // ВАЖНО: выходим сразу, не восстанавливаем энергию
+        return;
     }
     
-    // Если энергия уже полная - не восстанавливаем
     if (state.energy >= state.maxEnergy) {
         return;
     }
     
     if (!userId) {
-        // Локальное восстановление
         state.energy = Math.min(state.maxEnergy, state.energy + 1);
         updateUI();
         return;
@@ -555,24 +488,21 @@ const recoverEnergy = async () => {
     }
 };
 
-// Функция для принудительного сброса энергии (например, после апгрейда)
 const resetEnergyRecovery = () => {
-    if (energyUpdateInterval) {
-        clearInterval(energyUpdateInterval);
+    if (recoveryInterval) {
+        clearInterval(recoveryInterval);
         startEnergyRecovery();
     }
 };
 
 // ==================== CLICK HANDLER ====================
 async function handleTap(e) {
-    // Игнорируем клики по интерактивным элементам
     const target = e.target;
     if (target.closest('button, a, .nav-item, .settings-btn, .modal-close, .mini-boost-button, .skin-category, .skin-card, .task-button, .btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card')) {
         return;
     }
     if (e.cancelable) e.preventDefault();
 
-    // Координаты для анимации
     let clientX, clientY;
     if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -582,36 +512,29 @@ async function handleTap(e) {
         clientY = e.clientY;
     }
 
-    // Проверка Mega Boost
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
-    // 👇 ВОТ ЗДЕСЬ ДОБАВЛЯЕМ ПРОВЕРКУ ЭНЕРГИИ И ВСПЛЫВАЮЩЕЕ ОКНО
     if (!megaBoostActive && state.energy < 1) {
-        showEnergyRecoveryModal(); // ПОКАЗЫВАЕМ ОКНО
-        return; // ВЫХОДИМ ИЗ ФУНКЦИИ, НЕ КЛИКАЕМ
+        showEnergyRecoveryModal();
+        return;
     }
 
-    // Расчет дохода
     let gain = state.profitPerTap;
     
-    // Бонус скина
     const skin = getSkinById(userSkins.selected);
     if (skin && skin.bonus && skin.bonus.type === 'multiplier') {
         gain *= skin.bonus.value;
     }
     
-    // Mega Boost
     if (megaBoostActive) gain *= 2;
     gain = Math.floor(gain);
 
-    // Мгновенное обновление UI
     state.coins += gain;
     if (!megaBoostActive) {
         state.energy = Math.max(0, state.energy - 1);
     }
     updateUI();
 
-    // Анимация касания
     try {
         const effect = document.createElement('div');
         effect.className = 'tap-effect-global';
@@ -627,15 +550,12 @@ async function handleTap(e) {
         setTimeout(() => effect.remove(), 300);
     } catch (err) {}
 
-    // Вибрация
     vibrateClick();
 
-    // Звук
     if (settings.sound) {
         playClickSound(megaBoostActive);
     }
 
-    // Отправка в очередь (только если есть userId)
     if (userId) {
         clickBatch.clicks++;
         clickBatch.totalGain += gain;
@@ -647,7 +567,6 @@ async function handleTap(e) {
     } 
 }
 
-// Отправка накопленных кликов
 async function sendClickBatch() {
     if (clickBatch.clicks === 0 || !userId) {
         clickBatch.timer = null;
@@ -669,13 +588,11 @@ async function sendClickBatch() {
         console.log('Click batch error:', e);
     }
 
-    // Сброс
     clickBatch.clicks = 0;
     clickBatch.totalGain = 0;
     clickBatch.timer = null;
 }
 
-// Звук клика
 function playClickSound(megaBoostActive) {
     try {
         if (!window.audioCtx) {
@@ -728,7 +645,6 @@ function playClickSound(megaBoostActive) {
 }
 
 function showEnergyRecoveryModal() {
-    // Проверяем, не открыта ли уже модалка
     if (document.querySelector('.energy-recovery-modal')) return;
     
     const modal = document.createElement('div');
@@ -760,8 +676,6 @@ function showEnergyRecoveryModal() {
     `;
     
     document.body.appendChild(modal);
-    
-    // Обновляем время восстановления
     updateRecoveryTime();
 }
 
@@ -784,16 +698,13 @@ function updateRecoveryTime() {
 async function recoverEnergyWithAd() {
     closeEnergyModal();
     
-    // Проверяем, какая функция доступна
     if (typeof showRewardedAd === 'function') {
-        // Новая система с колбэком
         const success = await showRewardedAd('energy', async () => {
             state.energy = Math.min(state.maxEnergy, state.energy + 50);
             updateUI();
         });
     } 
     else if (typeof showRewardedVideo === 'function') {
-        // Старая система
         await showRewardedVideo();
         state.energy = Math.min(state.maxEnergy, state.energy + 50);
         updateUI();
@@ -809,20 +720,17 @@ function closeEnergyModal() {
     if (modal) modal.remove();
 }
 
-
 // ==================== USER DATA LOADING ====================
 const loadUserData = async () => {
     if (!userId) return;
     
     try {
-        // Регистрация
         await fetch(`${API_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId, username, referrer_id: referrerId })
         });
 
-        // Загрузка данных
         const data = await fetchWithCache(`${API_URL}/api/user/${userId}`, {}, MAX_CACHE_AGE);
         
         state.coins = data.coins || 0;
@@ -2003,8 +1911,5 @@ window.getSkinById = getSkinById;
 window.openSkins = openSkins;
 window.completeCPASkinFor = completeCPASkinFor;
 window.state = state;
-
-
-
 
 console.log('✅ Ryoho Clicker fully initialized with new architecture');
