@@ -21,55 +21,86 @@ const MAX_CACHE_AGE = 30000; // 30 секунд
 
 // ==================== RICHADS ИНИЦИАЛИЗАЦИЯ ====================
 function initRichAds() {
-    if (typeof TelegramAdsController !== 'undefined') {
-        try {
-            window.TelegramAdsController = new TelegramAdsController();
-            window.TelegramAdsController.initialize({
-                pubId: "792361",
-                appId: "1396",
-                debug: false
-            });
-            console.log('✅ RichAds инициализирован', window.TelegramAdsController);
-            return true;
-        } catch (e) {
-            console.error('❌ Ошибка инициализации RichAds:', e);
-            return false;
+    return new Promise((resolve, reject) => {
+        // Проверяем, доступен ли уже класс
+        if (typeof TelegramAdsController !== 'undefined') {
+            try {
+                window.TelegramAdsController = new TelegramAdsController();
+                window.TelegramAdsController.initialize({
+                    pubId: "792361",
+                    appId: "1396",
+                    debug: false
+                });
+                console.log('✅ RichAds инициализирован сразу');
+                resolve(true);
+            } catch (e) {
+                console.error('❌ Ошибка инициализации RichAds:', e);
+                reject(e);
+            }
+            return;
         }
-    }
-    return false;
+
+        // Если класс еще не загружен - ждем события
+        console.log('⏳ Ожидание загрузки TelegramAdsController...');
+        
+        let attempts = 0;
+        const maxAttempts = 20; // 20 * 250ms = 5 секунд
+        
+        const checkInterval = setInterval(() => {
+            attempts++;
+            
+            if (typeof TelegramAdsController !== 'undefined') {
+                clearInterval(checkInterval);
+                try {
+                    window.TelegramAdsController = new TelegramAdsController();
+                    window.TelegramAdsController.initialize({
+                        pubId: "792361",
+                        appId: "1396",
+                        debug: false
+                    });
+                    console.log('✅ RichAds инициализирован после загрузки');
+                    resolve(true);
+                } catch (e) {
+                    console.error('❌ Ошибка инициализации RichAds:', e);
+                    reject(e);
+                }
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('❌ TelegramAdsController не загрузился за 5 секунд');
+                resolve(false);
+            }
+        }, 250);
+    });
 }
 
-// Пробуем инициализировать сразу
-if (!initRichAds()) {
-    // Если не получилось - пробуем через секунду
-    setTimeout(() => {
-        if (initRichAds()) {
-            console.log('✅ RichAds инициализирован с задержкой');
-        } else {
-            console.log('❌ RichAds не загрузился, проверь подключение скрипта tg-ob.js');
-        }
-    }, 1000);
-}
+// Запускаем инициализацию
+initRichAds().then(success => {
+    if (success) {
+        console.log('✅ RichAds готов к работе');
+    } else {
+        console.log('⚠️ RichAds не доступен, будет использована старая система');
+    }
+});
 
 // ==================== РЕКЛАМА (ОСНОВНАЯ ФУНКЦИЯ) ====================
 async function showRewardedAd(rewardType, rewardCallback) {
-    // Проверяем, инициализирован ли TelegramAdsController
+    // Ждем инициализацию, если нужно
+    if (!window.TelegramAdsController) {
+        console.log('⚠️ TelegramAdsController не готов, пробуем инициализировать...');
+        await initRichAds();
+    }
+    
     if (!window.TelegramAdsController) {
         console.log('⚠️ TelegramAdsController не инициализирован');
         return showLegacyRewardedAd(rewardType, rewardCallback);
     }
     
     try {
-        // Показываем нативную рекламу (rewarded)
         await window.TelegramAdsController.triggerNativeNotification();
-        
         console.log('✅ Реклама показана, начисляем награду');
-        
-        // Начисляем награду
         await rewardCallback();
         showToast('🎁 Награда получена!');
         
-        // Отправляем статистику на сервер
         if (userId) {
             fetch(`${API_URL}/api/ad-watched`, {
                 method: 'POST',
