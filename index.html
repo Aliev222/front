@@ -26,7 +26,9 @@
         
 
     <!-- Твой основной скрипт -->
+    <script src="core.js"></script>
     <script src="app.js" defer></script>
+    
     
     <!-- Firebase (если нужен) -->
     <script type="module">
@@ -47,8 +49,8 @@
 </head>
 <body>
 
-<div class="game-container" ontouchstart="handleTap(event)" onclick="handleTap(event)" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
-
+<div class="game-container"  style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
+    <div class="game-click-layer"></div>
     <!-- BACKGROUND -->
     <div class="space-bg"></div>
     <div class="stars"></div>
