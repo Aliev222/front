@@ -98,9 +98,20 @@ async function showRewardedAd(rewardType, rewardCallback) {
     try {
         await window.TelegramAdsController.triggerNativeNotification();
         console.log('✅ Реклама показана, начисляем награду');
-        await rewardCallback();
-        showToast('🎁 Награда получена!');
         
+        // Вызываем колбэк награды
+        await rewardCallback();
+        
+        // Разные сообщения для разных типов наград
+        if (rewardType === 'mega_boost') {
+            showToast('🔥 Mega Boost активирован!');
+        } else if (rewardType === 'energy') {
+            showToast('⚡ +50 энергии!');
+        } else {
+            showToast('🎁 Награда получена!');
+        }
+        
+        // Отправляем статистику на сервер
         if (userId) {
             fetch(`${API_URL}/api/ad-watched`, {
                 method: 'POST',
@@ -485,13 +496,16 @@ const startEnergyRecovery = () => {
 };
 
 const recoverEnergy = async () => {
+    // Проверяем Mega Boost
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
+    // Если буст активен - не восстанавливаем энергию
     if (megaBoostActive) {
         console.log('⚡ Mega Boost active - energy recovery SKIPPED');
         return;
     }
     
+    // Если энергия уже полная - не восстанавливаем
     if (state.energy >= state.maxEnergy) {
         return;
     }
@@ -925,35 +939,44 @@ const activateMegaBoost = async () => {
         return;
     }
     
-    if (typeof window.show_10655027 !== 'function') {
-        showAlert('❌ Ads temporarily unavailable', true);
+    // Используем showRewardedAd вместо прямого вызова show_10655027
+    if (typeof showRewardedAd !== 'function') {
+        showAlert('❌ Ads unavailable', true);
         return;
     }
     
     try {
         if (boostBtn) boostBtn.classList.add('disabled');
-        await window.show_10655027();
         
-        const res = await fetch(`${API_URL}/api/activate-mega-boost`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
+        // Показываем рекламу и ждем результат
+        const success = await showRewardedAd('mega_boost', async () => {
+            // Этот код выполнится после успешного просмотра рекламы
+            const res = await fetch(`${API_URL}/api/activate-mega-boost`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.already_active) {
+                    showAlert(data.message, true);
+                } else {
+                    showAlert('🔥 ' + data.message);
+                    activateMegaBoostUI();
+                    if (data.expires_at) {
+                        startMegaBoostTimer(new Date(data.expires_at));
+                    }
+                    showMegaBoostEffect();
+                    await checkMegaBoostStatus();
+                }
+            }
         });
         
-        if (res.ok) {
-            const data = await res.json();
-            if (data.already_active) {
-                showAlert(data.message, true);
-            } else {
-                showAlert('🔥 ' + data.message);
-                activateMegaBoostUI();
-                if (data.expires_at) {
-                    startMegaBoostTimer(new Date(data.expires_at));
-                }
-                showMegaBoostEffect();
-                await checkMegaBoostStatus();
-            }
+        if (!success) {
+            showAlert('❌ Ad viewing failed', true);
         }
+        
     } catch (error) {
         console.error('Boost error:', error);
         showAlert('❌ Ad loading failed', true);
