@@ -442,7 +442,7 @@ const updateUI = () => {
 
         const energyFill = document.getElementById('energyFill');
         const energyText = document.getElementById('energyText');
-        const maxEnergyEl = document.getElementById('maxEnergyText');
+        const maxEnergyEl = document.getElementById('maxEnergyText');recover-energy
         
         if (energyFill && energyText && maxEnergyEl) {
             const percent = (state.energy / state.maxEnergy) * 100;
@@ -486,9 +486,9 @@ const startEnergyRecovery = () => {
         clearInterval(recoveryInterval);
         recoveryInterval = null;
     }
-    // Было: FULL_RECHARGE_TIME / state.maxEnergy
-    // Стало: 2000 (всегда 2 секунды)
-    const intervalMs = 2000;
+    
+    // ✅ ТВОЁ УСЛОВИЕ: +1 каждые 2 секунды
+    const intervalMs = 3000; 
     console.log(`⚡ Energy recovery started: +1 every 2 seconds`);
     
     recoveryInterval = setInterval(() => {
@@ -566,18 +566,18 @@ async function handleTap(e) {
     }
 
     let gain = state.profitPerTap;
-    
+
     const skin = getSkinById(userSkins.selected);
-    if (skin && skin.bonus && skin.bonus.type === 'multiplier') {
+    if (skin && skin.bonus?.type === 'multiplier') {
         gain *= skin.bonus.value;
     }
-    
+
     if (megaBoostActive) gain *= 2;
     gain = Math.floor(gain);
 
     state.coins += gain;
     if (!megaBoostActive) {
-        state.energy = Math.max(0, state.energy - 1);
+        state.energy = Math.max(0, state.energy - 1); // ← тратится только без буста
     }
     updateUI();
 
