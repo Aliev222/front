@@ -486,9 +486,10 @@ const startEnergyRecovery = () => {
         clearInterval(recoveryInterval);
         recoveryInterval = null;
     }
-    
-    const intervalMs = FULL_RECHARGE_TIME / state.maxEnergy;
-    console.log(`⚡ Energy recovery started: +1 every ${intervalMs}ms (${state.maxEnergy} max energy)`);
+    // Было: FULL_RECHARGE_TIME / state.maxEnergy
+    // Стало: 2000 (всегда 2 секунды)
+    const intervalMs = 2000;
+    console.log(`⚡ Energy recovery started: +1 every 2 seconds`);
     
     recoveryInterval = setInterval(() => {
         recoverEnergy();
