@@ -173,17 +173,25 @@ document.addEventListener('touchstart', function(e) {
 function switchTab(tab, element) {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     element.classList.add('active');
-
-    // Скрываем все модалки
     document.querySelectorAll('.modal-screen').forEach(m => m.style.display = 'none');
 
-    // Открываем нужную модалку
     switch(tab) {
-        case 'main': break; // ничего не делаем, главный экран
-        case 'friends': document.getElementById('friends-screen').style.display = 'block'; break;
-        case 'tasks': document.getElementById('tasks-screen').style.display = 'block'; break;
-        case 'games': document.getElementById('games-screen').style.display = 'block'; break;
-        case 'skins': document.getElementById('skins-screen').style.display = 'block'; break;
+        case 'main': break;
+        case 'friends':
+            document.getElementById('friends-screen').style.display = 'block';
+            updateReferralStats(); // обновляем UI друзей
+            break;
+        case 'tasks':
+            document.getElementById('tasks-screen').style.display = 'block';
+            loadTasks(); // загружаем задачи
+            break;
+        case 'games':
+            document.getElementById('games-screen').style.display = 'block';
+            break;
+        case 'skins':
+            document.getElementById('skins-screen').style.display = 'block';
+            updateSkinsUI(); // обновляем скины
+            break;
     }
 }
 
@@ -228,4 +236,9 @@ function playDice() { console.log('Dice rolled'); }
 // Инициализация UI
 // =======================
 updateUI();
+updateReferralStats();
+updateEnergyUI();
+updateCoinsUI();
+updateSkinsUI();
+
 console.log('✅ Ryoho Clicker fully initialized with fixed app.js');
