@@ -1133,113 +1133,134 @@ async function playDice() {
 }
 
 // Roulette
+// Roulette
 async function playWheel() {
-    const betInput = document.getElementById('wheel-bet');
-    const betType = document.getElementById('wheel-color').value;
-    const betNumber = document.getElementById('wheel-number')?.value;
-    
-    if (!betInput) return;
-    const bet = parseInt(betInput.value);
-    
-    if (bet > State.game.coins) {
-        showToast('❌ Недостаточно монет', true);
-        return;
-    }
-    if (bet < 10) {
-        showToast('❌ Минимальная ставка 10', true);
-        return;
-    }
-
-    const resultEl = document.getElementById('wheel-result');
-    const wheel = document.getElementById('wheel');
-    
-    resultEl.textContent = '🎡 Крутим...';
-    playSound('spin');
-    
-    let spins = 0;
-    const maxSpins = 20;
-    
-    const spinInterval = setInterval(() => {
-        wheel.textContent = Math.floor(Math.random() * 37);
-        spins++;
+    try {
+        const betInput = document.getElementById('wheel-bet');
+        if (!betInput) {
+            showToast('❌ Элемент ставки не найден', true);
+            return;
+        }
         
-        if (spins >= maxSpins) {
-            clearInterval(spinInterval);
+        const bet = parseInt(betInput.value);
+        const betType = document.getElementById('wheel-color')?.value;
+        const betNumber = document.getElementById('wheel-number')?.value;
+        
+        if (isNaN(bet) || bet < 10) {
+            showToast('❌ Минимальная ставка 10', true);
+            return;
+        }
+        
+        if (bet > State.game.coins) {
+            showToast('❌ Недостаточно монет', true);
+            return;
+        }
+
+        const resultEl = document.getElementById('wheel-result');
+        const wheel = document.getElementById('wheel');
+        
+        if (!resultEl || !wheel) {
+            showToast('❌ Ошибка интерфейса', true);
+            return;
+        }
+        
+        resultEl.textContent = '🎡 Крутим...';
+        playSound('spin');
+        
+        let spins = 0;
+        const maxSpins = 20;
+        
+        const spinInterval = setInterval(() => {
+            wheel.textContent = Math.floor(Math.random() * 37);
+            spins++;
             
-            if (userId) {
-                fetch(`${CONFIG.API_URL}/api/game/roulette`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        bet: bet,
-                        bet_type: betType,
-                        bet_value: betType === 'number' ? parseInt(betNumber) : null
+            if (spins >= maxSpins) {
+                clearInterval(spinInterval);
+                
+                if (userId) {
+                    fetch(`${CONFIG.API_URL}/api/game/roulette`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            bet: bet,
+                            bet_type: betType,
+                            bet_value: betType === 'number' ? parseInt(betNumber) : null
+                        })
                     })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    wheel.textContent = data.result_number;
+                    .then(res => {
+                        if (!res.ok) throw new Error('Server error');
+                        return res.json();
+                    })
+                    .then(data => {
+                        wheel.textContent = data.result_number;
+                        
+                        // Цвет результата
+                        const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+                        if (data.result_number === 0) {
+                            wheel.style.color = '#2ecc71'; // зеленый
+                        } else if (redNumbers.includes(data.result_number)) {
+                            wheel.style.color = '#e74c3c'; // красный
+                        } else {
+                            wheel.style.color = '#95a5a6'; // серый
+                        }
+                        
+                        resultEl.textContent = data.message || '🎮 Сыграно!';
+                        
+                        if (data.message?.includes('won')) {
+                            playSound('win');
+                        } else {
+                            playSound('lose');
+                        }
+                        
+                        State.game.coins = data.coins;
+                        updateUI();
+                    })
+                    .catch(err => {
+                        console.error('Roulette error:', err);
+                        resultEl.textContent = '❌ Ошибка сервера';
+                        playSound('lose');
+                    });
+                } else {
+                    // Локальная игра (без сервера)
+                    const result = Math.floor(Math.random() * 37);
+                    wheel.textContent = result;
                     
-                    // Цвет результата
                     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                    if (data.result_number === 0) {
-                        wheel.style.color = '#2ecc71'; // зеленый
-                    } else if (redNumbers.includes(data.result_number)) {
-                        wheel.style.color = '#e74c3c'; // красный
+                    
+                    if (result === 0) {
+                        wheel.style.color = '#2ecc71';
+                    } else if (redNumbers.includes(result)) {
+                        wheel.style.color = '#e74c3c';
                     } else {
-                        wheel.style.color = '#95a5a6'; // серый
+                        wheel.style.color = '#95a5a6';
                     }
                     
-                    resultEl.textContent = data.message;
+                    let win = false;
+                    if (betType === 'red' && redNumbers.includes(result)) win = true;
+                    if (betType === 'black' && result !== 0 && !redNumbers.includes(result)) win = true;
+                    if (betType === 'green' && result === 0) win = true;
+                    if (betType === 'number' && result === parseInt(betNumber)) win = true;
                     
-                    if (data.message.includes('won')) {
+                    if (win) {
+                        const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
+                        State.game.coins += bet * multiplier;
+                        resultEl.textContent = `🎡 Вы выиграли! x${multiplier}`;
                         playSound('win');
                     } else {
+                        State.game.coins -= bet;
+                        resultEl.textContent = '🎡 Вы проиграли';
                         playSound('lose');
                     }
-                    
-                    State.game.coins = data.coins;
                     updateUI();
-                })
-                .catch(() => {
-                    resultEl.textContent = '❌ Ошибка';
-                    playSound('lose');
-                });
-            } else {
-                const result = Math.floor(Math.random() * 37);
-                wheel.textContent = result;
-                
-                const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                
-                if (result === 0) {
-                    wheel.style.color = '#2ecc71';
-                } else if (redNumbers.includes(result)) {
-                    wheel.style.color = '#e74c3c';
-                } else {
-                    wheel.style.color = '#95a5a6';
                 }
-                
-                let win = false;
-                if (betType === 'red' && redNumbers.includes(result)) win = true;
-                if (betType === 'black' && result !== 0 && !redNumbers.includes(result)) win = true;
-                if (betType === 'green' && result === 0) win = true;
-                if (betType === 'number' && result === parseInt(betNumber)) win = true;
-                
-                if (win) {
-                    const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
-                    State.game.coins += bet * multiplier;
-                    resultEl.textContent = `🎡 Вы выиграли! x${multiplier}`;
-                    playSound('win');
-                } else {
-                    State.game.coins -= bet;
-                    resultEl.textContent = '🎡 Вы проиграли';
-                    playSound('lose');
-                }
-                updateUI();
             }
-        }
-    }, 100);
+        }, 100);
+        
+    } catch (err) {
+        console.error('Roulette error:', err);
+        showToast('❌ Ошибка', true);
+    }
 }
 
 // Конфетти для джекпота
