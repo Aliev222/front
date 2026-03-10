@@ -3,6 +3,8 @@
    ВСЁ В ОДНОМ ФАЙЛЕ
    ============================== */
 
+console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
+
 'use strict';
 
 // ==================== КОНФИГУРАЦИЯ ====================
@@ -911,3 +913,7 @@ window.recoverEnergy = recoverEnergy;
 window.showToast = showToast;
 
 console.log('✅ Spirit Clicker fully loaded');
+
+console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
+console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
+console.log('✅ openModal определена:', typeof openModal !== 'undefined');
