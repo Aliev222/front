@@ -640,6 +640,7 @@ async function upgradeBoost(type) {
             }
             
             showToast(`✅ ${type} +${result.new_level}!`);
+            playUpgradeSound();
             updateUI();
         }
     } catch (err) {
@@ -679,8 +680,97 @@ async function upgradeAll() {
     
     upgradeInProgress = false;
     showToast('✅ Все улучшения куплены!');
+    playUpgradeSound();
     updateUI();
 }
+
+function renderTasks(tasks) {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    
+    if (!tasks || tasks.length === 0) {
+        container.innerHTML = `
+            <div class="tasks-empty">
+                <div class="tasks-empty-icon">📋</div>
+                <div class="tasks-empty-text">Задания появятся позже</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = tasks.map(task => `
+        <div class="task-card ${task.completed ? 'completed' : ''}">
+            <div class="task-icon">${task.icon || '📋'}</div>
+            <div class="task-content">
+                <div class="task-title">${task.title || 'Задание'}</div>
+                <div class="task-desc">${task.description || ''}</div>
+                <div class="task-reward">🎁 ${task.reward || 0}</div>
+                ${task.progress ? `
+                    <div class="task-progress">
+                        <div class="task-progress-bar">
+                            <div class="task-progress-fill" style="width: ${(task.progress / task.total) * 100}%"></div>
+                        </div>
+                        <div class="task-progress-text">${task.progress}/${task.total}</div>
+                    </div>
+                ` : ''}
+            </div>
+            ${!task.completed ? `
+                <button class="task-button" onclick="completeTask('${task.id}')">
+                    Выполнить
+                </button>
+            ` : `
+                <button class="task-button completed" disabled>
+                    ✅ Выполнено
+                </button>
+            `}
+        </div>
+    `).join('');
+}
+
+// Добавь функцию для загрузки задач (если ее нет)
+async function loadTasks() {
+    if (!userId) return;
+    
+    try {
+        // Заглушка - замени на реальный API когда будет готов
+        const mockTasks = [
+            {
+                id: 'daily',
+                title: '🎯 Ежедневный бонус',
+                description: 'Заходи каждый день',
+                reward: '1000 монет',
+                icon: '📅',
+                completed: false,
+                progress: 1,
+                total: 1
+            },
+            {
+                id: 'clicks',
+                title: '👆 100 кликов',
+                description: 'Сделай 100 кликов',
+                reward: '500 монет',
+                icon: '👆',
+                completed: false,
+                progress: 0,
+                total: 100
+            }
+        ];
+        
+        renderTasks(mockTasks);
+        
+    } catch (err) {
+        console.error('Tasks error:', err);
+        renderTasks([]);
+    }
+}
+
+// Заглушка для выполнения задачи
+function completeTask(taskId) {
+    showToast(`✅ Задание "${taskId}" выполнено!`);
+    loadTasks(); // Перезагружаем задачи
+}
+
+
 
 // ==================== РЕФЕРАЛЫ ====================
 async function loadReferralData() {
@@ -859,11 +949,51 @@ function showEnergyRecoveryModal() {
         <div class="modal-content glass">
             <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
             <h3>⚡ Энергия закончилась!</h3>
-            <p>Подождите 2 секунды за 1 энергию</p>
-            <button class="btn-primary" onclick="this.closest('.energy-recovery-modal').remove()">OK</button>
+            <p>Посмотри рекламу и получи +50 энергии</p>
+            <button class="btn-primary" onclick="recoverEnergyWithAd()">
+                📺 Смотреть рекламу
+            </button>
+            <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
+                ⏳ Подождать
+            </button>
         </div>
     `;
     document.body.appendChild(modal);
+}
+
+function recoverEnergyWithAd() {
+    // Закрываем модалку
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+    
+    // Проверяем рекламу
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    // Показываем рекламу
+    window.show_10655027()
+        .then(() => {
+            // Начисляем энергию
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
+            updateUI();
+            showToast('⚡ +50 энергии!');
+            
+            // Эффект вспышки
+            const energyBar = document.querySelector('.energy-bar-fill');
+            if (energyBar) {
+                energyBar.style.transition = 'all 0.3s ease';
+                energyBar.style.filter = 'brightness(1.5)';
+                setTimeout(() => energyBar.style.filter = 'none', 500);
+            }
+        })
+        .catch((error) => {
+            console.error('Ad error:', error);
+            showToast('❌ Ошибка при показе рекламы', true);
+        });
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
@@ -885,6 +1015,39 @@ async function checkOfflinePassiveIncome() {
         }
     } catch (err) {}
 }
+
+
+function playUpgradeSound() {
+    if (!State.settings.sound) return;
+    
+    try {
+        if (!window.audioCtx) {
+            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (window.audioCtx.state === 'suspended') {
+            window.audioCtx.resume();
+        }
+        
+        const now = window.audioCtx.currentTime;
+        
+        // Фанфары апгрейда
+        for (let i = 0; i < 3; i++) {
+            const osc = window.audioCtx.createOscillator();
+            const gain = window.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(window.audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400 + i * 200, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+            
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        }
+    } catch (err) {}
+}
+
 
 // ==================== МИНИ-ИГРЫ ====================
 function openGame(game) {
