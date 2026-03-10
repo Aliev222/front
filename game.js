@@ -1,11 +1,11 @@
 /* ===============================
-   SPIRIT CLICKER - ПОЛНАЯ ВЕРСИЯ
-   ВСЁ В ОДНОМ ФАЙЛЕ
+   SPIRIT CLICKER - ПОЛНАЯ РАБОЧАЯ ВЕРСИЯ
+   ВСЁ В ОДНОМ ФАЙЛЕ - ИСПРАВЛЕНО
    ============================== */
 
-console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
-
 'use strict';
+
+console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
 
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
@@ -94,6 +94,10 @@ const formatNumber = (num) => {
 };
 
 const showToast = (msg, isError = false) => {
+    // Удаляем предыдущий тост если есть
+    const oldToast = document.querySelector('.toast-message');
+    if (oldToast) oldToast.remove();
+    
     const toast = document.createElement('div');
     toast.className = 'toast-message';
     toast.style.cssText = `
@@ -110,11 +114,28 @@ const showToast = (msg, isError = false) => {
         animation: toastFade 2s forwards;
         border: 1px solid #7F49B4;
         backdrop-filter: blur(5px);
+        white-space: nowrap;
+        pointer-events: none;
     `;
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
 };
+
+// Стили для тостов (добавляем один раз)
+if (!document.getElementById('toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'toast-styles';
+    style.textContent = `
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // ==================== API ====================
 const API = {
@@ -179,6 +200,7 @@ async function loadUserData() {
         
     } catch (err) {
         console.error('Failed to load user data:', err);
+        showToast('⚠️ Ошибка загрузки данных', true);
     }
 }
 
@@ -198,9 +220,17 @@ async function loadSkinsList() {
         if (res.ok) {
             const data = await res.json();
             State.skins.data = data.skins || [];
+        } else {
+            // Запасные данные, если сервер не отвечает
+            State.skins.data = [
+                { id: 'default_SP', name: 'Классический спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.0 } }
+            ];
         }
     } catch (err) {
         console.error('Failed to load skins:', err);
+        State.skins.data = [
+            { id: 'default_SP', name: 'Классический спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.0 } }
+        ];
     }
 }
 
@@ -286,6 +316,7 @@ async function recoverEnergy() {
             updateUI();
         }
     } catch (err) {
+        // Локальное восстановление при ошибке
         State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
         updateUI();
     }
@@ -317,9 +348,6 @@ async function sendClickBatch() {
 }
 
 function handleTap(e) {
-    // Инициализация звука
-    initAudio();
-    
     // Предотвращаем стандартное поведение
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
@@ -327,7 +355,8 @@ function handleTap(e) {
     // Игнорируем клики по кнопкам
     if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card')) {
+        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
         return;
     }
 
@@ -411,7 +440,9 @@ function handleTap(e) {
             if (!window.audioCtx) {
                 window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
+            if (window.audioCtx.state === 'suspended') {
+                window.audioCtx.resume().catch(() => {});
+            }
             
             const now = window.audioCtx.currentTime;
             const osc = window.audioCtx.createOscillator();
@@ -442,14 +473,6 @@ function handleTap(e) {
     }
 }
 
-function initAudio() {
-    if (!window.audioCtx) {
-        try {
-            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {}
-    }
-}
-
 // ==================== СКИНЫ ====================
 function getSkinById(id) {
     return State.skins.data.find(s => s.id === id);
@@ -466,7 +489,12 @@ function applySavedSkin() {
 
 function renderSkins(filter = 'all') {
     const grid = document.getElementById('skins-grid');
-    if (!grid || !State.skins.data.length) return;
+    if (!grid) return;
+    
+    if (!State.skins.data.length) {
+        grid.innerHTML = '<div class="loading">Загрузка скинов...</div>';
+        return;
+    }
     
     const filtered = filter === 'all' ? State.skins.data : State.skins.data.filter(s => s.rarity === filter);
     
@@ -514,6 +542,7 @@ async function selectActiveSkin(id) {
         showToast(`✨ Скин выбран!`);
     } catch (err) {
         console.error('Select skin error:', err);
+        showToast('❌ Ошибка выбора скина', true);
     }
 }
 
@@ -529,6 +558,7 @@ async function unlockSkin(id) {
         }
     } catch (err) {
         console.error('Unlock skin error:', err);
+        showToast('❌ Ошибка разблокировки', true);
     }
 }
 
@@ -634,7 +664,9 @@ async function loadReferralData() {
         if (earnEl) earnEl.textContent = data.earnings || 0;
         
         State.skins.friendsInvited = data.count || 0;
-    } catch (err) {}
+    } catch (err) {
+        console.error('Referral error:', err);
+    }
 }
 
 function copyReferralLink() {
@@ -643,7 +675,9 @@ function copyReferralLink() {
         showToast('❌ Ссылка не загружена', true);
         return;
     }
-    navigator.clipboard?.writeText(linkEl.textContent).then(() => showToast('✅ Ссылка скопирована!'));
+    navigator.clipboard?.writeText(linkEl.textContent)
+        .then(() => showToast('✅ Ссылка скопирована!'))
+        .catch(() => showToast('❌ Ошибка копирования', true));
 }
 
 function shareReferral() {
@@ -684,6 +718,14 @@ function toggleSound() {
     State.settings.sound = !State.settings.sound;
     saveSettings();
     updateSettingsUI();
+    if (State.settings.sound) {
+        // Тестовый звук при включении
+        try {
+            const audio = new Audio();
+            audio.volume = 0;
+            audio.play().catch(() => {});
+        } catch (e) {}
+    }
 }
 
 function toggleVibration() {
@@ -810,7 +852,7 @@ async function checkOfflinePassiveIncome() {
     } catch (err) {}
 }
 
-// ==================== МИНИ-ИГРЫ (ЗАГЛУШКИ) ====================
+// ==================== МИНИ-ИГРЫ ====================
 function openGame(game) {
     document.querySelectorAll('.game-modal').forEach(m => m.classList.remove('active'));
     const modal = document.getElementById(`game-${game}`);
@@ -828,9 +870,56 @@ function toggleNumberInput() {
     if (numberInput) numberInput.style.display = betType === 'number' ? 'block' : 'none';
 }
 
-// ==================== MEGA BOOST (ЗАГЛУШКА) ====================
+function playCoinflip() {
+    showToast('🎮 Coinflip будет позже');
+}
+
+function playSlots() {
+    showToast('🎮 Slots будет позже');
+}
+
+function playDice() {
+    showToast('🎮 Dice будет позже');
+}
+
+function playWheel() {
+    showToast('🎮 Roulette будет позже');
+}
+
+// ==================== MEGA BOOST ====================
 function activateMegaBoost() {
     showToast('🔥 Буст будет позже');
+}
+
+// ==================== УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК КЛИКОВ ====================
+function setupGlobalClickHandler() {
+    // Удаляем старые обработчики
+    document.removeEventListener('click', handleTap);
+    document.removeEventListener('touchstart', handleTap);
+    
+    // Добавляем новые на весь документ
+    document.addEventListener('click', function(e) {
+        // Проверяем, не кликнули ли по интерактивному элементу
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+            return;
+        }
+        handleTap(e);
+    });
+    
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+            return;
+        }
+        handleTap(e);
+    }, { passive: false });
+    
+    console.log('✅ Глобальный обработчик кликов привязан');
 }
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
@@ -851,12 +940,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateUI();
     }
     
-    // Привязываем обработчик кликов
-    const gameContainer = document.querySelector('.game-container');
-    if (gameContainer) {
-        gameContainer.addEventListener('click', handleTap);
-        gameContainer.addEventListener('touchstart', handleTap, { passive: false });
-    }
+    // Привязываем глобальный обработчик
+    setupGlobalClickHandler();
     
     // Автосохранение
     setInterval(() => {
@@ -869,23 +954,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Spirit Clicker ready');
 });
-
-setTimeout(() => {
-    const gameContainer = document.querySelector('.game-container');
-    if (gameContainer) {
-        // Удаляем старые обработчики если есть
-        gameContainer.removeEventListener('click', handleTap);
-        gameContainer.removeEventListener('touchstart', handleTap);
-        
-        // Добавляем новые
-        gameContainer.addEventListener('click', handleTap);
-        gameContainer.addEventListener('touchstart', handleTap, { passive: false });
-        
-        console.log('✅ Обработчик кликов привязан');
-    } else {
-        console.log('❌ Контейнер не найден');
-    }
-}, 500); // Даем время на загрузку DOM
 
 // ==================== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ====================
 window.handleTap = handleTap;
@@ -911,9 +979,12 @@ window.filterSkins = filterSkins;
 window.openSkins = openSkins;
 window.recoverEnergy = recoverEnergy;
 window.showToast = showToast;
+window.playCoinflip = playCoinflip;
+window.playSlots = playSlots;
+window.playDice = playDice;
+window.playWheel = playWheel;
 
-console.log('✅ Spirit Clicker fully loaded');
-
+// Проверка
 console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
 console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
 console.log('✅ openModal определена:', typeof openModal !== 'undefined');
