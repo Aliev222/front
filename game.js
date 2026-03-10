@@ -85,7 +85,8 @@ const State = {
         gainBuffer: 0,
         batchTimer: null,
         recoveryTimer: null,
-        lastClick: 0
+        lastClick: 0,
+        tournamentScore: 0,
     },     
     cache: new Map()
 
@@ -455,9 +456,11 @@ async function recoverEnergy() {
 async function sendClickBatch() {
     const clicks = State.temp.clickBuffer;
     const gain = State.temp.gainBuffer;
-    
+    const tournamentScore = State.temp.tournamentScore;
+
     State.temp.clickBuffer = 0;
     State.temp.gainBuffer = 0;
+    State.temp.tournamentScore = 0;
     State.temp.batchTimer = null;
     
     if (!userId || clicks === 0) return;
@@ -467,7 +470,9 @@ async function sendClickBatch() {
             user_id: userId,
             clicks,
             gain,
-            mega_boost: document.getElementById('mega-boost-btn')?.classList.contains('active') || false
+            mega_boost: document.getElementById('mega-boost-btn')?.classList.contains('active') || false,
+
+            tournament_score: tournamentScore
         });
     } catch (err) {
         console.log('Click batch failed, will retry');
@@ -537,7 +542,7 @@ function handleTap(e) {
     checkAchievements();
     
     // ОБНОВЛЕНИЕ ТУРНИРНОГО СЧЕТА
-    updateTournamentScore(State.game.coins);
+    State.temp.tournamentScore = State.game.coins;
 
     updateUI();
 
