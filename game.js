@@ -194,6 +194,7 @@ async function loadUserData() {
         await loadPrices();
         await loadSkinsList();
         await loadReferralData();
+        await checkBoostStatus();
         
         applySavedSkin();
         updateUI();
@@ -433,6 +434,39 @@ function handleTap(e) {
         
         setTimeout(() => effect.remove(), 600);
     } catch (err) {}
+
+    if (megaBoostActive) {
+        // Добавляем дополнительные искры
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+                const spark = document.createElement('div');
+                spark.style.cssText = `
+                    position: fixed;
+                    left: ${clientX + (Math.random() - 0.5) * 50}px;
+                    top: ${clientY + (Math.random() - 0.5) * 50}px;
+                    width: 4px;
+                    height: 4px;
+                    background: ${['#ffaa00', '#ff5500', '#ffff00'][Math.floor(Math.random() * 3)]};
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 9998;
+                    animation: sparkFade 0.5s ease-out forwards;
+                `;
+                document.body.appendChild(spark);
+                setTimeout(() => spark.remove(), 500);
+            }, i * 50);
+        }
+    }
+
+    // Добавь стиль для искр
+    const sparkStyle = document.createElement('style');
+    sparkStyle.textContent = `
+        @keyframes sparkFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2) translateY(-20px); }
+        }
+    `;
+    document.head.appendChild(sparkStyle);
 
     // ========== ЗВУК ==========
     if (State.settings.sound) {
@@ -1355,8 +1389,237 @@ function playSound(type) {
 
 
 // ==================== MEGA BOOST ====================
+let boostEndTime = null;
+let boostInterval = null;
+
 function activateMegaBoost() {
-    showToast('🔥 Буст будет позже');
+    if (!userId) {
+        showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    const boostBtn = document.getElementById('mega-boost-btn');
+    if (boostBtn?.classList.contains('active')) {
+        showToast('⚡ Буст уже активен!', true);
+        return;
+    }
+    
+    // Проверяем, загружена ли реклама
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама временно недоступна', true);
+        return;
+    }
+    
+    // Блокируем кнопку на время загрузки рекламы
+    if (boostBtn) boostBtn.classList.add('disabled');
+    
+    // Показываем рекламу
+    window.show_10655027()
+        .then(() => {
+            console.log('✅ Реклама просмотрена, активируем буст');
+            activateBoostOnServer();
+        })
+        .catch((error) => {
+            console.error('Ad error:', error);
+            showToast('❌ Ошибка при показе рекламы', true);
+        })
+        .finally(() => {
+            if (boostBtn) boostBtn.classList.remove('disabled');
+        });
+}
+
+async function activateBoostOnServer() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        if (!res.ok) throw new Error('Server error');
+        
+        const data = await res.json();
+        
+        if (data.already_active) {
+            showToast(data.message, true);
+            return;
+        }
+        
+        // Активируем буст локально на 3 минуты
+        const expiresAt = new Date(data.expires_at);
+        startLocalBoost(expiresAt);
+        showToast('🔥 MEGA BOOST АКТИВИРОВАН НА 3 МИНУТЫ!');
+        
+    } catch (err) {
+        console.error('Boost error:', err);
+        showToast('❌ Ошибка активации буста', true);
+    }
+}
+
+function startLocalBoost(expiresAt) {
+    const boostBtn = document.getElementById('mega-boost-btn');
+    if (!boostBtn) return;
+    
+    boostEndTime = expiresAt;
+    boostBtn.classList.add('active');
+    
+    // Показываем таймер
+    const timerEl = document.getElementById('mega-boost-timer');
+    if (timerEl) {
+        timerEl.style.display = 'block';
+    }
+    
+    // Добавляем индикатор
+    showBoostIndicator();
+    
+    // Добавляем эффект на energy bar
+    const energyBar = document.querySelector('.energy-bar-bg');
+    if (energyBar) {
+        energyBar.classList.add('boost-active');
+    }
+    
+    // Запускаем обновление таймера
+    if (boostInterval) clearInterval(boostInterval);
+    boostInterval = setInterval(updateBoostTimer, 200);
+    
+    // Добавляем стили для эффектов
+    addBoostStyles();
+}
+
+function updateBoostTimer() {
+    if (!boostEndTime) return;
+    
+    const now = new Date();
+    const diff = boostEndTime - now;
+    const timerEl = document.getElementById('mega-boost-timer');
+    
+    if (diff <= 0) {
+        // Буст закончился
+        clearInterval(boostInterval);
+        boostInterval = null;
+        boostEndTime = null;
+        
+        const boostBtn = document.getElementById('mega-boost-btn');
+        if (boostBtn) {
+            boostBtn.classList.remove('active');
+        }
+        
+        if (timerEl) {
+            timerEl.style.display = 'none';
+            timerEl.textContent = '3:00';
+        }
+        
+        // Убираем индикатор
+        const indicator = document.querySelector('.mega-boost-indicator');
+        if (indicator) indicator.remove();
+        
+        // Убираем эффект с energy bar
+        const energyBar = document.querySelector('.energy-bar-bg');
+        if (energyBar) {
+            energyBar.classList.remove('boost-active');
+        }
+        
+        showToast('⏰ Буст закончился');
+        return;
+    }
+    
+    const totalSeconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (timerEl) {
+        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Эффект мигания когда мало времени
+        if (totalSeconds < 10) {
+            timerEl.classList.add('urgent');
+        } else {
+            timerEl.classList.remove('urgent');
+        }
+    }
+}
+
+function showBoostIndicator() {
+    const oldIndicator = document.querySelector('.mega-boost-indicator');
+    if (oldIndicator) oldIndicator.remove();
+    
+    const energyContainer = document.querySelector('.energy-bar-container');
+    if (energyContainer) {
+        const indicator = document.createElement('div');
+        indicator.className = 'mega-boost-indicator';
+        indicator.innerHTML = '🔥 MEGA BOOST ACTIVE 🔥';
+        energyContainer.appendChild(indicator);
+    }
+}
+
+function addBoostStyles() {
+    // Стили уже должны быть в CSS, но добавим для надежности
+    const style = document.getElementById('boost-styles');
+    if (style) return;
+    
+    const newStyle = document.createElement('style');
+    newStyle.id = 'boost-styles';
+    newStyle.textContent = `
+        .energy-bar-bg.boost-active {
+            box-shadow: 0 0 20px #ffaa00, 0 0 40px #ff5500;
+            animation: boostPulse 1s infinite;
+        }
+        
+        @keyframes boostPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .mega-boost-indicator {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #ffaa00, #ff5500);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            white-space: nowrap;
+            animation: indicatorGlow 1s infinite;
+            box-shadow: 0 0 20px #ffaa00;
+            z-index: 100;
+        }
+        
+        @keyframes indicatorGlow {
+            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+        }
+        
+        .mini-boost-timer.urgent {
+            animation: urgentBlink 0.5s infinite;
+            background: #ff0000;
+        }
+        
+        @keyframes urgentBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    `;
+    document.head.appendChild(newStyle);
+}
+
+// Функция для проверки статуса буста при загрузке
+async function checkBoostStatus() {
+    if (!userId) return;
+    
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.active) {
+                startLocalBoost(new Date(data.expires_at));
+            }
+        }
+    } catch (err) {
+        console.error('Boost status error:', err);
+    }
 }
 
 // ==================== УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК КЛИКОВ ====================
