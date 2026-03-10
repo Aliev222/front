@@ -1407,47 +1407,74 @@ function activateMegaBoost() {
         return;
     }
     
-    // Проверяем, загружена ли реклама
+    // Проверяем рекламу
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама временно недоступна', true);
+        showToast('❌ Реклама недоступна', true);
         return;
     }
     
-    // Блокируем кнопку
-    if (boostBtn) boostBtn.classList.add('disabled');
-    console.log('📢 Показываем рекламу...');
+    showToast('📺 Загружаем рекламу...');
     
     // Показываем рекламу
     window.show_10655027()
         .then(() => {
-            console.log('✅ Реклама просмотрена, активируем буст');
+            showToast('✅ Реклама просмотрена! Активируем буст...');
             
-            // Отправляем запрос на сервер
-            return fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
+            // Активируем буст ЛОКАЛЬНО (без сервера!)
+            const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // +3 минуты
+            
+            // Визуальная активация
+            if (boostBtn) boostBtn.classList.add('active');
+            
+            // Показываем таймер
+            const timerEl = document.getElementById('mega-boost-timer');
+            if (timerEl) {
+                timerEl.style.display = 'block';
+                timerEl.textContent = '3:00';
+            }
+            
+            // Добавляем индикатор
+            showBoostIndicator();
+            
+            // Добавляем эффект на energy bar
+            const energyBar = document.querySelector('.energy-bar-bg');
+            if (energyBar) {
+                energyBar.classList.add('boost-active');
+            }
+            
+            // Запускаем таймер
+            if (boostInterval) clearInterval(boostInterval);
+            boostInterval = setInterval(() => {
+                const now = new Date();
+                const diff = expiresAt - now;
+                
+                if (diff <= 0) {
+                    clearInterval(boostInterval);
+                    if (boostBtn) boostBtn.classList.remove('active');
+                    if (timerEl) timerEl.style.display = 'none';
+                    document.querySelector('.mega-boost-indicator')?.remove();
+                    if (energyBar) energyBar.classList.remove('boost-active');
+                    showToast('⏰ Буст закончился');
+                    return;
+                }
+                
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+            showToast('🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!');
+            
+            // ОПЦИОНАЛЬНО: отправляем на сервер в фоне (не ждем ответа)
+            fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId })
-            });
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log('✅ Буст активирован на сервере:', data);
-            
-            // ВАЖНО: активируем буст локально
-            if (data.expires_at) {
-                startLocalBoost(new Date(data.expires_at));
-                showToast('🔥 MEGA BOOST АКТИВИРОВАН НА 3 МИНУТЫ!');
-            } else {
-                console.error('❌ Нет expires_at в ответе');
-                showToast('❌ Ошибка активации', true);
-            }
+            }).catch(() => {});
         })
         .catch((error) => {
-            console.error('❌ Ошибка:', error);
-            showToast('❌ Ошибка при активации буста', true);
-        })
-        .finally(() => {
-            if (boostBtn) boostBtn.classList.remove('disabled');
+            console.error('Ad error:', error);
+            showToast('❌ Ошибка при показе рекламы', true);
         });
 }
 
