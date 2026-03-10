@@ -532,8 +532,12 @@ function handleTap(e) {
         State.temp.batchTimer = setTimeout(sendClickBatch, CONFIG.CLICK_BATCH_INTERVAL);
     }
     
+    // Обновление достижений
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
     checkAchievements();
+    
+    // ОБНОВЛЕНИЕ ТУРНИРНОГО СЧЕТА
+    updateTournamentScore(State.game.coins);
 
     updateUI();
 
@@ -1292,30 +1296,63 @@ let tournamentTimer = null;
 
 async function loadTournamentData() {
     try {
-        // Заглушка - замени на реальный API
+        // Загружаем таблицу лидеров
+        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/tournament/leaderboard`);
+        const leaderboardData = await leaderboardRes.json();
+        
+        // Загружаем ранг игрока
+        const rankRes = await fetch(`${CONFIG.API_URL}/api/tournament/player-rank/${userId}`);
+        const rankData = await rankRes.json();
+        
+        if (leaderboardData.success) {
+            renderLeaderboard({
+                players: leaderboardData.players,
+                playerRank: rankData.rank,
+                playerScore: rankData.score,
+                timeLeft: leaderboardData.time_left
+            });
+            startTournamentTimer(leaderboardData.time_left);
+        }
+        
+    } catch (err) {
+        console.error('Tournament error:', err);
+        showToast('❌ Ошибка загрузки турнира', true);
+        
+        // Заглушка на случай ошибки
         const mockData = {
             players: [
                 { rank: 1, name: 'CryptoKing', score: 157890 },
                 { rank: 2, name: 'SpiritMaster', score: 143200 },
                 { rank: 3, name: 'ClickerPro', score: 128450 },
                 { rank: 4, name: 'CoinHunter', score: 112300 },
-                { rank: 5, name: 'TapLegend', score: 98700 },
-                { rank: 6, name: 'Username', score: 87650, isMe: true },
-                { rank: 7, name: 'SpiritWarrior', score: 76500 },
-                { rank: 8, name: 'GhostPlayer', score: 65400 },
-                { rank: 9, name: 'DarkClicker', score: 54300 },
-                { rank: 10, name: 'LightSpirit', score: 43200 }
+                { rank: 5, name: 'TapLegend', score: 98700 }
             ],
-            playerRank: 6,
+            playerRank: 42,
             playerScore: State.game.coins,
-            timeLeft: 86399 // 23:59:59
+            timeLeft: 86399
         };
-        
         renderLeaderboard(mockData);
         startTournamentTimer(mockData.timeLeft);
+    }
+}
+
+// Функция для обновления счета в турнире (вызывать при кликах)
+async function updateTournamentScore(score) {
+    if (!userId) return;
+    
+    try {
+        // Отправляем обновленный счет на сервер
+        await fetch(`${CONFIG.API_URL}/api/tournament/update-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                user_id: userId, 
+                score: score 
+            })
+        }).catch(() => {}); // Игнорируем ошибки, не критично
         
     } catch (err) {
-        console.error('Tournament error:', err);
+        console.error('Tournament score update error:', err);
     }
 }
 
