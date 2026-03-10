@@ -10,13 +10,11 @@
 
 const CONFIG = {
     API_URL: 'https://ryoho.onrender.com',
-    CLICK_BATCH_INTERVAL: 1000,      // Отправка кликов раз в секунду
-    ENERGY_RECHARGE_INTERVAL: 2000,   // +1 энергия каждые 2 секунды
-    PASSIVE_INCOME_INTERVAL: 3600000, // 1 час
-    CACHE_TTL: 30000,                  // 30 секунд
-    MAX_BATCH_SIZE: 100,                // Максимум кликов в батче
-    DEBOUNCE_CLICK: 50,                 // Минимальный интервал между кликами (мс)
-    TOAST_DURATION: 2500
+    CLICK_BATCH_INTERVAL: 1000,
+    ENERGY_RECHARGE_INTERVAL: 2000,
+    PASSIVE_INCOME_INTERVAL: 3600000,
+    CACHE_TTL: 30000,
+    DEBOUNCE_CLICK: 50
 };
 
 /* ===============================
@@ -35,7 +33,7 @@ const State = {
         energy: 500,
         maxEnergy: 500,
         profitPerTap: 1,
-        profitPerHour: 0,
+        profitPerHour: 100,
         level: 0,
         prices: {
             multitap: 50,
@@ -57,12 +55,16 @@ const State = {
     },
     
     settings: {
-        theme: 'day',
-        sound: true,
-        vibration: true
+        theme: localStorage.getItem('spiritSettings') ? 
+            JSON.parse(localStorage.getItem('spiritSettings')).theme || 'day' : 'day',
+        sound: localStorage.getItem('spiritSettings') ? 
+            JSON.parse(localStorage.getItem('spiritSettings')).sound !== undefined ? 
+            JSON.parse(localStorage.getItem('spiritSettings')).sound : true : true,
+        vibration: localStorage.getItem('spiritSettings') ? 
+            JSON.parse(localStorage.getItem('spiritSettings')).vibration !== undefined ? 
+            JSON.parse(localStorage.getItem('spiritSettings')).vibration : true : true
     },
     
-    // Временные данные
     temp: {
         clickBuffer: 0,
         gainBuffer: 0,
@@ -73,6 +75,9 @@ const State = {
     
     cache: new Map()
 };
+
+// Глобальный доступ
+window.State = State;
 
 /* ===============================
    TELEGRAM INIT
@@ -92,7 +97,6 @@ const TelegramApp = {
             State.user.username = user.username || `user_${user.id}`;
         }
         
-        // Реферальный параметр
         const startParam = tg.initDataUnsafe?.start_param || '';
         if (startParam?.startsWith('ref_')) {
             State.user.referrerId = parseInt(startParam.replace('ref_', '')) || null;
@@ -153,6 +157,8 @@ const API = {
     }
 };
 
+window.API = API;
+
 /* ===============================
    CACHE MANAGER
    ============================== */
@@ -182,6 +188,8 @@ const Cache = {
     }
 };
 
+window.Cache = Cache;
+
 /* ===============================
    USER DATA LOADING
    ============================== */
@@ -191,14 +199,12 @@ const UserData = {
         if (!State.user.id) return;
         
         try {
-            // Регистрация
             await API.post('/api/register', {
                 user_id: State.user.id,
                 username: State.user.username,
                 referrer_id: State.user.referrerId
             });
             
-            // Загрузка данных
             const cached = Cache.get(`user_${State.user.id}`);
             if (cached) {
                 this.mergeData(cached);
@@ -225,7 +231,7 @@ const UserData = {
         State.game.energy = data.energy || 500;
         State.game.maxEnergy = data.max_energy || 500;
         State.game.profitPerTap = data.profit_per_tap || 1;
-        State.game.profitPerHour = data.profit_per_hour || 0;
+        State.game.profitPerHour = data.profit_per_hour || 100;
         State.game.levels.multitap = data.multitap_level || 0;
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
@@ -260,83 +266,13 @@ const UserData = {
     }
 };
 
+window.UserData = UserData;
+
 /* ===============================
-   CLICK ENGINE
+   CLICK ENGINE (ТОЛЬКО ОТПРАВКА)
    ============================== */
 
 const ClickEngine = {
-    lastClickTime: 0,
-    pendingEffects: [],
-    
-    handle(x, y, element = null) {
-        const now = Date.now();
-        
-        // Дебаунс кликов
-        if (now - this.lastClickTime < CONFIG.DEBOUNCE_CLICK) return;
-        this.lastClickTime = now;
-        
-        // Проверка энергии
-        if (State.game.energy <= 0) {
-            UI.showToast('⚡ Нет энергии!', true);
-            return;
-        }
-        
-        // Расчет дохода
-        let gain = State.game.profitPerTap;
-        
-        // Бонус скина
-        const skin = this.getActiveSkin();
-        if (skin?.bonus) {
-            if (skin.bonus.type === 'multiplier') {
-                gain *= skin.bonus.value;
-            }
-        }
-        
-        // Проверка буста
-        const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
-        if (megaBoostActive) gain *= 2;
-        
-        gain = Math.floor(gain);
-        
-        // Обновление состояния
-        State.game.coins += gain;
-        if (!megaBoostActive) {
-            State.game.energy = Math.max(0, State.game.energy - 1);
-        }
-        
-        // Визуальные эффекты
-        Effects.spawnFloatingText(`+${gain}`, x, y, megaBoostActive);
-        Effects.sparkle(x, y);
-        
-        // Вибрация
-        if (State.settings.vibration) {
-            if (window.Telegram?.WebApp?.HapticFeedback) {
-                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-            } else if (navigator.vibrate) {
-                navigator.vibrate(20);
-            }
-        }
-        
-        // Звук
-        if (State.settings.sound) {
-            Audio.play('click', megaBoostActive);
-        }
-        
-        // Буферизация для отправки
-        this.bufferClick(gain);
-        
-        UI.updateGame();
-    },
-    
-    bufferClick(gain) {
-        State.temp.clickBuffer++;
-        State.temp.gainBuffer += gain;
-        
-        if (!State.temp.batchTimer) {
-            State.temp.batchTimer = setTimeout(() => this.sendBatch(), CONFIG.CLICK_BATCH_INTERVAL);
-        }
-    },
-    
     async sendBatch() {
         const clicks = State.temp.clickBuffer;
         const gain = State.temp.gainBuffer;
@@ -361,10 +297,17 @@ const ClickEngine = {
         }
     },
     
-    getActiveSkin() {
-        return window.skinsData?.find(s => s.id === State.skins.selected);
+    addClick(gain, megaBoostActive) {
+        State.temp.clickBuffer++;
+        State.temp.gainBuffer += gain;
+        
+        if (!State.temp.batchTimer) {
+            State.temp.batchTimer = setTimeout(() => this.sendBatch(), CONFIG.CLICK_BATCH_INTERVAL);
+        }
     }
 };
+
+window.ClickEngine = ClickEngine;
 
 /* ===============================
    ENERGY SYSTEM
@@ -380,7 +323,6 @@ const EnergySystem = {
     },
     
     async recover() {
-        // Проверка буста
         const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
         if (megaBoostActive) return;
         
@@ -399,7 +341,6 @@ const EnergySystem = {
                 UI.updateEnergy();
             }
         } catch (err) {
-            // Локальное восстановление при ошибке
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
             UI.updateEnergy();
         }
@@ -413,13 +354,17 @@ const EnergySystem = {
     }
 };
 
+window.EnergySystem = EnergySystem;
+
 /* ===============================
    UPGRADE SYSTEM
    ============================== */
 
+let upgradeInProgress = false;
+
 const UpgradeSystem = {
     async upgrade(type) {
-        if (window.upgradeInProgress || !State.user.id) return;
+        if (upgradeInProgress || !State.user.id) return;
         
         const price = State.game.prices[type];
         if (!price || State.game.coins < price) {
@@ -427,7 +372,7 @@ const UpgradeSystem = {
             return;
         }
         
-        window.upgradeInProgress = true;
+        upgradeInProgress = true;
         
         try {
             const result = await API.post('/api/upgrade', {
@@ -449,27 +394,26 @@ const UpgradeSystem = {
                 }
                 
                 UI.showToast(`✅ ${type} +${result.new_level}!`);
-                Effects.playUpgrade();
                 UI.updateAll();
             }
         } catch (err) {
             console.error('Upgrade error:', err);
             UI.showToast('❌ Upgrade failed', true);
         } finally {
-            window.upgradeInProgress = false;
+            upgradeInProgress = false;
         }
     },
     
     async upgradeAll() {
-        if (window.upgradeInProgress || !State.user.id) return;
+        if (upgradeInProgress || !State.user.id) return;
         
-        const total = Object.values(State.game.prices).reduce((a, b) => a + b, 0);
+        const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
         if (State.game.coins < total) {
             UI.showToast(`❌ Need ${total} coins`, true);
             return;
         }
         
-        window.upgradeInProgress = true;
+        upgradeInProgress = true;
         
         for (const type of ['multitap', 'profit', 'energy']) {
             try {
@@ -495,58 +439,43 @@ const UpgradeSystem = {
             }
         }
         
-        window.upgradeInProgress = false;
+        upgradeInProgress = false;
         EnergySystem.reset();
         UI.updateAll();
-        Effects.playUpgrade();
         UI.showToast('✅ All upgrades completed!');
     }
 };
+
+window.UpgradeSystem = UpgradeSystem;
 
 /* ===============================
    SKINS SYSTEM
    ============================== */
 
 const SkinsSystem = {
-    async init() {
+    skinsData: [],
+    
+    async load() {
         try {
             const res = await fetch(`${CONFIG.API_URL}/api/skins/list`);
             if (res.ok) {
-                window.skinsData = await res.json();
-                this.renderGrid();
+                const data = await res.json();
+                this.skinsData = data.skins || [];
+                return this.skinsData;
             }
         } catch (err) {
             console.error('Failed to load skins:', err);
         }
+        return [];
     },
     
-    renderGrid(filter = 'all') {
-        const grid = document.getElementById('skins-grid');
-        if (!grid || !window.skinsData) return;
-        
-        const filtered = filter === 'all' 
-            ? window.skinsData 
-            : window.skinsData.filter(s => s.rarity === filter);
-        
-        grid.innerHTML = filtered.map(skin => {
-            const unlocked = this.isUnlocked(skin);
-            const owned = State.skins.owned.includes(skin.id);
-            const selected = State.skins.selected === skin.id;
-            
-            return `
-                <div class="skin-card ${unlocked ? '' : 'locked'} ${selected ? 'selected' : ''}" 
-                     data-id="${skin.id}" onclick="window.selectSkin('${skin.id}')">
-                    ${!unlocked ? '<div class="skin-lock">🔒</div>' : ''}
-                    ${owned && selected ? '<div class="skin-equipped">✓</div>' : ''}
-                    <div class="skin-image">
-                        <img src="${skin.image}" alt="${skin.name}" loading="lazy"
-                             onerror="this.src='imgg/clickimg.png'">
-                    </div>
-                    <div class="skin-name">${skin.name}</div>
-                    <div class="skin-rarity ${skin.rarity}">${this.getRarityName(skin.rarity)}</div>
-                </div>
-            `;
-        }).join('');
+    getSkinById(id) {
+        return this.skinsData.find(s => s.id === id);
+    },
+    
+    getRarityName(rarity) {
+        const names = { common: 'Обычный', rare: 'Редкий', legendary: 'Легендарный', super: 'Супер редкий' };
+        return names[rarity] || rarity;
     },
     
     isUnlocked(skin) {
@@ -557,50 +486,7 @@ const SkinsSystem = {
         
         if (req.type === 'free') return true;
         if (req.type === 'ads') return State.skins.adsWatched >= (req.count || 0);
-        if (req.type === 'special') {
-            if (req.description?.includes('50 друзей')) {
-                return State.skins.friendsInvited >= 50;
-            }
-            if (req.description?.includes('100 уровня')) {
-                return State.game.level >= 100;
-            }
-        }
         return false;
-    },
-    
-    getRarityName(rarity) {
-        const names = { common: 'Обычный', rare: 'Редкий', legendary: 'Легендарный', super: 'Супер редкий' };
-        return names[rarity] || rarity;
-    },
-    
-    async select(id) {
-        const skin = window.skinsData?.find(s => s.id === id);
-        if (!skin) return;
-        
-        if (!State.skins.owned.includes(id) && !this.isUnlocked(skin)) {
-            UI.showToast(`❌ ${skin.name} еще не открыт!`, true);
-            return;
-        }
-        
-        if (!State.skins.owned.includes(id)) {
-            await this.unlock(id, 'ads');
-        }
-        
-        if (State.user.id) {
-            try {
-                await API.post('/api/select-skin', {
-                    user_id: State.user.id,
-                    skin_id: id
-                });
-            } catch (err) {
-                console.error('Failed to sync skin selection:', err);
-            }
-        }
-        
-        State.skins.selected = id;
-        this.updateClickerImage(id);
-        UI.updateSkinsGrid();
-        UI.showToast(`✨ Скин "${skin.name}" выбран!`);
     },
     
     async unlock(id, method = 'ads') {
@@ -617,190 +503,52 @@ const SkinsSystem = {
                 State.skins.owned = res.owned_skins;
                 if (res.selected_skin) {
                     State.skins.selected = res.selected_skin;
-                    this.updateClickerImage(res.selected_skin);
                 }
                 UI.showToast('✅ Новый скин разблокирован!');
-                UI.updateSkinsGrid();
+                return true;
             }
         } catch (err) {
             console.error('Failed to unlock skin:', err);
             UI.showToast('❌ Ошибка разблокировки', true);
         }
+        return false;
     },
     
-    updateClickerImage(id) {
-        const img = document.querySelector('.click-image');
-        if (!img) return;
+    async select(id) {
+        const skin = this.getSkinById(id);
+        if (!skin) return false;
         
-        const skin = window.skinsData?.find(s => s.id === id);
-        img.src = (skin?.image || 'imgg/skins/default_SP.png') + '?t=' + Date.now();
-        img.onerror = () => { img.src = 'imgg/clickimg.png'; };
+        if (!State.skins.owned.includes(id) && !this.isUnlocked(skin)) {
+            UI.showToast(`❌ ${skin.name} еще не открыт!`, true);
+            return false;
+        }
+        
+        if (!State.skins.owned.includes(id)) {
+            const unlocked = await this.unlock(id, 'free');
+            if (!unlocked) return false;
+        }
+        
+        if (State.user.id) {
+            try {
+                await API.post('/api/select-skin', {
+                    user_id: State.user.id,
+                    skin_id: id
+                });
+            } catch (err) {
+                console.error('Failed to sync skin selection:', err);
+            }
+        }
+        
+        State.skins.selected = id;
+        UI.showToast(`✨ Скин "${skin.name}" выбран!`);
+        return true;
     }
 };
 
-/* ===============================
-   AUDIO SYSTEM
-   ============================== */
-
-const Audio = {
-    ctx: null,
-    sounds: {},
-    
-    init() {
-        if (!State.settings.sound) return;
-        
-        try {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            if (this.ctx.state === 'suspended') {
-                document.addEventListener('click', () => this.ctx.resume(), { once: true });
-            }
-        } catch (e) {
-            console.warn('Web Audio not supported');
-        }
-    },
-    
-    play(type, special = false) {
-        if (!State.settings.sound || !this.ctx) return;
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-        
-        const now = this.ctx.currentTime;
-        
-        if (type === 'click') {
-            if (special) {
-                // Мощный звук для буста
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            } else {
-                // Обычный звук
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(650, now);
-                osc.frequency.exponentialRampToValueAtTime(450, now + 0.08);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            }
-        } else if (type === 'upgrade') {
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.setValueAtTime(600, now + 0.05);
-            osc.frequency.setValueAtTime(800, now + 0.1);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-            osc.start(now);
-            osc.stop(now + 0.15);
-        }
-    }
-};
+window.SkinsSystem = SkinsSystem;
 
 /* ===============================
-   EFFECTS SYSTEM
-   ============================== */
-
-const Effects = {
-    floatingPool: [],
-    maxPoolSize: 10,
-    
-    spawnFloatingText(text, x, y, special = false) {
-        let el = this.floatingPool.pop();
-        if (!el) {
-            el = document.createElement('div');
-            el.className = 'floating-text';
-        }
-        
-        el.textContent = text;
-        if (special) {
-            el.style.color = '#ffaa00';
-            el.style.fontWeight = 'bold';
-            el.style.textShadow = '0 0 10px #ff0';
-        } else {
-            el.style.color = '';
-            el.style.fontWeight = '';
-            el.style.textShadow = '';
-        }
-        
-        el.style.left = x + 'px';
-        el.style.top = y + 'px';
-        document.body.appendChild(el);
-        
-        requestAnimationFrame(() => {
-            el.style.transform = 'translateY(-50px)';
-            el.style.opacity = '0';
-        });
-        
-        setTimeout(() => {
-            if (el.parentNode) el.remove();
-            if (this.floatingPool.length < this.maxPoolSize) {
-                this.floatingPool.push(el);
-            }
-        }, 800);
-    },
-    
-    sparkle(x, y) {
-        const count = 5;
-        for (let i = 0; i < count; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'sparkle-particle';
-            particle.style.left = (x + (Math.random() - 0.5) * 50) + 'px';
-            particle.style.top = (y + (Math.random() - 0.5) * 50) + 'px';
-            particle.style.backgroundColor = `hsl(${Math.random() * 60 + 30}, 100%, 70%)`;
-            particle.style.width = particle.style.height = (Math.random() * 6 + 4) + 'px';
-            
-            document.body.appendChild(particle);
-            
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 30 + Math.random() * 30;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance - 20;
-            
-            requestAnimationFrame(() => {
-                particle.style.transform = `translate(${tx}px, ${ty}px)`;
-                particle.style.opacity = '0';
-            });
-            
-            setTimeout(() => particle.remove(), 600);
-        }
-    },
-    
-    playUpgrade() {
-        const el = document.querySelector('.upgrade-panel');
-        if (!el) return;
-        
-        el.classList.add('upgrade-bounce');
-        setTimeout(() => el.classList.remove('upgrade-bounce'), 300);
-    },
-    
-    playBonus() {
-        const el = document.querySelector('.balance-container');
-        if (!el) return;
-        
-        el.classList.add('bonus-flash');
-        setTimeout(() => el.classList.remove('bonus-flash'), 400);
-    }
-};
-
-/* ===============================
-   UI SYSTEM
+   UI SYSTEM (МИНИМАЛЬНЫЙ ДЛЯ CORE)
    ============================== */
 
 const UI = {
@@ -810,6 +558,9 @@ const UI = {
         
         const tapEl = document.getElementById('profitPerTap');
         if (tapEl) tapEl.textContent = State.game.profitPerTap;
+        
+        const hourEl = document.getElementById('profitPerHour');
+        if (hourEl) hourEl.textContent = State.game.profitPerHour;
         
         this.updateEnergy();
         this.updateUpgradePanel();
@@ -833,7 +584,7 @@ const UI = {
             const missing = State.game.maxEnergy - State.game.energy;
             if (missing > 0) {
                 const seconds = Math.ceil(missing * CONFIG.ENERGY_RECHARGE_INTERVAL / 1000);
-                regenEl.textContent = `⚡ +1/${CONFIG.ENERGY_RECHARGE_INTERVAL/1000}с (${seconds}с до полной)`;
+                regenEl.textContent = `⚡ +1/${CONFIG.ENERGY_RECHARGE_INTERVAL/1000}с (${seconds}с)`;
             } else {
                 regenEl.textContent = '⚡ Energy full!';
             }
@@ -849,10 +600,6 @@ const UI = {
             const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
             priceEl.textContent = total;
         }
-    },
-    
-    updateSkinsGrid() {
-        SkinsSystem.renderGrid();
     },
     
     updateAll() {
@@ -880,16 +627,71 @@ const UI = {
         `;
         toast.textContent = msg;
         document.body.appendChild(toast);
-        
         setTimeout(() => toast.remove(), 2000);
     }
 };
+
+window.UI = UI;
+
+/* ===============================
+   REFERRAL SYSTEM
+   ============================== */
+
+const ReferralSystem = {
+    async loadData() {
+        if (!State.user.id) return;
+        
+        try {
+            const data = await API.get(`/api/referral-data/${State.user.id}`);
+            
+            const countEl = document.getElementById('referral-count');
+            const earnEl = document.getElementById('referral-earnings');
+            
+            if (countEl) countEl.textContent = data.count || 0;
+            if (earnEl) earnEl.textContent = data.earnings || 0;
+            
+            State.skins.friendsInvited = data.count || 0;
+            
+            const linkEl = document.getElementById('referral-link');
+            if (linkEl) {
+                linkEl.textContent = `https://t.me/Ryoho_bot?start=ref_${State.user.id}`;
+            }
+        } catch (err) {
+            console.error('Referral error:', err);
+        }
+    },
+    
+    copyLink() {
+        const linkEl = document.getElementById('referral-link');
+        if (!linkEl?.textContent || linkEl.textContent === 'loading...') {
+            UI.showToast('❌ Ссылка не загружена', true);
+            return;
+        }
+        
+        navigator.clipboard?.writeText(linkEl.textContent)
+            .then(() => UI.showToast('✅ Ссылка скопирована!'))
+            .catch(() => UI.showToast('❌ Ошибка копирования', true));
+    },
+    
+    share() {
+        const linkEl = document.getElementById('referral-link');
+        if (!linkEl?.textContent || linkEl.textContent === 'loading...') {
+            UI.showToast('❌ Ссылка не загружена', true);
+            return;
+        }
+        
+        const text = encodeURIComponent('🎮 Присоединяйся к Spirit Clicker!');
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(linkEl.textContent)}&text=${text}`, '_blank');
+    }
+};
+
+window.ReferralSystem = ReferralSystem;
 
 /* ===============================
    SETTINGS SYSTEM
    ============================== */
 
-const Settings = {
+const SettingsSystem = {
     load() {
         try {
             const saved = localStorage.getItem('spiritSettings');
@@ -977,6 +779,8 @@ const Settings = {
     }
 };
 
+window.SettingsSystem = SettingsSystem;
+
 /* ===============================
    NAVIGATION
    ============================== */
@@ -1011,108 +815,56 @@ const Navigation = {
         const modalId = `${tab}-screen`;
         this.openModal(modalId);
         
-        if (tab === 'friends') window.loadReferralData?.();
-        if (tab === 'tasks') window.loadTasks?.();
-        if (tab === 'skins') {
-            SkinsSystem.renderGrid();
-            this.openModal(modalId);
-        }
+        if (tab === 'friends') ReferralSystem.loadData();
+        if (tab === 'skins') window.dispatchEvent(new CustomEvent('openSkins'));
     }
 };
 
+window.Navigation = Navigation;
+
 /* ===============================
-   INITIALIZATION
+   GAME FUNCTIONS (ДЛЯ APP.JS)
    ============================== */
 
-document.addEventListener('DOMContentLoaded', () => {
-    TelegramApp.init();
-    Settings.load();
-    Audio.init();
-    
-    if (State.user.id) {
-        UserData.load().then(() => {
-            EnergySystem.startRecovery();
-            SkinsSystem.init();
-            window.loadReferralData?.();
-            window.loadTasks?.();
-        });
+// Эти функции будут вызываться из app.js
+window.handleTap = function(clientX, clientY, megaBoostActive, gain) {
+    // Обновляем состояние
+    State.game.coins += gain;
+    if (!megaBoostActive) {
+        State.game.energy = Math.max(0, State.game.energy - 1);
     }
     
-    // Клик по всей игровой области
-    const gameContainer = document.querySelector('.game-container');
-    const clickLayer = document.querySelector('.game-click-layer');
-    const clickButton = document.getElementById('ryoho');
+    // Отправляем на сервер
+    ClickEngine.addClick(gain, megaBoostActive);
     
-    const clickHandler = (e) => {
-        // Игнорируем клики по интерактивным элементам
-        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.skin-category, .task-button, .btn-primary, .btn-secondary, ' +
-            '.toggle-wrap, .upgrade-panel, .game-card, .modal-screen *')) {
-            return;
-        }
-        
-        e.preventDefault();
-        
-        let x, y;
-        if (e.touches) {
-            x = e.touches[0].clientX;
-            y = e.touches[0].clientY;
-        } else {
-            x = e.clientX;
-            y = e.clientY;
-        }
-        
-        ClickEngine.handle(x, y, e.target);
+    // Обновляем UI
+    UI.updateAll();
+    
+    return {
+        coins: State.game.coins,
+        energy: State.game.energy
     };
-    
-    if (gameContainer) {
-        gameContainer.addEventListener('click', clickHandler);
-        gameContainer.addEventListener('touchstart', clickHandler, { passive: false });
-    }
-    
-    // Автосохранение
-    setInterval(() => UserData.saveProgress(), 10000);
-    
-    console.log('✅ Spirit Clicker Core initialized');
-});
-
-/* ===============================
-   EXPORTS
-   ============================== */
-
-// Глобальные переменные
-window.State = State;
-window.CONFIG = CONFIG;
-
-// Основные функции
-window.handleTap = (e) => {
-    let x, y;
-    if (e.touches) {
-        x = e.touches[0].clientX;
-        y = e.touches[0].clientY;
-    } else {
-        x = e.clientX;
-        y = e.clientY;
-    }
-    ClickEngine.handle(x, y, e.target);
 };
 
 window.upgradeBoost = (type) => UpgradeSystem.upgrade(type);
 window.upgradeAll = () => UpgradeSystem.upgradeAll();
 
-// Навигация
+window.recoverEnergy = () => EnergySystem.recover();
+window.startEnergyRecovery = () => EnergySystem.startRecovery();
+
+window.selectSkin = (id) => SkinsSystem.select(id);
+window.getSkinById = (id) => SkinsSystem.getSkinById(id);
+
+window.copyReferralLink = () => ReferralSystem.copyLink();
+window.shareReferral = () => ReferralSystem.share();
+
+window.toggleTheme = () => SettingsSystem.toggleTheme();
+window.toggleSound = () => SettingsSystem.toggleSound();
+window.toggleVibration = () => SettingsSystem.toggleVibration();
+
 window.openModal = (id) => Navigation.openModal(id);
 window.closeModal = (id) => Navigation.closeModal(id);
 window.switchTab = (tab, el) => Navigation.switchTab(tab, el);
-
-// Скины
-window.filterSkins = (category) => SkinsSystem.renderGrid(category);
-window.selectSkin = (id) => SkinsSystem.select(id);
-
-// Настройки
-window.toggleTheme = () => Settings.toggleTheme();
-window.toggleSound = () => Settings.toggleSound();
-window.toggleVibration = () => Settings.toggleVibration();
 window.openSettings = () => Navigation.openModal('settings-screen');
 window.closeSettings = () => Navigation.closeModal('settings-screen');
 window.closeSettingsOutside = (e) => {
@@ -1120,42 +872,25 @@ window.closeSettingsOutside = (e) => {
     if (box && !box.contains(e.target)) Navigation.closeModal('settings-screen');
 };
 
-// Энергия
-window.recoverEnergy = () => EnergySystem.recover();
+/* ===============================
+   TASKS (ЗАГЛУШКИ)
+   ============================== */
 
-// Заглушки для совместимости
-window.copyReferralLink = () => {
-    navigator.clipboard.writeText(`https://t.me/Ryoho_bot?start=ref_${State.user.id || ''}`);
-    UI.showToast('✅ Link copied!');
-};
-
-window.shareReferral = () => {
-    const text = encodeURIComponent('🎮 Join Spirit Clicker!');
-    window.open(`https://t.me/share/url?url=https://t.me/Ryoho_bot?start=ref_${State.user.id || ''}&text=${text}`, '_blank');
-};
-
-window.loadReferralData = async () => {
-    if (!State.user.id) return;
-    try {
-        const data = await API.get(`/api/referral-data/${State.user.id}`);
-        const countEl = document.getElementById('referral-count');
-        const earnEl = document.getElementById('referral-earnings');
-        if (countEl) countEl.textContent = data.count || 0;
-        if (earnEl) earnEl.textContent = data.earnings || 0;
-    } catch (err) {
-        console.error('Referral error:', err);
+window.loadTasks = async () => {
+    const container = document.getElementById('tasks-list');
+    if (container) {
+        container.innerHTML = '<div class="loading">Задачи появятся позже</div>';
     }
 };
 
-window.loadTasks = async () => {
-    // Заглушка для задач
-};
-
 window.completeTask = (taskId) => {
-    UI.showToast('✅ Task completed!');
+    UI.showToast('✅ Задание выполнено!');
 };
 
-// Мини-игры (заглушки для совместимости)
+/* ===============================
+   MINI-GAMES (ЗАГЛУШКИ)
+   ============================== */
+
 window.openGame = (game) => {
     const modal = document.getElementById(`game-${game}`);
     if (modal) modal.classList.add('active');
@@ -1166,10 +901,173 @@ window.closeGame = (game) => {
     if (modal) modal.classList.remove('active');
 };
 
-window.playCoinflip = () => UI.showToast('🎮 Coinflip coming soon!');
-window.playSlots = () => UI.showToast('🎮 Slots coming soon!');
-window.playDice = () => UI.showToast('🎮 Dice coming soon!');
-window.playWheel = () => UI.showToast('🎮 Roulette coming soon!');
-window.toggleNumberInput = () => {};
+window.toggleNumberInput = () => {
+    const betType = document.getElementById('wheel-color')?.value;
+    const numberInput = document.getElementById('wheel-number');
+    if (numberInput) {
+        numberInput.style.display = betType === 'number' ? 'block' : 'none';
+    }
+};
 
-console.log('✅ Spirit Clicker Core fully loaded');
+window.playCoinflip = async () => {
+    const bet = parseInt(document.getElementById('coin-bet')?.value || 0);
+    if (bet > State.game.coins || bet < 10) {
+        UI.showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    
+    if (!State.user.id) {
+        UI.showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    try {
+        const data = await API.post('/api/game/coinflip', {
+            user_id: State.user.id,
+            bet
+        });
+        
+        State.game.coins = data.coins;
+        UI.updateAll();
+        
+        document.getElementById('coin-result').textContent = data.message || '🎮 Сыграно!';
+    } catch (err) {
+        UI.showToast('❌ Ошибка игры', true);
+    }
+};
+
+window.playSlots = async () => {
+    const bet = parseInt(document.getElementById('slots-bet')?.value || 0);
+    if (bet > State.game.coins || bet < 10) {
+        UI.showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    
+    if (!State.user.id) {
+        UI.showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    try {
+        const data = await API.post('/api/game/slots', {
+            user_id: State.user.id,
+            bet
+        });
+        
+        State.game.coins = data.coins;
+        UI.updateAll();
+        
+        document.getElementById('slot1').textContent = data.slots?.[0] || '🍒';
+        document.getElementById('slot2').textContent = data.slots?.[1] || '🍒';
+        document.getElementById('slot3').textContent = data.slots?.[2] || '🍒';
+        document.getElementById('slots-result').textContent = data.message || '🎮 Сыграно!';
+    } catch (err) {
+        UI.showToast('❌ Ошибка игры', true);
+    }
+};
+
+window.playDice = async () => {
+    const bet = parseInt(document.getElementById('dice-bet')?.value || 0);
+    const pred = document.getElementById('dice-prediction')?.value;
+    
+    if (bet > State.game.coins || bet < 10) {
+        UI.showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    
+    if (!State.user.id) {
+        UI.showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    try {
+        const data = await API.post('/api/game/dice', {
+            user_id: State.user.id,
+            bet,
+            prediction: pred
+        });
+        
+        State.game.coins = data.coins;
+        UI.updateAll();
+        
+        const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        document.getElementById('dice1').textContent = faces[(data.dice1 || 1) - 1];
+        document.getElementById('dice2').textContent = faces[(data.dice2 || 1) - 1];
+        document.getElementById('dice-result').textContent = data.message || '🎮 Сыграно!';
+    } catch (err) {
+        UI.showToast('❌ Ошибка игры', true);
+    }
+};
+
+window.playWheel = async () => {
+    const bet = parseInt(document.getElementById('wheel-bet')?.value || 0);
+    const betType = document.getElementById('wheel-color')?.value;
+    const betNumber = parseInt(document.getElementById('wheel-number')?.value);
+    
+    if (bet > State.game.coins || bet < 10) {
+        UI.showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    
+    if (!State.user.id) {
+        UI.showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    try {
+        const data = await API.post('/api/game/roulette', {
+            user_id: State.user.id,
+            bet,
+            bet_type: betType,
+            bet_value: betType === 'number' ? betNumber : null
+        });
+        
+        State.game.coins = data.coins;
+        UI.updateAll();
+        
+        document.getElementById('wheel').textContent = data.result_number || '0';
+        document.getElementById('wheel-result').textContent = data.message || '🎮 Сыграно!';
+    } catch (err) {
+        UI.showToast('❌ Ошибка игры', true);
+    }
+};
+
+/* ===============================
+   MEGA BOOST (ЗАГЛУШКА)
+   ============================== */
+
+window.activateMegaBoost = () => {
+    UI.showToast('🔥 Буст будет позже');
+};
+
+/* ===============================
+   INITIALIZATION
+   ============================== */
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Spirit Clicker Core starting...');
+    
+    TelegramApp.init();
+    SettingsSystem.load();
+    
+    if (State.user.id) {
+        await UserData.load();
+        EnergySystem.startRecovery();
+        await SkinsSystem.load();
+        await ReferralSystem.loadData();
+    }
+    
+    // Обработчик для открытия скинов
+    window.addEventListener('openSkins', async () => {
+        await SkinsSystem.load();
+        Navigation.openModal('skins-screen');
+    });
+    
+    // Автосохранение
+    setInterval(() => UserData.saveProgress(), 10000);
+    
+    console.log('✅ Spirit Clicker Core loaded', State.user.id ? `for user ${State.user.id}` : '');
+});
+
+// Экспорт для совместимости
+window.showToast = UI.showToast;

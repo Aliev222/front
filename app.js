@@ -321,7 +321,7 @@ const sendClickBatch = async () => {
 
 // ==================== CLICK HANDLER ====================
 function handleTap(e) {
-    
+    // Инициализация звука при первом клике
     initAudio();
     
     // Предотвращаем стандартное поведение
@@ -335,118 +335,153 @@ function handleTap(e) {
         return;
     }
 
-    // ПОЛУЧАЕМ КООРДИНАТЫ КЛИКА
+    // Получаем координаты клика
     let clientX, clientY;
-    
     if (e.touches) {
-        // Для сенсорных устройств
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
     } else {
-        // Для мыши
         clientX = e.clientX;
         clientY = e.clientY;
     }
 
-    // Проверка буста
+    // Получаем данные из core.js
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
-    if (!megaBoostActive && state.energy < 1) {
+    // Проверка энергии
+    if (!megaBoostActive && State.game.energy < 1) {
         showEnergyRecoveryModal();
         return;
     }
 
     // Расчет дохода
-    let gain = state.profitPerTap;
-    const skin = skinsData.find(s => s.id === userSkins.selected);
-    if (skin?.bonus?.type === 'multiplier') gain *= skin.bonus.value;
+    let gain = State.game.profitPerTap;
+    
+    // Получаем скин через SkinsSystem
+    const skin = SkinsSystem.getSkinById(State.skins.selected);
+    if (skin?.bonus?.type === 'multiplier') {
+        gain *= skin.bonus.value;
+    }
+    
     if (megaBoostActive) gain *= 2;
     gain = Math.floor(gain);
 
-    // Обновление состояния
-    state.coins += gain;
+    // Обновление через core.js
+    State.game.coins += gain;
     if (!megaBoostActive) {
-        state.energy = Math.max(0, state.energy - 1);
+        State.game.energy = Math.max(0, State.game.energy - 1);
     }
-    updateUI();
+    
+    // Отправка на сервер
+    ClickEngine.addClick(gain, megaBoostActive);
+    
+    // Обновляем UI
+    UI.updateAll();
 
-    // ========== ИСПРАВЛЕННАЯ АНИМАЦИЯ ==========
+    // ========== АНИМАЦИЯ (ВОЗВРАЩАЕМ!) ==========
     try {
         const effect = document.createElement('div');
         effect.className = 'tap-effect-global';
-        
-        // ВАЖНО: используем clientX/clientY напрямую
-        effect.style.left = clientX + 'px';
-        effect.style.top = clientY + 'px';
-        effect.style.transform = 'translate(-50%, -50%)';
-        effect.style.position = 'fixed'; // fixed относительно окна, не документа
-        effect.style.color = megaBoostActive ? '#ffaa00' : 'white';
-        effect.style.fontSize = '28px';
-        effect.style.fontWeight = 'bold';
-        effect.style.textShadow = megaBoostActive ? '0 0 10px #ffaa00' : '0 0 10px #7F49B4';
-        effect.style.pointerEvents = 'none';
-        effect.style.zIndex = '9999';
-        effect.style.whiteSpace = 'nowrap';
-        effect.style.transition = 'all 0.6s ease-out';
+        effect.style.cssText = `
+            position: fixed;
+            left: ${clientX}px;
+            top: ${clientY}px;
+            transform: translate(-50%, -50%);
+            color: ${megaBoostActive ? '#ffaa00' : 'white'};
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 10px ${megaBoostActive ? '#ffaa00' : '#7F49B4'};
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            transition: all 0.6s ease-out;
+        `;
         effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
-        
         document.body.appendChild(effect);
         
-        // Анимация
         requestAnimationFrame(() => {
             effect.style.transform = 'translate(-50%, -150px)';
             effect.style.opacity = '0';
         });
         
         setTimeout(() => effect.remove(), 600);
-        
     } catch (err) {
         console.log('Animation error:', err);
     }
 
-    // Вибрация
-    if (settings.vibration) {
+    // ========== ЗВУК (ВОЗВРАЩАЕМ!) ==========
+    if (State.settings.sound) {
         try {
-            if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
+            // Используем глобальный AudioContext
+            if (!window.audioCtx) {
+                window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const audioCtx = window.audioCtx;
+            
+            // Возобновляем если приостановлен
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const now = audioCtx.currentTime;
+            
+            if (megaBoostActive) {
+                // Звук для буста
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else {
+                // Обычный звук
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(650, now);
+                osc.frequency.exponentialRampToValueAtTime(450, now + 0.08);
+                gainNode.gain.setValueAtTime(0.25, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        } catch (err) {
+            console.log('Sound error:', err);
+        }
+    }
+
+    // ========== ВИБРАЦИЯ ==========
+    if (State.settings.vibration) {
+        try {
+            if (window.Telegram?.WebApp?.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
             } else if (navigator.vibrate) {
                 navigator.vibrate(20);
             }
         } catch (err) {}
     }
+}
 
-    // Звук
-    if (settings.sound) {
+// Функция инициализации звука
+function initAudio() {
+    if (!window.audioCtx) {
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            oscillator.type = megaBoostActive ? 'sawtooth' : 'sine';
-            oscillator.frequency.setValueAtTime(megaBoostActive ? 800 : 650, audioCtx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(
-                megaBoostActive ? 400 : 450, 
-                audioCtx.currentTime + (megaBoostActive ? 0.1 : 0.08)
-            );
-            
-            gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-            
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.15);
-        } catch (err) {}
-    }
-
-    // Отправка на сервер
-    if (userId) {
-        clickBatch.clicks++;
-        clickBatch.totalGain += gain;
-        clickBatch.megaBoost = megaBoostActive;
-        if (!clickBatch.timer) {
-            clickBatch.timer = setTimeout(sendClickBatch, CLICK_BATCH_INTERVAL);
+            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('✅ Audio initialized');
+        } catch (e) {
+            console.log('❌ Audio init failed:', e);
         }
     }
 }
