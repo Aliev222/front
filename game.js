@@ -39,7 +39,15 @@ if (tg) {
 // ==================== СОСТОЯНИЕ (ОДНО!) ====================
 const State = {
     user: { id: userId, username, referrerId },
-    
+        achievements: {
+        clicks: 0,
+        upgrades: 0,
+        games: 0,
+        referrals: 0,
+        adsWatched: 0,
+        completed: []
+    },
+
     game: {
         coins: 0,
         energy: 500,
@@ -51,6 +59,8 @@ const State = {
         levels: { multitap: 0, profit: 0, energy: 0 }
     },
     
+    
+
     skins: {
         owned: ['default_SP'],
         selected: 'default_SP',
@@ -76,9 +86,10 @@ const State = {
         batchTimer: null,
         recoveryTimer: null,
         lastClick: 0
-    },
-    
+    },     
     cache: new Map()
+
+    
 };
 
 // Глобальный доступ
@@ -135,6 +146,122 @@ if (!document.getElementById('toast-styles')) {
         }
     `;
     document.head.appendChild(style);
+}
+
+const ACHIEVEMENTS = [
+    {
+        id: 'click_100',
+        title: 'Начинающий кликер',
+        description: 'Сделай 100 кликов',
+        icon: '👆',
+        condition: (stats) => stats.clicks >= 100,
+        reward: 1000
+    },
+    {
+        id: 'click_1000',
+        title: 'Опытный кликер',
+        description: 'Сделай 1000 кликов',
+        icon: '👆',
+        condition: (stats) => stats.clicks >= 1000,
+        reward: 5000
+    },
+    {
+        id: 'click_10000',
+        title: 'Мастер кликов',
+        description: 'Сделай 10000 кликов',
+        icon: '👑',
+        condition: (stats) => stats.clicks >= 10000,
+        reward: 20000
+    },
+    {
+        id: 'upgrade_10',
+        title: 'Улучшатель',
+        description: 'Купи 10 улучшений',
+        icon: '⬆️',
+        condition: (stats) => stats.upgrades >= 10,
+        reward: 5000
+    },
+    {
+        id: 'games_10',
+        title: 'Игрок',
+        description: 'Сыграй в мини-игры 10 раз',
+        icon: '🎮',
+        condition: (stats) => stats.games >= 10,
+        reward: 3000
+    },
+    {
+        id: 'referral_5',
+        title: 'Популярный',
+        description: 'Пригласи 5 друзей',
+        icon: '👥',
+        condition: (stats) => stats.referrals >= 5,
+        reward: 10000
+    }
+];
+
+function checkAchievements() {
+    const stats = {
+        clicks: State.achievements.clicks || 0,
+        upgrades: State.achievements.upgrades || 0,
+        games: State.achievements.games || 0,
+        referrals: State.skins.friendsInvited || 0,
+        adsWatched: State.skins.adsWatched || 0
+    };
+    
+    ACHIEVEMENTS.forEach(achievement => {
+        if (!State.achievements.completed.includes(achievement.id) && 
+            achievement.condition(stats)) {
+            // Достижение выполнено!
+            State.achievements.completed.push(achievement.id);
+            State.game.coins += achievement.reward;
+            showAchievementNotification(achievement);
+            updateUI();
+        }
+    });
+}
+
+function showAchievementNotification(achievement) {
+    const notif = document.createElement('div');
+    notif.className = 'achievement-notification';
+    notif.innerHTML = `
+        <div class="achievement-icon">${achievement.icon}</div>
+        <div class="achievement-info">
+            <div class="achievement-title">🏆 Достижение!</div>
+            <div class="achievement-name">${achievement.title}</div>
+            <div class="achievement-reward">+${achievement.reward} монет</div>
+        </div>
+    `;
+    document.body.appendChild(notif);
+    
+    setTimeout(() => notif.classList.add('show'), 100);
+    setTimeout(() => notif.remove(), 5000);
+    
+    // Звук достижения
+    playAchievementSound();
+}
+
+function playAchievementSound() {
+    if (!State.settings.sound) return;
+    
+    try {
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        const now = window.audioCtx.currentTime;
+        
+        for (let i = 0; i < 3; i++) {
+            const osc = window.audioCtx.createOscillator();
+            const gain = window.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(window.audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600 + i * 200, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+            
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        }
+    } catch (err) {}
 }
 
 // ==================== API ====================
@@ -405,9 +532,62 @@ function handleTap(e) {
         State.temp.batchTimer = setTimeout(sendClickBatch, CONFIG.CLICK_BATCH_INTERVAL);
     }
     
+    State.achievements.clicks = (State.achievements.clicks || 0) + 1;
+    checkAchievements();
+
     updateUI();
 
     // ========== АНИМАЦИЯ ==========
+    
+    const skinEffect = getSkinEffect(State.skins.selected);
+    if (skinEffect && skinEffect.particleCount > 5) {
+        // Дополнительные частицы для редких скинов
+        for (let i = 0; i < skinEffect.particleCount; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                const angle = (i / skinEffect.particleCount) * Math.PI * 2;
+                const distance = 30 + Math.random() * 30;
+                
+                particle.style.cssText = `
+                    position: fixed;
+                    left: ${clientX}px;
+                    top: ${clientY}px;
+                    width: 6px;
+                    height: 6px;
+                    background: ${skinEffect.particleColor[i % skinEffect.particleColor.length]};
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 9998;
+                    box-shadow: 0 0 10px currentColor;
+                    animation: skinParticle 1s ease-out forwards;
+                `;
+                
+                // Устанавливаем переменные для анимации
+                particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                particle.style.setProperty('--ty', Math.sin(angle) * distance - 20 + 'px');
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }, i * 30);
+        }
+    }
+
+    // Добавь стили для частиц
+    const particleStyle = document.createElement('style');
+    particleStyle.textContent = `
+        @keyframes skinParticle {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0);
+            }
+        }
+    `;
+    document.head.appendChild(particleStyle);
+    
     try {
         const effect = document.createElement('div');
         effect.className = 'tap-effect-global';
@@ -608,6 +788,90 @@ function filterSkins(category, e) {
     renderSkins(category);
 }
 
+function getSkinEffect(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) return null;
+    
+    // Эффекты в зависимости от редкости
+    switch(skin.rarity) {
+        case 'legendary':
+            return {
+                color: '#ffaa00',
+                particleColor: ['#ffaa00', '#ff5500', '#ffff00'],
+                particleCount: 15,
+                sound: 'legendary'
+            };
+        case 'super':
+            return {
+                color: '#ff6b6b',
+                particleColor: ['#ff6b6b', '#ff8e8e', '#ffb6b6'],
+                particleCount: 10,
+                sound: 'super'
+            };
+        case 'rare':
+            return {
+                color: '#4ecdc4',
+                particleColor: ['#4ecdc4', '#6ed4cc', '#8edbd4'],
+                particleCount: 8,
+                sound: 'rare'
+            };
+        default:
+            return {
+                color: '#7F49B4',
+                particleColor: ['#7F49B4', '#9b6bdf', '#b88ce8'],
+                particleCount: 5,
+                sound: 'common'
+            };
+    }
+}
+
+function playSkinSound(rarity) {
+    if (!State.settings.sound) return;
+    
+    try {
+        if (!window.audioCtx) {
+            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const now = window.audioCtx.currentTime;
+        const osc = window.audioCtx.createOscillator();
+        const gain = window.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(window.audioCtx.destination);
+        
+        switch(rarity) {
+            case 'legendary':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.setValueAtTime(1200, now + 0.05);
+                osc.frequency.setValueAtTime(1600, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                break;
+            case 'super':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.setValueAtTime(900, now + 0.05);
+                osc.frequency.setValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                break;
+            case 'rare':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(600, now + 0.05);
+                osc.frequency.setValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                break;
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.3);
+    } catch (err) {}
+}
+
+
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
 
@@ -632,6 +896,8 @@ async function upgradeBoost(type) {
             State.game.coins = result.coins;
             State.game.levels[type] = result.new_level;
             State.game.prices[type] = result.next_cost || 0;
+            State.achievements.upgrades = (State.achievements.upgrades || 0) + 1;
+
             
             if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
             if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
@@ -643,6 +909,7 @@ async function upgradeBoost(type) {
             showToast(`✅ ${type} +${result.new_level}!`);
             playUpgradeSound();
             updateUI();
+            checkAchievements();
         }
     } catch (err) {
         showToast('❌ Ошибка сервера', true);
@@ -669,6 +936,7 @@ async function upgradeAll() {
                 State.game.coins = result.coins;
                 State.game.levels[type] = result.new_level;
                 State.game.prices[type] = result.next_cost || 0;
+                State.achievements.upgrades = (State.achievements.upgrades || 0) + 1;
                 if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
                 if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
                 if (result.max_energy) {
@@ -682,6 +950,7 @@ async function upgradeAll() {
     upgradeInProgress = false;
     showToast('✅ Все улучшения куплены!');
     playUpgradeSound();
+    checkAchievements();
     updateUI();
 }
 
@@ -946,6 +1215,7 @@ function switchTab(tab, el) {
     
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
+    if (tab === 'tournament') loadTournamentData();
 }
 
 function openSettings() {
@@ -1016,6 +1286,82 @@ function recoverEnergyWithAd() {
             console.error('Ad error:', error);
             showToast('❌ Ошибка при показе рекламы', true);
         });
+}
+
+let tournamentTimer = null;
+
+async function loadTournamentData() {
+    try {
+        // Заглушка - замени на реальный API
+        const mockData = {
+            players: [
+                { rank: 1, name: 'CryptoKing', score: 157890 },
+                { rank: 2, name: 'SpiritMaster', score: 143200 },
+                { rank: 3, name: 'ClickerPro', score: 128450 },
+                { rank: 4, name: 'CoinHunter', score: 112300 },
+                { rank: 5, name: 'TapLegend', score: 98700 },
+                { rank: 6, name: 'Username', score: 87650, isMe: true },
+                { rank: 7, name: 'SpiritWarrior', score: 76500 },
+                { rank: 8, name: 'GhostPlayer', score: 65400 },
+                { rank: 9, name: 'DarkClicker', score: 54300 },
+                { rank: 10, name: 'LightSpirit', score: 43200 }
+            ],
+            playerRank: 6,
+            playerScore: State.game.coins,
+            timeLeft: 86399 // 23:59:59
+        };
+        
+        renderLeaderboard(mockData);
+        startTournamentTimer(mockData.timeLeft);
+        
+    } catch (err) {
+        console.error('Tournament error:', err);
+    }
+}
+
+function renderLeaderboard(data) {
+    const list = document.getElementById('leaderboard-list');
+    const playerRank = document.getElementById('player-rank');
+    const playerScore = document.getElementById('player-score');
+    
+    if (list) {
+        list.innerHTML = data.players.map(p => `
+            <div class="leaderboard-item ${p.isMe ? 'current-player' : ''}">
+                <span class="player-rank">${p.rank}</span>
+                <span class="player-name">${p.name}</span>
+                <span class="player-score">${formatNumber(p.score)}</span>
+            </div>
+        `).join('');
+    }
+    
+    if (playerRank) playerRank.textContent = `#${data.playerRank}`;
+    if (playerScore) playerScore.textContent = formatNumber(data.playerScore);
+}
+
+function startTournamentTimer(seconds) {
+    if (tournamentTimer) clearInterval(tournamentTimer);
+    
+    const timerEl = document.getElementById('tournament-timer');
+    if (!timerEl) return;
+    
+    let remaining = seconds;
+    
+    tournamentTimer = setInterval(() => {
+        remaining--;
+        
+        if (remaining <= 0) {
+            clearInterval(tournamentTimer);
+            timerEl.textContent = 'Турнир завершен';
+            loadTournamentData(); // Загружаем новый турнир
+            return;
+        }
+        
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const secs = remaining % 60;
+        
+        timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
@@ -1139,6 +1485,8 @@ async function playCoinflip() {
                 
                 resultEl.textContent = data.message || '🎮 Сыграно!';
                 State.game.coins = data.coins;
+                State.achievements.games = (State.achievements.games || 0) + 1;
+                checkAchievements();
                 updateUI();
                 
             } catch (err) {
@@ -1246,9 +1594,11 @@ async function playSlots() {
                 if (s1 === s2 && s2 === s3) {
                     const win = bet * 5;
                     State.game.coins += win;
+                    State.achievements.games = (State.achievements.games || 0) + 1;
                     resultEl.textContent = '🎰 ДЖЕКПОТ! +' + win;
                     playSound('win');
                     createConfetti();
+                    checkAchievements();
                 } else {
                     State.game.coins -= bet;
                     resultEl.textContent = '🎰 Повезет в следующий раз';

@@ -121,46 +121,84 @@ body.modal-open {
 
 /* ==================== HEADER ==================== */
 .header {
-    composes: glass;
-    border-bottom: 2px solid var(--accent);
-    padding: 10px 16px;
-}
-
-.balance-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border-bottom: 2px solid var(--accent);
+    border-radius: 20px;
+    margin-bottom: 10px;
 }
 
-.balance-label {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 24px;
-    font-weight: 400;
-    letter-spacing: 4px;
-    text-transform: uppercase;
+/* ===== ЛЕВАЯ ЧАСТЬ - ТУРНИР ===== */
+.header .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 20px;
+    padding: 4px 0;
+}
+
+.header .nav-item .nav-icon {
+    font-size: 19px;
+    line-height: 1;
+    filter: drop-shadow(0 0 5px var(--accent));
+    animation: tournamentPulse 2s infinite;
+}
+
+.header .nav-item span:last-child {
+    font-size: 9px;
     color: var(--accent);
-    white-space: nowrap;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.header .nav-item:active {
+    transform: scale(0.9);
+}
+
+/* ===== ЦЕНТР - БАЛАНС ===== */
+.balance-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100px;
 }
 
 .balance-value {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(24px, 6vw, 36px);
+    font-size: 28px;
     font-weight: 400;
     color: var(--text-primary);
     letter-spacing: 2px;
-    flex: 1;
     text-align: center;
-    transition: transform 0.1s ease;
 }
 
 .balance-value:active {
     transform: scale(0.95);
 }
 
+/* ===== ПРАВАЯ ЧАСТЬ - НАСТРОЙКИ ===== */
+.settings-container {
+    width: 50px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-left: 7vh;
+}
+
 .settings-btn {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 50%;
@@ -171,7 +209,6 @@ body.modal-open {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .settings-btn:active {
@@ -180,6 +217,48 @@ body.modal-open {
     color: var(--accent);
 }
 
+/* ===== АНИМАЦИЯ ===== */
+@keyframes tournamentPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 5px var(--accent));
+    }
+    50% {
+        filter: drop-shadow(0 0 12px var(--accent));
+    }
+}
+
+/* ===== АДАПТАЦИЯ ДЛЯ МАЛЕНЬКИХ ЭКРАНОВ ===== */
+@media (max-width: 400px) {
+    .header {
+        padding: 6px 12px;
+    }
+    
+    .header .nav-item {
+        width: 40px;
+    }
+    
+    .header .nav-item .nav-icon {
+        font-size: 18px;
+    }
+    
+    .header .nav-item span:last-child {
+        font-size: 7px;
+    }
+    
+    .balance-value {
+        font-size: 22px;
+    }
+    
+    .settings-container {
+        width: 40px;
+    }
+    
+    .settings-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+    }
+}
 /* ==================== STATS ROW ==================== */
 .stats-row {
     display: grid;
@@ -1990,4 +2069,93 @@ body.modal-open {
     background: var(--success);
     opacity: 0.7;
     cursor: default;
+}
+
+.tournament-header {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--accent-dim), transparent);
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.tournament-timer {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--accent);
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.tournament-prize {
+    font-size: 18px;
+    color: var(--warning);
+    margin-top: 10px;
+}
+
+.leaderboard {
+    background: rgba(0,0,0,0.2);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.leaderboard-header {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px;
+    padding: 10px;
+    color: var(--text-dim);
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.leaderboard-item {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px;
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.2s;
+}
+
+.leaderboard-item.current-player {
+    background: var(--accent-dim);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+}
+
+.player-rank {
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.player-name {
+    color: var(--text-primary);
+}
+
+.player-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    color: var(--warning);
+    text-align: right;
+}
+
+.player-rank {
+    background: rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rank-label {
+    color: var(--text-dim);
+    font-size: 14px;
+}
+
+.rank-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--accent);
 }

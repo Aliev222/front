@@ -57,9 +57,19 @@
 
     <!-- HEADER -->
     <div class="header glass">
+        <!-- Левая часть - турнир -->
+        <div class="nav-item" onclick="switchTab('tournament', this)">
+            <span class="nav-icon">🏆</span>
+            <span>Tournament</span>
+        </div>
+        
+        <!-- Центр - баланс -->
         <div class="balance-container">
-            <div class="balance-label">Spirix</div>
             <div class="balance-value" id="coinBalance">0</div>
+        </div>
+        
+        <!-- Правая часть - настройки (отдельный div) -->
+        <div class="settings-container">
             <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
         </div>
     </div>
@@ -163,9 +173,50 @@
             </span>
             <span>Skins</span>
         </div>
+        
+        
     </div>
 
 </div>
+
+<!-- TOURNAMENT MODAL -->
+<div class="modal-screen" id="tournament-screen">
+    <div class="glass">
+        <div class="modal-header">
+            <button class="modal-close" onclick="closeModal('tournament-screen')">✕</button>
+            <h2>🏆 ТУРНИР</h2>
+        </div>
+        <div class="modal-content">
+            <div class="tournament-header">
+                <div class="tournament-timer" id="tournament-timer">23:59:59</div>
+                <div class="tournament-prize">🎁 100 000 монет</div>
+            </div>
+            
+            <div class="leaderboard">
+                <div class="leaderboard-header">
+                    <span>#</span>
+                    <span>Игрок</span>
+                    <span>Счет</span>
+                </div>
+                <div id="leaderboard-list">
+                    <div class="loading">Загрузка...</div>
+                </div>
+            </div>
+            
+            <div class="player-rank glass">
+                <div class="rank-info">
+                    <span class="rank-label">Ваш ранг:</span>
+                    <span class="rank-value" id="player-rank">#42</span>
+                </div>
+                <div class="rank-info">
+                    <span class="rank-label">Ваш счет:</span>
+                    <span class="rank-value" id="player-score">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- FRIENDS MODAL -->
 <div class="modal-screen" id="friends-screen">
