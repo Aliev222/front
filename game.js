@@ -870,21 +870,468 @@ function toggleNumberInput() {
     if (numberInput) numberInput.style.display = betType === 'number' ? 'block' : 'none';
 }
 
-function playCoinflip() {
-    showToast('🎮 Coinflip будет позже');
+async function playCoinflip() {
+    const betInput = document.getElementById('coin-bet');
+    if (!betInput) return;
+    
+    const bet = parseInt(betInput.value);
+    if (bet > State.game.coins) {
+        showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    if (bet < 10) {
+        showToast('❌ Минимальная ставка 10', true);
+        return;
+    }
+
+    const resultEl = document.getElementById('coin-result');
+    const coin = document.getElementById('coin');
+    
+    // Анимация подбрасывания
+    resultEl.textContent = '🪙 Подбрасываем...';
+    coin.classList.add('flipping');
+    
+    // Звук подбрасывания
+    playSound('coinflip');
+    
+    setTimeout(async () => {
+        if (userId) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/game/coinflip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, bet })
+                });
+                
+                if (!res.ok) throw new Error('Server error');
+                
+                const data = await res.json();
+                coin.classList.remove('flipping');
+                
+                // Анимация результата
+                if (data.message.includes('won')) {
+                    coin.classList.add('win');
+                    setTimeout(() => coin.classList.remove('win'), 1000);
+                    playSound('win');
+                } else {
+                    playSound('lose');
+                }
+                
+                resultEl.textContent = data.message || '🎮 Сыграно!';
+                State.game.coins = data.coins;
+                updateUI();
+                
+            } catch (err) {
+                console.error('Coinflip error:', err);
+                coin.classList.remove('flipping');
+                resultEl.textContent = '❌ Ошибка сервера';
+                showToast('❌ Ошибка', true);
+            }
+        } else {
+            // Локальная игра (без сервера)
+            const win = Math.random() < 0.5;
+            coin.classList.remove('flipping');
+            
+            if (win) {
+                State.game.coins += bet;
+                coin.classList.add('win');
+                setTimeout(() => coin.classList.remove('win'), 1000);
+                resultEl.textContent = '🦅 Вы выиграли! +' + bet;
+                playSound('win');
+            } else {
+                State.game.coins -= bet;
+                resultEl.textContent = '💀 Вы проиграли';
+                playSound('lose');
+            }
+            updateUI();
+        }
+    }, 1500);
 }
 
-function playSlots() {
-    showToast('🎮 Slots будет позже');
+async function playSlots() {
+    const betInput = document.getElementById('slots-bet');
+    if (!betInput) return;
+    
+    const bet = parseInt(betInput.value);
+    if (bet > State.game.coins) {
+        showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    if (bet < 10) {
+        showToast('❌ Минимальная ставка 10', true);
+        return;
+    }
+
+    const resultEl = document.getElementById('slots-result');
+    const slot1 = document.getElementById('slot1');
+    const slot2 = document.getElementById('slot2');
+    const slot3 = document.getElementById('slot3');
+    
+    const symbols = ['🍒', '🍋', '🍊', '7️⃣', '💎', '⭐'];
+    
+    resultEl.textContent = '🎰 Крутим...';
+    playSound('spin');
+    
+    let spins = 0;
+    const maxSpins = 15;
+    const spinInterval = setInterval(() => {
+        slot1.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        slot2.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        slot3.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        spins++;
+        
+        if (spins >= maxSpins) {
+            clearInterval(spinInterval);
+            
+            if (userId) {
+                fetch(`${CONFIG.API_URL}/api/game/slots`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, bet })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    slot1.textContent = data.slots[0];
+                    slot2.textContent = data.slots[1];
+                    slot3.textContent = data.slots[2];
+                    resultEl.textContent = data.message;
+                    
+                    if (data.message.includes('JACKPOT')) {
+                        playSound('win');
+                        // Эффект конфетти
+                        createConfetti();
+                    } else if (data.message.includes('won')) {
+                        playSound('win');
+                    } else {
+                        playSound('lose');
+                    }
+                    
+                    State.game.coins = data.coins;
+                    updateUI();
+                })
+                .catch(() => {
+                    resultEl.textContent = '❌ Ошибка';
+                    playSound('lose');
+                });
+            } else {
+                // Локальная игра
+                const s1 = symbols[Math.floor(Math.random() * symbols.length)];
+                const s2 = symbols[Math.floor(Math.random() * symbols.length)];
+                const s3 = symbols[Math.floor(Math.random() * symbols.length)];
+                
+                slot1.textContent = s1;
+                slot2.textContent = s2;
+                slot3.textContent = s3;
+                
+                if (s1 === s2 && s2 === s3) {
+                    const win = bet * 5;
+                    State.game.coins += win;
+                    resultEl.textContent = '🎰 ДЖЕКПОТ! +' + win;
+                    playSound('win');
+                    createConfetti();
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = '🎰 Повезет в следующий раз';
+                    playSound('lose');
+                }
+                updateUI();
+            }
+        }
+    }, 100);
 }
 
-function playDice() {
-    showToast('🎮 Dice будет позже');
+async function playDice() {
+    const betInput = document.getElementById('dice-bet');
+    const predSelect = document.getElementById('dice-prediction');
+    
+    if (!betInput || !predSelect) return;
+    
+    const bet = parseInt(betInput.value);
+    const pred = predSelect.value;
+    
+    if (bet > State.game.coins) {
+        showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    if (bet < 10) {
+        showToast('❌ Минимальная ставка 10', true);
+        return;
+    }
+
+    const resultEl = document.getElementById('dice-result');
+    const dice1 = document.getElementById('dice1');
+    const dice2 = document.getElementById('dice2');
+    
+    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    
+    resultEl.textContent = '🎲 Бросаем...';
+    playSound('dice');
+    
+    let spins = 0;
+    const maxSpins = 12;
+    
+    const spinInterval = setInterval(() => {
+        dice1.textContent = diceFaces[Math.floor(Math.random() * 6)];
+        dice2.textContent = diceFaces[Math.floor(Math.random() * 6)];
+        spins++;
+        
+        if (spins >= maxSpins) {
+            clearInterval(spinInterval);
+            
+            if (userId) {
+                fetch(`${CONFIG.API_URL}/api/game/dice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, bet, prediction: pred })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    dice1.textContent = diceFaces[data.dice1 - 1];
+                    dice2.textContent = diceFaces[data.dice2 - 1];
+                    resultEl.textContent = data.message;
+                    
+                    if (data.message.includes('won')) {
+                        playSound('win');
+                    } else {
+                        playSound('lose');
+                    }
+                    
+                    State.game.coins = data.coins;
+                    updateUI();
+                })
+                .catch(() => {
+                    resultEl.textContent = '❌ Ошибка';
+                    playSound('lose');
+                });
+            } else {
+                const d1 = Math.floor(Math.random() * 6) + 1;
+                const d2 = Math.floor(Math.random() * 6) + 1;
+                const sum = d1 + d2;
+                
+                dice1.textContent = diceFaces[d1 - 1];
+                dice2.textContent = diceFaces[d2 - 1];
+                
+                let win = false;
+                if (pred === '7' && sum === 7) win = true;
+                if (pred === 'even' && sum % 2 === 0) win = true;
+                if (pred === 'odd' && sum % 2 === 1) win = true;
+                
+                if (win) {
+                    const multiplier = pred === '7' ? 5 : 2;
+                    State.game.coins += bet * multiplier;
+                    resultEl.textContent = `🎲 Вы выиграли! x${multiplier}`;
+                    playSound('win');
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = '🎲 Вы проиграли';
+                    playSound('lose');
+                }
+                updateUI();
+            }
+        }
+    }, 70);
 }
 
-function playWheel() {
-    showToast('🎮 Roulette будет позже');
+// Roulette
+async function playWheel() {
+    const betInput = document.getElementById('wheel-bet');
+    const betType = document.getElementById('wheel-color').value;
+    const betNumber = document.getElementById('wheel-number')?.value;
+    
+    if (!betInput) return;
+    const bet = parseInt(betInput.value);
+    
+    if (bet > State.game.coins) {
+        showToast('❌ Недостаточно монет', true);
+        return;
+    }
+    if (bet < 10) {
+        showToast('❌ Минимальная ставка 10', true);
+        return;
+    }
+
+    const resultEl = document.getElementById('wheel-result');
+    const wheel = document.getElementById('wheel');
+    
+    resultEl.textContent = '🎡 Крутим...';
+    playSound('spin');
+    
+    let spins = 0;
+    const maxSpins = 20;
+    
+    const spinInterval = setInterval(() => {
+        wheel.textContent = Math.floor(Math.random() * 37);
+        spins++;
+        
+        if (spins >= maxSpins) {
+            clearInterval(spinInterval);
+            
+            if (userId) {
+                fetch(`${CONFIG.API_URL}/api/game/roulette`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        bet: bet,
+                        bet_type: betType,
+                        bet_value: betType === 'number' ? parseInt(betNumber) : null
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    wheel.textContent = data.result_number;
+                    
+                    // Цвет результата
+                    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+                    if (data.result_number === 0) {
+                        wheel.style.color = '#2ecc71'; // зеленый
+                    } else if (redNumbers.includes(data.result_number)) {
+                        wheel.style.color = '#e74c3c'; // красный
+                    } else {
+                        wheel.style.color = '#95a5a6'; // серый
+                    }
+                    
+                    resultEl.textContent = data.message;
+                    
+                    if (data.message.includes('won')) {
+                        playSound('win');
+                    } else {
+                        playSound('lose');
+                    }
+                    
+                    State.game.coins = data.coins;
+                    updateUI();
+                })
+                .catch(() => {
+                    resultEl.textContent = '❌ Ошибка';
+                    playSound('lose');
+                });
+            } else {
+                const result = Math.floor(Math.random() * 37);
+                wheel.textContent = result;
+                
+                const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+                
+                if (result === 0) {
+                    wheel.style.color = '#2ecc71';
+                } else if (redNumbers.includes(result)) {
+                    wheel.style.color = '#e74c3c';
+                } else {
+                    wheel.style.color = '#95a5a6';
+                }
+                
+                let win = false;
+                if (betType === 'red' && redNumbers.includes(result)) win = true;
+                if (betType === 'black' && result !== 0 && !redNumbers.includes(result)) win = true;
+                if (betType === 'green' && result === 0) win = true;
+                if (betType === 'number' && result === parseInt(betNumber)) win = true;
+                
+                if (win) {
+                    const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
+                    State.game.coins += bet * multiplier;
+                    resultEl.textContent = `🎡 Вы выиграли! x${multiplier}`;
+                    playSound('win');
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = '🎡 Вы проиграли';
+                    playSound('lose');
+                }
+                updateUI();
+            }
+        }
+    }, 100);
 }
+
+// Конфетти для джекпота
+function createConfetti() {
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                width: 8px;
+                height: 8px;
+                background: hsl(${Math.random() * 360}, 100%, 50%);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 50);
+    }
+}
+
+// Добавить стили для конфетти
+const confettiStyle = document.createElement('style');
+confettiStyle.textContent = `
+    @keyframes confettiFall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+        }
+    }
+`;
+document.head.appendChild(confettiStyle);
+
+// Универсальная функция звука для игр
+function playSound(type) {
+    if (!State.settings.sound) return;
+    
+    try {
+        if (!window.audioCtx) {
+            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (window.audioCtx.state === 'suspended') {
+            window.audioCtx.resume().catch(() => {});
+        }
+        
+        const now = window.audioCtx.currentTime;
+        const osc = window.audioCtx.createOscillator();
+        const gain = window.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(window.audioCtx.destination);
+        
+        switch(type) {
+            case 'win':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                break;
+            case 'lose':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                break;
+            case 'spin':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.5);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                break;
+            case 'dice':
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                for (let i = 0; i < 5; i++) {
+                    osc.frequency.setValueAtTime(200 + i * 100, now + i * 0.1);
+                }
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                break;
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.6);
+    } catch (err) {}
+}
+
 
 // ==================== MEGA BOOST ====================
 function activateMegaBoost() {
