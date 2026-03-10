@@ -868,6 +868,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ Spirit Clicker ready');
 });
 
+setTimeout(() => {
+    const gameContainer = document.querySelector('.game-container');
+    if (gameContainer) {
+        // Удаляем старые обработчики если есть
+        gameContainer.removeEventListener('click', handleTap);
+        gameContainer.removeEventListener('touchstart', handleTap);
+        
+        // Добавляем новые
+        gameContainer.addEventListener('click', handleTap);
+        gameContainer.addEventListener('touchstart', handleTap, { passive: false });
+        
+        console.log('✅ Обработчик кликов привязан');
+    } else {
+        console.log('❌ Контейнер не найден');
+    }
+}, 500); // Даем время на загрузку DOM
+
 // ==================== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ====================
 window.handleTap = handleTap;
 window.upgradeBoost = upgradeBoost;
