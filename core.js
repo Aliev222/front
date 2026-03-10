@@ -1073,3 +1073,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Экспорт для совместимости
 window.showToast = UI.showToast;
+
+window.State = State;
+console.log('State доступен в консоли как window.State');
