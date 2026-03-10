@@ -4,6 +4,8 @@
 
 'use strict';
 
+console.log('✅ core.js starting...');
+console.log('Telegram WebApp:', window.Telegram?.WebApp ? '✅' : '❌');
 /* ===============================
    CONFIGURATION
    ============================== */
