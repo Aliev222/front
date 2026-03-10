@@ -195,6 +195,7 @@ async function loadUserData() {
         await loadSkinsList();
         await loadReferralData();
         await checkBoostStatus();
+        await loadTasks();
         
         applySavedSkin();
         updateUI();
@@ -692,7 +693,7 @@ function renderTasks(tasks) {
         container.innerHTML = `
             <div class="tasks-empty">
                 <div class="tasks-empty-icon">📋</div>
-                <div class="tasks-empty-text">Задания появятся позже</div>
+                <div class="tasks-empty-text">Нет доступных заданий</div>
             </div>
         `;
         return;
@@ -701,16 +702,16 @@ function renderTasks(tasks) {
     container.innerHTML = tasks.map(task => `
         <div class="task-card ${task.completed ? 'completed' : ''}">
             <div class="task-icon">${task.icon || '📋'}</div>
-            <div class="task-content">
+            <div class="task-info">
                 <div class="task-title">${task.title || 'Задание'}</div>
                 <div class="task-desc">${task.description || ''}</div>
-                <div class="task-reward">🎁 ${task.reward || 0}</div>
-                ${task.progress ? `
+                <div class="task-reward">🎁 ${task.reward || '0'}</div>
+                ${task.progress !== undefined ? `
                     <div class="task-progress">
                         <div class="task-progress-bar">
                             <div class="task-progress-fill" style="width: ${(task.progress / task.total) * 100}%"></div>
                         </div>
-                        <div class="task-progress-text">${task.progress}/${task.total}</div>
+                        <span class="task-progress-text">${task.progress}/${task.total}</span>
                     </div>
                 ` : ''}
             </div>
@@ -719,48 +720,69 @@ function renderTasks(tasks) {
                     Выполнить
                 </button>
             ` : `
-                <button class="task-button completed" disabled>
-                    ✅ Выполнено
-                </button>
+                <button class="task-button completed" disabled>✅ Выполнено</button>
             `}
         </div>
     `).join('');
 }
 
+function completeTask(taskId) {
+    showToast(`✅ Задание выполнено!`);
+    // Здесь можно добавить логику начисления награды
+    loadTasks(); // Перезагружаем список задач
+}
+
 // Добавь функцию для загрузки задач (если ее нет)
 async function loadTasks() {
-    if (!userId) return;
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    
+    if (!userId) {
+        container.innerHTML = '<div class="loading">Авторизуйтесь</div>';
+        return;
+    }
     
     try {
-        // Заглушка - замени на реальный API когда будет готов
-        const mockTasks = [
-            {
-                id: 'daily',
-                title: '🎯 Ежедневный бонус',
-                description: 'Заходи каждый день',
-                reward: '1000 монет',
-                icon: '📅',
-                completed: false,
-                progress: 1,
-                total: 1
-            },
-            {
-                id: 'clicks',
-                title: '👆 100 кликов',
-                description: 'Сделай 100 кликов',
-                reward: '500 монет',
-                icon: '👆',
-                completed: false,
-                progress: 0,
-                total: 100
-            }
-        ];
+        // Пытаемся загрузить с сервера
+        const data = await API.get(`/api/tasks/${userId}`).catch(() => null);
         
-        renderTasks(mockTasks);
-        
+        if (data && data.length > 0) {
+            renderTasks(data);
+        } else {
+            // Если сервер не отвечает - показываем заглушку
+            const mockTasks = [
+                {
+                    id: 'daily_bonus',
+                    title: '📅 Ежедневный бонус',
+                    description: 'Заходи каждый день',
+                    reward: '10000 монет',
+                    icon: '📅',
+                    completed: false
+                },
+                {
+                    id: 'invite_friend',
+                    title: '👥 Пригласи друга',
+                    description: 'Пригласи 1 друга в игру',
+                    reward: '5000 монет',
+                    icon: '👥',
+                    completed: false
+                },
+                {
+                    id: 'watch_ad',
+                    title: '📺 Посмотри рекламу',
+                    description: 'Посмотри 3 рекламы',
+                    reward: '15000 монет',
+                    icon: '📺',
+                    completed: false,
+                    progress: 0,
+                    total: 3
+                }
+            ];
+            renderTasks(mockTasks);
+        }
     } catch (err) {
         console.error('Tasks error:', err);
-        renderTasks([]);
+        container.innerHTML = '<div class="loading">Ошибка загрузки</div>';
     }
 }
 
