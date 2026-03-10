@@ -197,6 +197,100 @@ const recoverEnergy = async () => {
     }
 };
 
+// ==================== AUDIO SYSTEM ====================
+let audioCtx = null;
+let isAudioInitialized = false;
+
+// Инициализация аудио при первом взаимодействии
+function initAudio() {
+    if (isAudioInitialized) return;
+    
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        isAudioInitialized = true;
+        console.log('✅ Audio initialized');
+    } catch (e) {
+        console.log('❌ Audio init failed:', e);
+    }
+}
+
+// Упрощенная функция звука
+function playClickSound(megaBoostActive = false) {
+    if (!settings.sound) return;
+    
+    // Инициализируем при первом клике
+    if (!isAudioInitialized) {
+        initAudio();
+        // Если не удалось инициализировать, выходим
+        if (!isAudioInitialized) return;
+    }
+    
+    try {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                playSoundInternal(megaBoostActive);
+            });
+        } else {
+            playSoundInternal(megaBoostActive);
+        }
+    } catch (e) {
+        console.log('Sound error:', e);
+    }
+}
+// ==================== ВИБРАЦИЯ ====================
+function vibrateClick() {
+    if (!settings.vibration) return;
+    
+    try {
+        // Telegram Haptic Feedback (работает в нативных приложениях Telegram)
+        if (tg?.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+        // Web Vibration API (работает в браузере)
+        else if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    } catch (e) {
+        console.log('Vibration error:', e);
+    }
+}
+function playSoundInternal(megaBoostActive) {
+    const now = audioCtx.currentTime;
+    
+    if (megaBoostActive) {
+        // Звук для буста
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        
+        osc.start();
+        osc.stop(now + 0.2);
+    } else {
+        // Обычный звук клика
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(450, now + 0.08);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        
+        osc.start();
+        osc.stop(now + 0.15);
+    }
+}
+
+
 // ==================== CLICK BATCH ====================
 const clickBatch = { clicks: 0, totalGain: 0, timer: null, megaBoost: false };
 
@@ -227,15 +321,34 @@ const sendClickBatch = async () => {
 
 // ==================== CLICK HANDLER ====================
 function handleTap(e) {
+    
+    initAudio();
+    
+    // Предотвращаем стандартное поведение
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
+    // Игнорируем клики по кнопкам
     if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card')) {
         return;
     }
 
+    // ПОЛУЧАЕМ КООРДИНАТЫ КЛИКА
+    let clientX, clientY;
+    
+    if (e.touches) {
+        // Для сенсорных устройств
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        // Для мыши
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+
+    // Проверка буста
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
     if (!megaBoostActive && state.energy < 1) {
@@ -243,52 +356,98 @@ function handleTap(e) {
         return;
     }
 
+    // Расчет дохода
     let gain = state.profitPerTap;
     const skin = skinsData.find(s => s.id === userSkins.selected);
     if (skin?.bonus?.type === 'multiplier') gain *= skin.bonus.value;
     if (megaBoostActive) gain *= 2;
     gain = Math.floor(gain);
 
+    // Обновление состояния
     state.coins += gain;
-    if (!megaBoostActive) state.energy = Math.max(0, state.energy - 1);
+    if (!megaBoostActive) {
+        state.energy = Math.max(0, state.energy - 1);
+    }
     updateUI();
 
-    // Простая анимация
-    const effect = document.createElement('div');
-    effect.className = 'tap-effect-global';
-    effect.style.cssText = `
-        position: fixed; const x = e.clientX || (e.touches && e.touches[0]?.clientX) || window.innerWidth / 2;
-        const y = e.clientY || (e.touches && e.touches[0]?.clientY) || window.innerHeight / 2;
-        effect.style.left = x + 'px';
-        effect.style.top = y + 'px';
-        top: ${e.clientY || e.touches?.[0]?.clientY || window.innerHeight/2}px;
-        transform: translate(-50%, -50%); color: ${megaBoostActive ? '#ffaa00' : 'white'};
-        font-size: 24px; pointer-events: none; z-index: 9999;
-        transition: all 0.5s ease-out; white-space: nowrap;
-    `;
-    effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
-    effect.style.position = "fixed";
-    effect.style.pointerEvents = "none";
-    if (document.querySelectorAll('.tap-effect-global').length < 20) {
+    // ========== ИСПРАВЛЕННАЯ АНИМАЦИЯ ==========
+    try {
+        const effect = document.createElement('div');
+        effect.className = 'tap-effect-global';
+        
+        // ВАЖНО: используем clientX/clientY напрямую
+        effect.style.left = clientX + 'px';
+        effect.style.top = clientY + 'px';
+        effect.style.transform = 'translate(-50%, -50%)';
+        effect.style.position = 'fixed'; // fixed относительно окна, не документа
+        effect.style.color = megaBoostActive ? '#ffaa00' : 'white';
+        effect.style.fontSize = '28px';
+        effect.style.fontWeight = 'bold';
+        effect.style.textShadow = megaBoostActive ? '0 0 10px #ffaa00' : '0 0 10px #7F49B4';
+        effect.style.pointerEvents = 'none';
+        effect.style.zIndex = '9999';
+        effect.style.whiteSpace = 'nowrap';
+        effect.style.transition = 'all 0.6s ease-out';
+        effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
+        
         document.body.appendChild(effect);
+        
+        // Анимация
+        requestAnimationFrame(() => {
+            effect.style.transform = 'translate(-50%, -150px)';
+            effect.style.opacity = '0';
+        });
+        
+        setTimeout(() => effect.remove(), 600);
+        
+    } catch (err) {
+        console.log('Animation error:', err);
     }
-    
-    requestAnimationFrame(() => {
-        effect.style.transform = 'translate(-50%, -100px)';
-        effect.style.opacity = '0';
-    });
-    setTimeout(() => effect.remove(), 500);
 
+    // Вибрация
     if (settings.vibration) {
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        else if (navigator.vibrate) navigator.vibrate(20);
+        try {
+            if (tg?.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            } else if (navigator.vibrate) {
+                navigator.vibrate(20);
+            }
+        } catch (err) {}
     }
 
+    // Звук
+    if (settings.sound) {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = megaBoostActive ? 'sawtooth' : 'sine';
+            oscillator.frequency.setValueAtTime(megaBoostActive ? 800 : 650, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(
+                megaBoostActive ? 400 : 450, 
+                audioCtx.currentTime + (megaBoostActive ? 0.1 : 0.08)
+            );
+            
+            gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.15);
+        } catch (err) {}
+    }
+
+    // Отправка на сервер
     if (userId) {
         clickBatch.clicks++;
         clickBatch.totalGain += gain;
         clickBatch.megaBoost = megaBoostActive;
-        if (!clickBatch.timer) clickBatch.timer = setTimeout(sendClickBatch, CLICK_BATCH_INTERVAL);
+        if (!clickBatch.timer) {
+            clickBatch.timer = setTimeout(sendClickBatch, CLICK_BATCH_INTERVAL);
+        }
     }
 }
 
@@ -964,5 +1123,21 @@ window.openSkins = openSkins;
 window.recoverEnergy = recoverEnergy;
 window.startEnergyRecovery = startEnergyRecovery;
 window.showToast = showToast;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const gameContainer = document.querySelector('.game-container');
+    if (gameContainer) {
+        // Удаляем старые обработчики если есть
+        gameContainer.removeEventListener('click', handleTap);
+        gameContainer.removeEventListener('touchstart', handleTap);
+        
+        // Добавляем новые
+        gameContainer.addEventListener('click', handleTap);
+        gameContainer.addEventListener('touchstart', handleTap, { passive: false });
+        
+        console.log('✅ Обработчики кликов привязаны');
+    }
+});
+
 
 console.log('✅ Spirit Clicker оптимизирован');
