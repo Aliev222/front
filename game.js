@@ -1396,114 +1396,62 @@ let boostEndTime = null;
 let boostInterval = null;
 
 function activateMegaBoost() {
-    debugLog('🚀 Нажата кнопка буста', 'info');
-    
     if (!userId) {
-        debugLog('❌ Нет userId', 'error');
         showToast('❌ Авторизуйтесь', true);
         return;
     }
-    debugLog(`✅ userId: ${userId}`, 'info');
     
     const boostBtn = document.getElementById('mega-boost-btn');
     if (boostBtn?.classList.contains('active')) {
-        debugLog('⚠️ Буст уже активен', 'error');
         showToast('⚡ Буст уже активен!', true);
         return;
     }
     
-    // Проверяем рекламу
+    // Проверяем, загружена ли реклама
     if (typeof window.show_10655027 !== 'function') {
-        debugLog('❌ show_10655027 не функция', 'error');
-        debugLog(`Тип: ${typeof window.show_10655027}`, 'error');
         showToast('❌ Реклама временно недоступна', true);
         return;
     }
-    debugLog('✅ show_10655027 доступна', 'info');
     
     // Блокируем кнопку
     if (boostBtn) boostBtn.classList.add('disabled');
-    debugLog('🔒 Кнопка заблокирована', 'info');
+    console.log('📢 Показываем рекламу...');
     
     // Показываем рекламу
-    debugLog('📢 Пытаемся показать рекламу...', 'info');
-    
     window.show_10655027()
-        .then((result) => {
-            debugLog(`✅ Реклама успешна! Результат: ${JSON.stringify(result)}`, 'info');
-            debugLog('🔄 Вызываем activateBoostOnServer...', 'info');
+        .then(() => {
+            console.log('✅ Реклама просмотрена, активируем буст');
             
-            fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
+            // Отправляем запрос на сервер
+            return fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId })
-            })
-            .then(res => {
-                debugLog(`📡 Ответ сервера: статус ${res.status}`, 'info');
-                return res.json();
-            })
-            .then(data => {
-                debugLog(`📦 Данные сервера: ${JSON.stringify(data)}`, 'info');
-                
-                if (data.already_active) {
-                    debugLog('⚠️ Буст уже активен на сервере', 'error');
-                    showToast(data.message, true);
-                    return;
-                }
-                
-                if (data.expires_at) {
-                    debugLog(`⏰ Буст активирован до: ${data.expires_at}`, 'info');
-                    startLocalBoost(new Date(data.expires_at));
-                    showToast('🔥 MEGA BOOST АКТИВИРОВАН!');
-                    debugLog('✅ Буст успешно активирован!', 'info');
-                } else {
-                    debugLog('❌ Нет expires_at в ответе', 'error');
-                }
-            })
-            .catch(err => {
-                debugLog(`❌ Ошибка запроса к серверу: ${err.message}`, 'error');
-                // Запасной вариант
-                debugLog('⚠️ Активируем локально', 'info');
-                const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
-                startLocalBoost(expiresAt);
-                showToast('🔥 БУСТ АКТИВИРОВАН (локально)!');
-            })
-            .finally(() => {
-                if (boostBtn) boostBtn.classList.remove('disabled');
-                debugLog('🔓 Кнопка разблокирована', 'info');
             });
         })
+        .then(res => res.json())
+        .then(data => {
+            console.log('✅ Буст активирован на сервере:', data);
+            
+            // ВАЖНО: активируем буст локально
+            if (data.expires_at) {
+                startLocalBoost(new Date(data.expires_at));
+                showToast('🔥 MEGA BOOST АКТИВИРОВАН НА 3 МИНУТЫ!');
+            } else {
+                console.error('❌ Нет expires_at в ответе');
+                showToast('❌ Ошибка активации', true);
+            }
+        })
         .catch((error) => {
-            debugLog(`❌ Ошибка рекламы: ${error}`, 'error');
-            if (error.message) debugLog(`Сообщение: ${error.message}`, 'error');
-            showToast('❌ Ошибка при показе рекламы', true);
+            console.error('❌ Ошибка:', error);
+            showToast('❌ Ошибка при активации буста', true);
+        })
+        .finally(() => {
             if (boostBtn) boostBtn.classList.remove('disabled');
         });
 }
 
-// ==================== ВРЕМЕННАЯ ОТЛАДКА ====================
-function debugLog(message, type = 'info') {
-    const debugDiv = document.createElement('div');
-    debugDiv.style.cssText = `
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        background: ${type === 'error' ? '#ff4444' : '#333'};
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 99999;
-        font-size: 12px;
-        word-break: break-word;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    `;
-    debugDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-    document.body.appendChild(debugDiv);
-    
-    // Удаляем через 5 секунд
-    setTimeout(() => debugDiv.remove(), 5000);
-}
+
 async function activateBoostOnServer() {
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
