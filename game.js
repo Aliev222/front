@@ -2430,7 +2430,12 @@ window.playCoinflip = playCoinflip;
 window.playSlots = playSlots;
 window.playDice = playDice;
 window.playWheel = playWheel;
-
+window.State = State;
+window.state = State;
+window.recoverEnergy = recoverEnergy;
+window.startEnergyRecovery = startEnergyRecovery;
+window.forceSync = forceSync;
+window.sendClickBatch = sendClickBatch;
 // Проверка
 console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
 console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
