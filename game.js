@@ -1411,6 +1411,176 @@ function closeSettingsOutside(e) {
     if (box && !box.contains(e.target)) closeSettings();
 }
 
+// ==================== SKIN MODAL ====================
+
+let currentSelectedSkin = null;
+
+function openSkinModal(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) return;
+    
+    currentSelectedSkin = skin;
+    
+    const owned = State.skins.owned.includes(skin.id);
+    const selected = State.skins.selected === skin.id;
+    
+    // Заполняем данные
+    document.getElementById('skin-modal-image').src = skin.image;
+    document.getElementById('skin-modal-name').textContent = skin.name;
+    document.getElementById('skin-modal-description').textContent = skin.description || 'Нет описания';
+    
+    // Редкость
+    const rarityEl = document.getElementById('skin-modal-rarity');
+    rarityEl.textContent = getRarityName(skin.rarity);
+    rarityEl.className = `skin-modal-rarity ${skin.rarity}`;
+    
+    // Бонус
+    const bonusEl = document.getElementById('skin-modal-bonus');
+    if (skin.bonus) {
+        let bonusText = '';
+        if (skin.bonus.type === 'multiplier') {
+            const percent = Math.round((skin.bonus.value - 1) * 100);
+            bonusText = `+${percent}% к доходу`;
+        } else if (skin.bonus.type === 'interval') {
+            bonusText = `+${skin.bonus.value} монет/час`;
+        }
+        document.getElementById('skin-modal-bonus-value').textContent = bonusText;
+        bonusEl.style.display = 'flex';
+    } else {
+        bonusEl.style.display = 'none';
+    }
+    
+    // Требование
+    const reqEl = document.getElementById('skin-modal-requirement');
+    const progressContainer = document.getElementById('skin-modal-progress');
+    const reqText = document.getElementById('skin-modal-req-text');
+    const progressFill = document.getElementById('skin-modal-progress-fill');
+    const progressText = document.getElementById('skin-modal-progress-text');
+    
+    if (!owned && skin.requirement) {
+        reqEl.style.display = 'block';
+        
+        let reqDescription = '';
+        let progress = 0;
+        let total = 0;
+        
+        switch(skin.requirement.type) {
+            case 'ads':
+                total = skin.requirement.count || 10;
+                progress = State.skins.adsWatched || 0;
+                reqDescription = `📺 Просмотр видео: ${progress}/${total}`;
+                break;
+            case 'friends':
+                total = skin.requirement.count || 5;
+                progress = State.skins.friendsInvited || 0;
+                reqDescription = `👥 Пригласить друзей: ${progress}/${total}`;
+                break;
+            case 'level':
+                total = skin.requirement.level || 10;
+                progress = State.game.levels.multitap || 0;
+                reqDescription = `📊 Достичь ${total} уровня: ${progress}`;
+                break;
+            case 'cpa':
+                reqDescription = `🔗 ${skin.requirement.description || 'Выполнить задание'}`;
+                break;
+            default:
+                reqDescription = '✨ Бесплатно';
+        }
+        
+        reqText.textContent = reqDescription;
+        
+        if (progress > 0 && total > 0) {
+            const percent = (progress / total) * 100;
+            progressFill.style.width = percent + '%';
+            progressText.textContent = `${progress}/${total}`;
+            progressContainer.style.display = 'block';
+        } else {
+            progressContainer.style.display = 'none';
+        }
+    } else {
+        reqEl.style.display = 'none';
+    }
+    
+    // Статус
+    const statusEl = document.getElementById('skin-modal-status');
+    const statusBadge = document.getElementById('skin-status-badge');
+    
+    if (owned && selected) {
+        statusBadge.textContent = '✅ Выбран';
+        statusBadge.className = 'status-badge selected';
+    } else if (owned) {
+        statusBadge.textContent = '✓ В коллекции';
+        statusBadge.className = 'status-badge owned';
+    } else {
+        statusBadge.textContent = '🔒 Заблокирован';
+        statusBadge.className = 'status-badge locked';
+    }
+    
+    // Кнопка действия
+    const actionBtn = document.getElementById('skin-modal-action-btn');
+    if (owned && !selected) {
+        actionBtn.textContent = 'Выбрать';
+        actionBtn.className = 'modal-btn primary';
+    } else if (!owned && canUnlockSkin(skin)) {
+        actionBtn.textContent = 'Получить';
+        actionBtn.className = 'modal-btn primary';
+    } else if (!owned) {
+        actionBtn.textContent = 'Закрыть';
+        actionBtn.className = 'modal-btn secondary';
+    } else {
+        actionBtn.textContent = 'Закрыть';
+        actionBtn.className = 'modal-btn secondary';
+    }
+    
+    // Показываем модалку
+    document.getElementById('skin-modal-overlay').classList.add('active');
+    document.getElementById('skin-modal').classList.add('active');
+}
+
+function closeSkinModal() {
+    document.getElementById('skin-modal-overlay').classList.remove('active');
+    document.getElementById('skin-modal').classList.remove('active');
+    currentSelectedSkin = null;
+}
+
+function canUnlockSkin(skin) {
+    if (!skin.requirement) return false;
+    
+    switch(skin.requirement.type) {
+        case 'free':
+            return true;
+        case 'ads':
+            return (State.skins.adsWatched || 0) >= (skin.requirement.count || 10);
+        case 'friends':
+            return (State.skins.friendsInvited || 0) >= (skin.requirement.count || 5);
+        case 'level':
+            return (State.game.levels.multitap || 0) >= (skin.requirement.level || 10);
+        default:
+            return false;
+    }
+}
+
+function executeSkinAction() {
+    if (!currentSelectedSkin) return;
+    
+    const skin = currentSelectedSkin;
+    const owned = State.skins.owned.includes(skin.id);
+    const selected = State.skins.selected === skin.id;
+    
+    if (owned && !selected) {
+        selectActiveSkin(skin.id);
+    } else if (!owned && canUnlockSkin(skin)) {
+        unlockSkin(skin.id);
+    }
+    
+    closeSkinModal();
+}
+
+// Обновляем клик на карточке скина
+function selectSkin(skinId) {
+    openSkinModal(skinId);
+}
+
 // ==================== ЭНЕРГИЯ - МОДАЛКА ====================
 function showEnergyRecoveryModal() {
     if (document.querySelector('.energy-recovery-modal')) return;
