@@ -105,6 +105,7 @@ const State = {
 window.State = State;
 window.state = State;
 window.State = State;
+console.log('✅ window.State создан:', window.State);
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 const formatNumber = (num) => {
