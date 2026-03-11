@@ -1775,8 +1775,8 @@ body.modal-open {
 .skin-card {
     background: var(--skins-card-bg);
     border: 1.5px solid var(--skins-card-border);
-    border-radius: 18px;
-    padding: 14px 10px;
+    border-radius: 14px;
+    padding: 8px 6px;
     text-align: center;
     position: relative;
     transition: all 0.2s ease;
@@ -1786,7 +1786,7 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -1818,13 +1818,13 @@ body.modal-open {
 
 /* Изображение скина */
 .skin-image {
-    width: 90px;
-    height: 90px;
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
     overflow: hidden;
     position: relative;
-    margin: 0 auto 6px;
-    border: 2.5px solid var(--skins-card-border);
+    margin: 0 auto 4px;
+    border: 2px solid var(--skins-card-border);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
     display: flex;
@@ -1867,7 +1867,7 @@ body.modal-open {
 
 /* Название скина */
 .skin-name {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--skins-text);
     white-space: nowrap;
@@ -1959,10 +1959,10 @@ body.modal-open {
 
 .skin-btn {
     width: 100%;
-    padding: 10px;
+    padding: 7px;
     border: none;
-    border-radius: 25px;
-    font-size: 12px;
+    border-radius: 20px;
+    font-size: 10px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;

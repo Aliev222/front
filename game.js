@@ -1374,7 +1374,8 @@ async function loadReferralData() {
         if (countEl) countEl.textContent = data.count || 0;
         if (earnEl) earnEl.textContent = data.earnings || 0;
         
-        State.skins.friendsInvited = data.count || 0;
+        State.skins.friendsInvited = data.count || 0;  // ✅ ЭТО ВАЖНО!
+        
     } catch (err) {
         console.error('Referral error:', err);
     }
