@@ -9,27 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
-    <!-- Telegram WebApp (обязательно) -->
+    <!-- Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>      
     <script src='//libtl.com/sdk.js' data-zone='10655027' data-sdk='show_10655027'></script>
-    
-    
 
-    <!-- <script>
-    // Rewarded interstitial
-    show_10655027().then(() => {
-        // Сюда вставь свою функцию награды
-        alert('Ты посмотрел рекламу!');
-    });
-    </script> -->
-
-        
-
-    <!-- Твой основной скрипт -->
+    <!-- Основной скрипт -->
     <script src="game.js"></script>
     
-    
-    <!-- Firebase (если нужен) -->
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
@@ -48,8 +35,9 @@
 </head>
 <body>
 
-    <div class="game-container"  style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
+    <div class="game-container" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
         <div class="game-click-layer"></div>
+        
         <!-- BACKGROUND -->
         <div class="space-bg"></div>
         <div class="stars"></div>
@@ -57,18 +45,15 @@
 
         <!-- HEADER -->
         <div class="header glass">
-            <!-- Левая часть - турнир -->
             <div class="nav-item" onclick="switchTab('tournament', this)">
                 <span class="nav-icon">🏆</span>
                 <span>Tournament</span>
             </div>
             
-            <!-- Центр - баланс -->
             <div class="balance-container">
                 <div class="balance-value" id="coinBalance">0</div>
             </div>
             
-            <!-- Правая часть - настройки (отдельный div) -->
             <div class="settings-container">
                 <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
             </div>
@@ -91,22 +76,19 @@
                 </div>
             </div>
         </div>
+        
         <div class="energy-bar-container">
             <div class="energy-bar-bg">
                 <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
             </div>
-        
         </div>
                     
         <!-- CLICKER AREA -->
         <div class="clicker-area">
-
-            <!-- Energy counter -->
             <div class="energy-preview">
                 <span id="energyText">1000</span> / <span id="maxEnergyText">1000</span>
             </div>
 
-            <!-- Click button -->
             <div class="clicker-container">
                 <div class="click-button-wrapper">
                     <div class="click-button" id="ryoho">
@@ -115,20 +97,16 @@
                     </div>
                 </div>
             </div>
+            
             <div class="boost-corner">
                 <button class="mini-boost-button" onclick="activateMegaBoost()" id="mega-boost-btn">
                     <span class="mini-boost-icon">
                         <img src="imgg/rocket.png" style="width: 40px; height: 40px; vertical-align: middle;overflow: hidden;">
                     </span>
-                    
                     <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
                 </button>
             </div>
-            
-
         </div>
-        
-
 
         <!-- UPGRADE PANEL -->
         <div class="upgrade-panel glass" onclick="upgradeAll()">
@@ -172,10 +150,7 @@
                 </span>
                 <span>Skins</span>
             </div>
-            
-            
         </div>
-
     </div>
 
     <!-- TOURNAMENT MODAL -->
@@ -215,7 +190,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- FRIENDS MODAL -->
     <div class="modal-screen" id="friends-screen">
@@ -267,29 +241,6 @@
                 <div class="tasks-list" id="tasks-list">
                     <div class="loading">Loading...</div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SKINS MODAL -->
-    <div class="modal-screen" id="skins-screen">
-        <div class="glass">
-            <div class="modal-header">
-                <button class="modal-close" onclick="closeModal('skins-screen')">✕</button>
-                <h2>🎨 СКИНЫ</h2>
-            </div>
-            
-            <div class="modal-content">
-                <!-- Категории -->
-                <div class="skins-categories">
-                    <button class="skin-category active" onclick="filterSkins('all', event)">Все</button>
-                    <button class="skin-category" onclick="filterSkins('common')">Обычные</button>
-                    <button class="skin-category" onclick="filterSkins('rare')">Редкие</button>
-                    <button class="skin-category" onclick="filterSkins('legendary')">Легендарные</button>
-                </div>
-                
-                <!-- Сетка скинов (2 в ряд) -->
-                <div class="skins-grid" id="skins-grid"></div>
             </div>
         </div>
     </div>
@@ -353,7 +304,7 @@
             <button class="modal-close" onclick="closeGame('wheel')">✕</button>
             <h2>Roulette</h2>
             <div style="text-align:center;margin-bottom:12px;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;">
-                Red ×2 &nbsp;|&nbsp; Black ×2 &nbsp;|&nbsp; Green ×35
+                Red ×2 | Black ×2 | Green ×35
             </div>
             <div style="display:flex;justify-content:center;margin:12px 0;">
                 <div id="wheel" style="width:84px;height:84px;border-radius:50%;background:#1a1a1a;border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:36px;font-weight:400;color:var(--purple);letter-spacing:2px;">0</div>
@@ -420,15 +371,11 @@
     <!-- SETTINGS MODAL -->
     <div class="settings-overlay" id="settings-screen" onclick="closeSettingsOutside(event)">
         <div class="settings-modal glass" id="settings-modal-box">
-
             <div class="settings-header">
                 <h2>Settings</h2>
                 <button class="modal-close" onclick="closeSettings()">✕</button>
             </div>
 
-
-
-            <!-- Theme -->
             <div class="settings-section">
                 <div class="settings-label">
                     <span class="settings-icon" id="themeIcon">☀️</span>
@@ -444,7 +391,6 @@
                 </div>
             </div>
 
-            <!-- Sound -->
             <div class="settings-section">
                 <div class="settings-label">
                     <span class="settings-icon" id="soundIcon">🔊</span>
@@ -460,7 +406,6 @@
                 </div>
             </div>
 
-            <!-- Vibration -->
             <div class="settings-section">
                 <div class="settings-label">
                     <span class="settings-icon" id="vibIcon">📳</span>
@@ -480,40 +425,24 @@
         </div>
     </div>
 
-    <!-- CONFIRM MODAL (for skins) - УЛУЧШЕННАЯ ВЕРСИЯ -->
+    <!-- CONFIRM MODAL (for skins) -->
     <div class="confirm-modal" id="confirm-modal" style="display: none;">
         <div class="confirm-modal-overlay" onclick="closeConfirmModal?.()"></div>
         <div class="confirm-modal-content glass">
             <button class="confirm-modal-close" onclick="closeConfirmModal?.()">✕</button>
-            
-            <!-- Иконка скина с анимацией -->
             <div class="confirm-modal-icon" id="confirm-modal-icon">🎨</div>
-            
-            <!-- Заголовок -->
             <h3 class="confirm-modal-title" id="confirm-modal-title">Выберите действие</h3>
-            
-            <!-- Превью скина (увеличенное для мобильных) -->
             <div class="skin-preview-mini" id="confirm-skin-preview">
                 <img src="" alt="" id="confirm-skin-img" class="confirm-skin-img" loading="lazy">
             </div>
-            
-            <!-- Название скина (более крупный шрифт) -->
             <p class="confirm-skin-name" id="confirm-skin-name">Название скина</p>
-            
-            <!-- Описание скина -->
             <p class="confirm-skin-desc" id="confirm-skin-desc">Описание скина</p>
-            
-            <!-- Требования с иконками -->
             <div class="skin-requirements-mini" id="confirm-skin-requirements">
                 <span class="requirement-badge">✨ Бесплатно</span>
             </div>
-            
-            <!-- Бонус скина (НОВОЕ) -->
             <div class="skin-bonus-mini" id="confirm-skin-bonus">
                 <span class="bonus-badge">⚡ +50% к доходу</span>
             </div>
-            
-            <!-- Кнопки действий (увеличенные для мобильных) -->
             <div class="confirm-modal-buttons">
                 <button class="btn-secondary modal-btn" onclick="closeConfirmModal?.()">
                     <span class="btn-icon">✕</span>
@@ -524,25 +453,25 @@
                     <span class="btn-text" id="confirm-action-text">Выбрать</span>
                 </button>
             </div>
-            
-            <!-- Подсказка для тапа (НОВОЕ) -->
             <div class="modal-tip">
                 👆 Нажмите вне окна для закрытия
             </div>
         </div>
     </div>
-    <!-- МОДАЛКА СПИСКА СКИНОВ -->
+
+    <!-- ==================== НОВАЯ МОДАЛКА СПИСКА СКИНОВ ==================== -->
     <div class="modal-screen" id="skins-screen">
         <div class="skins-modal">
             <!-- Шапка -->
             <div class="skins-header">
-                <h2 class="skins-title">🎨 СКИНЫ</h2>
+                <h2 class="skins-title"> СКИНЫ</h2>
                 <button class="skins-close" onclick="closeModal('skins-screen')">✕</button>
             </div>
 
-            <!-- Прогресс коллекции (маленький) -->
+            <!-- Прогресс коллекции -->
             <div class="collection-progress">
-                <span>📊 <span id="skins-collected">0</span>/<span id="skins-total">21</span></span>
+                <img src="imgg/skins/icon.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 4px;">
+                <span id="skins-collected">0</span>/<span id="skins-total">21</span>
                 <div class="progress-bar-mini">
                     <div class="progress-fill" id="skins-progress-fill" style="width: 0%"></div>
                 </div>
@@ -550,21 +479,21 @@
 
             <!-- Фильтры -->
             <div class="skins-filters">
-                <button class="filter-btn active" onclick="filterSkins('all', this)">Все</button>
-                <button class="filter-btn" onclick="filterSkins('common', this)">Обычные</button>
-                <button class="filter-btn" onclick="filterSkins('rare', this)">Редкие</button>
-                <button class="filter-btn" onclick="filterSkins('legendary', this)">Легендарные</button>
-                <button class="filter-btn" onclick="filterSkins('super', this)">Супер</button>
+                <button class="filter-btn active" onclick="filterSkins('all')">Все</button>
+                <button class="filter-btn" onclick="filterSkins('common')">Обычные</button>
+                <button class="filter-btn" onclick="filterSkins('rare')">Редкие</button>
+                <button class="filter-btn" onclick="filterSkins('legendary')">Легендарные</button>
+                <button class="filter-btn" onclick="filterSkins('super')">Супер</button>
             </div>
 
             <!-- Сетка скинов (2 в ряд) -->
             <div class="skins-grid" id="skins-grid">
-                <!-- Сюда будут грузиться скины -->
+                <!-- Сюда будут грузиться скины из game.js -->
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА ДЕТАЛЕЙ СКИНА -->
+    <!-- ==================== МОДАЛКА ДЕТАЛЕЙ СКИНА ==================== -->
     <div class="skin-detail-modal" id="skin-detail-modal">
         <div class="skin-detail-content">
             <!-- Крупное фото -->
