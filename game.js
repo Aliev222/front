@@ -2944,6 +2944,9 @@ async function unlockSkinFromDetail(skinId) {
         return;
     }
     
+    // Показываем загрузку
+    showToast('🔄 Отправляем запрос...');
+    
     try {
         const res = await API.post('/api/unlock-skin', { 
             user_id: userId, 
@@ -2952,7 +2955,12 @@ async function unlockSkinFromDetail(skinId) {
         });
         
         if (res.success) {
+            // ✅ 1. Добавляем в локальный массив
             State.skins.owned.push(skinId);
+            
+            // ✅ 2. Обновляем данные с сервера (важно!)
+            await refreshUserData();
+            
             showToast('✅ Новый скин!');
             
             // Если это первый скин, выбираем его
@@ -2964,11 +2972,34 @@ async function unlockSkinFromDetail(skinId) {
             closeSkinDetail();
             renderSkins();
             updateCollectionProgress();
+        } else {
+            // ✅ 3. Обработка ошибки от сервера
+            showToast(`❌ ${res.message || 'Не удалось получить скин'}`, true);
         }
         
     } catch (err) {
         console.error('Unlock skin error:', err);
         showToast('❌ Ошибка получения скина', true);
+    }
+}
+
+// ✅ Добавьте эту функцию в game.js (если её нет)
+async function refreshUserData() {
+    try {
+        const data = await API.get(`/api/user/${userId}`);
+        
+        // Обновляем скины с сервера
+        State.skins.owned = data.owned_skins || State.skins.owned;
+        State.skins.selected = data.selected_skin || State.skins.selected;
+        State.skins.adsWatched = data.ads_watched || State.skins.adsWatched;
+        
+        console.log('🔄 Данные обновлены с сервера:', {
+            owned: State.skins.owned,
+            selected: State.skins.selected
+        });
+        
+    } catch (e) {
+        console.error('Ошибка обновления данных:', e);
     }
 }
 

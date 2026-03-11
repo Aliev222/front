@@ -654,8 +654,7 @@ body.modal-open {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(10px);
+    background: var(--bg-card);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -679,6 +678,7 @@ body.modal-open {
     flex-direction: column;
     background: var(--bg-card);
     transition: background 0.3s ease;
+    flex-shrink: 0;
 }
 
 .modal-header {
