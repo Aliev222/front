@@ -1,8 +1,11 @@
+'use strict';
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
+window.syncTimer = null;
 
-'use strict';
+const API_URL = window.API_URL;
+
 
 console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
 
@@ -446,25 +449,55 @@ function updateUI() {
 }
 
 // ==================== ЭНЕРГИЯ ====================
+// ==================== ЗАПУСК ВОССТАНОВЛЕНИЯ ====================
 function startEnergyRecovery() {
-    if (State.temp.recoveryTimer) clearInterval(State.temp.recoveryTimer);
+    console.log('⚡ Запуск восстановления энергии');
     
-    startSync();
+    if (State.temp.recoveryTimer) {
+        clearInterval(State.temp.recoveryTimer);
+        State.temp.recoveryTimer = null;
+    }
+    
+    // Запускаем recoverEnergy каждые 15 секунд
+    State.temp.recoveryTimer = setInterval(() => {
+        console.log('⏰ Таймер сработал');
+        recoverEnergy();
+    }, window.ENERGY_RECOVERY_INTERVAL);
+    
+    // Первый вызов через 2 секунды
+    setTimeout(() => {
+        console.log('⚡ Первое восстановление');
+        recoverEnergy();
+    }, 2000);
 }
 
+// ==================== ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ====================
 const recoverEnergy = async () => {
+    console.log('🔄 recoverEnergy вызвана');
+    
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
-    if (megaBoostActive) return;
-    if (State.game.energy >= State.game.maxEnergy) return;
+    if (megaBoostActive) {
+        console.log('⚡ Буст активен - восстановление отключено');
+        return;
+    }
+    
+    if (State.game.energy >= State.game.maxEnergy) {
+        console.log('⚡ Энергия уже полная');
+        return;
+    }
+    
     if (!userId) {
+        const oldEnergy = State.game.energy;
         State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+        console.log(`⚡ Локальное восстановление: ${oldEnergy} → ${State.game.energy}`);
         updateUI();
         return;
     }
     
     try {
-        const res = await fetch(`${API_URL}/api/recover-energy`, {
+        console.log('📡 Отправка запроса на сервер...');
+        const res = await fetch(`${window.API_URL}/api/recover-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -473,16 +506,22 @@ const recoverEnergy = async () => {
         if (res.ok) {
             const data = await res.json();
             if (data.energy !== undefined) {
+                const oldEnergy = State.game.energy;
                 State.game.energy = data.energy;
-                console.log(`⚡ Энергия от сервера: ${data.energy}`);
+                console.log(`⚡ Сервер: ${oldEnergy} → ${data.energy}`);
                 updateUI();
             }
+        } else {
+            console.log('⚠️ Ошибка сервера, локальное восстановление');
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+            updateUI();
         }
     } catch (e) {
-        console.error('Energy recovery error:', e);
+        console.error('❌ Ошибка:', e);
+        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+        updateUI();
     }
 };
-
 // ==================== КЛИКИ ====================
 let lastBatchTime = 0;
 
@@ -742,34 +781,40 @@ const SYNC_INTERVAL = 15000; // 15 секунд
 async function forceSync() {
     console.log(`🔄 Синхронизация... кликов в буфере: ${State.temp.clickBuffer}`);
     
-    // 1. Отправляем накопленные клики
+    // Отправляем клики если есть
     if (State.temp.clickBuffer > 0) {
         await sendClickBatch();
     }
     
-    // 2. Запрашиваем актуальные данные с сервера (БЕЗ КЭША!)
+    // Запрашиваем свежие данные
     if (userId) {
         try {
-            const res = await fetch(`${API_URL}/api/user/${userId}`);
+            const res = await fetch(`${window.API_URL}/api/user/${userId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            
             if (res.ok) {
                 const data = await res.json();
-                if (data.energy !== undefined) {
-                    const oldEnergy = State.game.energy;
-                    State.game.energy = data.energy;
-                    State.game.coins = data.coins;
-                    console.log(`⚡ Сервер: ${oldEnergy} → ${data.energy}`);
-                    updateUI();
-                }
+                
+                const oldEnergy = State.game.energy;
+                State.game.energy = data.energy;
+                State.game.coins = data.coins;
+                State.game.maxEnergy = data.max_energy;
+                
+                console.log(`⚡ Синхронизация: ${oldEnergy} → ${data.energy}`);
+                updateUI();
             }
         } catch (e) {
-            console.error('Sync error:', e);
+            console.error('❌ Sync error:', e);
         }
     }
 }
 
 function startSync() {
-    if (syncTimer) clearInterval(syncTimer);
-    syncTimer = setInterval(forceSync, SYNC_INTERVAL);
+    if (window.syncTimer) clearInterval(window.syncTimer);
+    window.syncTimer = setInterval(forceSync, 15000);
 }
 
 // ==================== СКИНЫ ====================
@@ -2432,10 +2477,11 @@ window.playDice = playDice;
 window.playWheel = playWheel;
 window.State = State;
 window.state = State;
-window.recoverEnergy = recoverEnergy;
 window.startEnergyRecovery = startEnergyRecovery;
 window.forceSync = forceSync;
 window.sendClickBatch = sendClickBatch;
+window.startSync = startSync;
+window.API_URL = API_URL;
 // Проверка
 console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
 console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
