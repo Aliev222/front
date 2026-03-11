@@ -1788,6 +1788,8 @@ body.modal-open {
     align-items: center;
     gap: 4px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1;
+    overflow: hidden;
 }
 
 .skin-card:active {
@@ -1801,7 +1803,7 @@ body.modal-open {
 }
 
 .skin-card.locked {
-    opacity: 0.7;
+    opacity: 0.3;
     filter: grayscale(0.4);
 }
 
