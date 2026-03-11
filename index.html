@@ -95,7 +95,6 @@
         <div class="energy-bar-bg">
             <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
         </div>
-
     
     </div>
                 
@@ -292,51 +291,6 @@
             <!-- Сетка скинов (2 в ряд) -->
             <div class="skins-grid" id="skins-grid"></div>
         </div>
-    </div>
-</div>
-<!-- SKIN INFO MODAL -->
-<div class="skin-modal-overlay" id="skin-modal-overlay" onclick="closeSkinModal()"></div>
-<div class="skin-modal" id="skin-modal">
-    <div class="skin-modal-header">
-        <h3 class="skin-modal-title">Информация о скине</h3>
-        <button class="skin-modal-close" onclick="closeSkinModal()">✕</button>
-    </div>
-    
-    <div class="skin-modal-body">
-        <div class="skin-preview">
-            <img src="" alt="skin" id="skin-modal-image" class="skin-modal-image">
-        </div>
-        
-        <div class="skin-details">
-            <div class="skin-modal-name" id="skin-modal-name">Название скина</div>
-            <div class="skin-modal-rarity" id="skin-modal-rarity">Обычный</div>
-            <div class="skin-modal-description" id="skin-modal-description">Описание скина</div>
-            
-            <div class="skin-modal-bonus" id="skin-modal-bonus">
-                <span class="bonus-label">Бонус:</span>
-                <span class="bonus-value" id="skin-modal-bonus-value">+0%</span>
-            </div>
-            
-            <div class="skin-modal-requirement" id="skin-modal-requirement">
-                <div class="requirement-label">Требование:</div>
-                <div class="requirement-text" id="skin-modal-req-text">Бесплатно</div>
-                <div class="progress-container" id="skin-modal-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="skin-modal-progress-fill" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-text" id="skin-modal-progress-text">0/0</div>
-                </div>
-            </div>
-            
-            <div class="skin-modal-status" id="skin-modal-status">
-                <span class="status-badge" id="skin-status-badge">🔒 Заблокирован</span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="skin-modal-footer">
-        <button class="skin-modal-btn secondary" onclick="closeSkinModal()">Закрыть</button>
-        <button class="skin-modal-btn primary" id="skin-modal-action-btn" onclick="executeSkinAction()">Действие</button>
     </div>
 </div>
 
