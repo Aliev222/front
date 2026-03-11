@@ -449,7 +449,60 @@ function updateUI() {
 function startEnergyRecovery() {
     if (State.temp.recoveryTimer) clearInterval(State.temp.recoveryTimer);
     
-    startSync();
+    console.log('⚡ Запуск восстановления энергии: раз в 15 секунд');
+    
+    // ✅ Устанавливаем интервал 15 секунд (15000 мс)
+    State.temp.recoveryTimer = setInterval(() => {
+        // Не восстанавливаем при активном Mega Boost
+        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) {
+            console.log('⚡ Mega Boost активен - пропускаем восстановление');
+            return;
+        }
+        
+        // Если энергия не полная - запрашиваем восстановление
+        if (State.game.energy < State.game.maxEnergy) {
+            console.log(`⚡ Энергия не полная (${State.game.energy}/${State.game.maxEnergy}), запрос на сервер...`);
+            requestEnergyRecovery();
+        } else {
+            console.log(`⚡ Энергия уже полная (${State.game.energy}/${State.game.maxEnergy})`);
+        }
+    }, 15000); // ← 15 секунд!
+}
+
+// Новая функция для запроса восстановления
+async function requestEnergyRecovery() {
+    if (!userId) {
+        // Офлайн режим - восстанавливаем сами
+        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
+        updateUI();
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/api/recover-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            const oldEnergy = State.game.energy;
+            State.game.energy = data.energy;
+            console.log(`⚡ Восстановление: ${oldEnergy} → ${State.game.energy} (+3 за 15 сек)`);
+            updateUI();
+        } else {
+            console.error('Ошибка сервера при восстановлении энергии');
+            // Если сервер не отвечает - восстанавливаем локально
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
+            updateUI();
+        }
+    } catch (e) {
+        console.error('Energy recovery error:', e);
+        // При ошибке - восстанавливаем локально
+        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
+        updateUI();
+    }
 }
 
 const recoverEnergy = async () => {
@@ -747,19 +800,30 @@ async function forceSync() {
         await sendClickBatch();
     }
     
-    // 2. Запрашиваем актуальные данные с сервера (БЕЗ КЭША!)
+    // 2. Запрашиваем актуальные данные с сервера
     if (userId) {
         try {
             const res = await fetch(`${API_URL}/api/user/${userId}`);
             if (res.ok) {
                 const data = await res.json();
-                if (data.energy !== undefined) {
-                    const oldEnergy = State.game.energy;
-                    State.game.energy = data.energy;
-                    State.game.coins = data.coins;
-                    console.log(`⚡ Сервер: ${oldEnergy} → ${data.energy}`);
-                    updateUI();
-                }
+                
+                // ✅ Сохраняем старые значения
+                const oldEnergy = State.game.energy;
+                const oldCoins = State.game.coins;
+                
+                // ✅ Обновляем монеты (всегда берем с сервера)
+                State.game.coins = data.coins;
+                
+                // ✅ ДЛЯ ЭНЕРГИИ: берем МАКСИМАЛЬНОЕ значение
+                // (локальное восстановление + серверное)
+                State.game.energy = Math.max(State.game.energy, data.energy);
+                
+                // ✅ Ограничиваем максимумом
+                State.game.energy = Math.min(State.game.energy, data.max_energy);
+                
+                console.log(`⚡ Синхронизация: локальная=${oldEnergy}, сервер=${data.energy}, берем=${State.game.energy}`);
+                
+                updateUI();
             }
         } catch (e) {
             console.error('Sync error:', e);
@@ -1353,10 +1417,24 @@ function recoverEnergyWithAd() {
     // Показываем рекламу
     window.show_10655027()
         .then(() => {
-            // Начисляем энергию
+            // Начисляем энергию (+50)
+            const oldEnergy = State.game.energy;
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
             updateUI();
-            showToast('⚡ +50 энергии!');
+            
+            // ✅ Отправляем на сервер
+            if (userId) {
+                fetch(`${API_URL}/api/update-energy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        energy: State.game.energy 
+                    })
+                }).catch(() => {});
+            }
+            
+            showToast(`⚡ +50 энергии! (${oldEnergy} → ${State.game.energy})`);
             
             // Эффект вспышки
             const energyBar = document.querySelector('.energy-bar-fill');
