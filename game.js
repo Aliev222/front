@@ -953,36 +953,69 @@ function applySavedSkin() {
     img.onerror = () => img.src = 'imgg/clickimg.png';
 }
 
-function renderSkins(filter = 'all') {
+function renderSkins() {
     const grid = document.getElementById('skins-grid');
-    if (!grid) return;
-    
-    if (!State.skins.data.length) {
-        grid.innerHTML = '<div class="loading">Загрузка скинов...</div>';
+    if (!grid) {
+        console.error('❌ skins-grid не найден');
         return;
     }
     
-    const filtered = filter === 'all' ? State.skins.data : State.skins.data.filter(s => s.rarity === filter);
+    console.log('🎨 Рендерим скины:', State.skins.data);
+    
+    let filtered = State.skins.data;
+    
+    // Фильтрация по редкости
+    if (currentFilter && currentFilter !== 'all') {
+        filtered = filtered.filter(s => s.rarity === currentFilter);
+    }
+    
+    if (!filtered || filtered.length === 0) {
+        grid.innerHTML = '<div class="loading">Нет скинов</div>';
+        return;
+    }
     
     grid.innerHTML = filtered.map(skin => {
-        const unlocked = State.skins.owned.includes(skin.id) || skin.requirement?.type === 'free';
-        const owned = State.skins.owned.includes(skin.id);
-        const selected = State.skins.selected === skin.id;
+        
+        // Проверяем, есть ли скин в owned
+
+        const isOwned = State.skins.owned && State.skins.owned.includes(skin.id);
+        const isSelected = State.skins.selected === skin.id;
+        const isLocked = !isOwned;
+        
+        console.log(`🖼️ Скин ${skin.id}: owned=${isOwned}, selected=${isSelected}`);
         
         return `
-            <div class="skin-card ${unlocked ? '' : 'locked'} ${selected ? 'selected' : ''}" 
-                 data-id="${skin.id}" onclick="selectSkin('${skin.id}')">
-                ${!unlocked ? '<div class="skin-lock">🔒</div>' : ''}
-                ${owned && selected ? '<div class="skin-equipped">✓</div>' : ''}
+            <div class="skin-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}" 
+                 data-id="${skin.id}">
                 <div class="skin-image">
-                    <img src="${skin.image}" alt="${skin.name}" loading="lazy"
+                    <img src="${skin.image}" alt="${skin.name}" 
                          onerror="this.src='imgg/clickimg.png'">
                 </div>
                 <div class="skin-name">${skin.name}</div>
                 <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
+                ${isLocked ? '<div class="skin-lock">🔒</div>' : ''}
+                ${isSelected ? '<div class="skin-selected-badge">✓</div>' : ''}
             </div>
         `;
     }).join('');
+
+    document.querySelectorAll('.skin-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                const skinId = this.dataset.id;
+                console.log('👆 Клик по карточке скина:', skinId);
+                openSkinDetail(skinId);
+            });
+        });
+
+
+    // Добавляем обработчики кликов на карточки
+    document.querySelectorAll('.skin-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            const skinId = this.dataset.id;
+            console.log('👆 Клик по скину:', skinId);
+            openSkinDetail(skinId);
+        });
+    });
 }
 
 function selectSkin(id) {
@@ -1027,6 +1060,7 @@ async function unlockSkin(id) {
         showToast('❌ Ошибка разблокировки', true);
     }
 }
+
 
 function openSkins() {
     renderSkins();
@@ -2683,6 +2717,296 @@ function recoverEnergyWithAd() {
             console.error('Ad error:', error);
             showToast('❌ Ошибка при показе рекламы', true);
         });
+}
+
+// ==================== ДЕТАЛИ СКИНОВ ====================
+
+// Открыть детали скина
+function openSkinDetail(skinId) {
+    console.log('🔍 Открываем детали скина:', skinId);
+    
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) {
+        console.error('❌ Скин не найден:', skinId);
+        return;
+    }
+    
+    const modal = document.getElementById('skin-detail-modal');
+    if (!modal) {
+        console.error('❌ Модалка skin-detail-modal не найдена');
+        return;
+    }
+    
+    const isOwned = State.skins.owned.includes(skin.id);
+    const isSelected = State.skins.selected === skin.id;
+    
+    // Заполняем данные
+    document.getElementById('skin-detail-img').src = skin.image || 'imgg/clickimg.png';
+    document.getElementById('skin-detail-name').textContent = skin.name || 'Скин';
+    
+    const rarityEl = document.getElementById('skin-detail-rarity');
+    rarityEl.textContent = skin.rarity || 'common';
+    rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
+    
+    document.getElementById('skin-detail-description').textContent = 
+        skin.description || 'Нет описания';
+    
+    // Бонус
+    const bonusEl = document.getElementById('skin-detail-bonus');
+    if (skin.bonus) {
+        if (skin.bonus.type === 'multiplier') {
+            bonusEl.innerHTML = `⚡ Бонус: x${skin.bonus.value} к доходу`;
+        } else if (skin.bonus.type === 'interval') {
+            bonusEl.innerHTML = `⚡ Бонус: +${skin.bonus.value} энергии/сек`;
+        } else {
+            bonusEl.innerHTML = `⚡ Бонус: +${skin.bonus.value || 0}`;
+        }
+    } else {
+        bonusEl.innerHTML = '⚡ Бонус: нет';
+    }
+    
+    // Блок требования
+    const reqBlock = document.getElementById('skin-requirement-block');
+    const reqText = document.getElementById('skin-requirement-text');
+    const reqProgress = document.getElementById('skin-requirement-progress');
+    const progressText = document.getElementById('requirement-progress-text');
+    const progressFill = document.getElementById('requirement-progress-fill');
+    const actionBtn = document.getElementById('skin-action-btn');
+    
+    if (isOwned) {
+        // Скин уже есть
+        reqBlock.style.display = 'none';
+        
+        if (isSelected) {
+            actionBtn.textContent = '✓ ВЫБРАН';
+            actionBtn.setAttribute('data-type', 'selected');
+            actionBtn.onclick = closeSkinDetail;
+        } else {
+            actionBtn.textContent = 'ВЫБРАТЬ';
+            actionBtn.setAttribute('data-type', 'owned');
+            actionBtn.onclick = () => selectSkinFromDetail(skin.id);
+        }
+    } else {
+        // Скин не получен
+        reqBlock.style.display = 'block';
+        
+        if (skin.requirement?.type === 'level') {
+            const current = State.game.levels.multitap || 0;
+            const value = skin.requirement.value || 1;
+            const percent = Math.min(100, (current / value) * 100);
+            
+            reqText.textContent = `🔓 Требуется уровень ${value}`;
+            progressText.textContent = `${current}/${value}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            if (current >= value) {
+                actionBtn.textContent = 'ПОЛУЧИТЬ';
+                actionBtn.setAttribute('data-type', 'level');
+                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+            } else {
+                actionBtn.textContent = 'ПРОКАЧАТЬ УРОВЕНЬ';
+                actionBtn.setAttribute('data-type', 'level');
+                actionBtn.onclick = () => {
+                    closeSkinDetail();
+                    switchTab('main');
+                    showToast('📊 Кликай, чтобы повысить уровень!');
+                };
+            }
+            
+        } else if (skin.requirement?.type === 'ads' || skin.requirement?.type === 'video') {
+            const count = skin.requirement.count || skin.requirement.value || 1;
+            const current = State.skins.adsWatched || 0;
+            const percent = Math.min(100, (current / count) * 100);
+            
+            reqText.textContent = `🔓 Посмотри ${count} видео`;
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            if (current >= count) {
+                actionBtn.textContent = 'ПОЛУЧИТЬ';
+                actionBtn.setAttribute('data-type', 'video');
+                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+            } else {
+                actionBtn.textContent = 'СМОТРЕТЬ ВИДЕО';
+                actionBtn.setAttribute('data-type', 'video');
+                actionBtn.onclick = () => watchAdForSkin(skin.id);
+            }
+            
+        } else if (skin.requirement?.type === 'friends') {
+            const count = skin.requirement.count || skin.requirement.value || 1;
+            const current = State.skins.friendsInvited || 0;
+            const percent = Math.min(100, (current / count) * 100);
+            
+            reqText.textContent = `🔓 Пригласи ${count} друзей`;
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            if (current >= count) {
+                actionBtn.textContent = 'ПОЛУЧИТЬ';
+                actionBtn.setAttribute('data-type', 'friends');
+                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+            } else {
+                actionBtn.textContent = 'ПРИГЛАСИТЬ ДРУЗЕЙ';
+                actionBtn.setAttribute('data-type', 'friends');
+                actionBtn.onclick = () => {
+                    closeSkinDetail();
+                    switchTab('friends');
+                };
+            }
+            
+        } else if (skin.requirement?.type === 'cpa' || skin.requirement?.type === 'link') {
+            const url = skin.requirement.url || skin.requirement.value || '#';
+            
+            reqText.textContent = `🔓 Перейди по ссылке`;
+            reqProgress.style.display = 'none';
+            
+            actionBtn.textContent = 'ПЕРЕЙТИ';
+            actionBtn.setAttribute('data-type', 'link');
+            actionBtn.onclick = () => window.open(url, '_blank');
+            
+        } else if (skin.requirement?.type === 'free') {
+            reqText.textContent = `✨ Бесплатный скин`;
+            reqProgress.style.display = 'none';
+            
+            actionBtn.textContent = 'ПОЛУЧИТЬ';
+            actionBtn.setAttribute('data-type', 'free');
+            actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+            
+        } else {
+            reqText.textContent = `🔓 Условие: особое`;
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = 'НЕДОСТУПНО';
+        }
+    }
+    
+    // Показываем модалку
+    modal.classList.add('active');
+}
+
+// Закрыть детали скина
+function closeSkinDetail() {
+    const modal = document.getElementById('skin-detail-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Выбрать скин из деталей
+async function selectSkinFromDetail(skinId) {
+    if (!userId) {
+        showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    try {
+        await API.post('/api/select-skin', { 
+            user_id: userId, 
+            skin_id: skinId 
+        });
+        
+        State.skins.selected = skinId;
+        applySavedSkin();
+        showToast('✨ Скин выбран!');
+        closeSkinDetail();
+        renderSkins();
+        
+    } catch (err) {
+        console.error('Select skin error:', err);
+        showToast('❌ Ошибка выбора скина', true);
+    }
+}
+
+// Получить скин из деталей
+async function unlockSkinFromDetail(skinId) {
+    if (!userId) {
+        showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    if (State.skins.owned.includes(skinId)) {
+        showToast('✅ Скин уже есть');
+        closeSkinDetail();
+        return;
+    }
+    
+    try {
+        const res = await API.post('/api/unlock-skin', { 
+            user_id: userId, 
+            skin_id: skinId,
+            method: 'free'
+        });
+        
+        if (res.success) {
+            State.skins.owned.push(skinId);
+            showToast('✅ Новый скин!');
+            
+            // Если это первый скин, выбираем его
+            if (State.skins.owned.length === 1) {
+                State.skins.selected = skinId;
+                applySavedSkin();
+            }
+            
+            closeSkinDetail();
+            renderSkins();
+            updateCollectionProgress();
+        }
+        
+    } catch (err) {
+        console.error('Unlock skin error:', err);
+        showToast('❌ Ошибка получения скина', true);
+    }
+}
+
+// Смотреть рекламу для скина
+function watchAdForSkin(skinId) {
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    window.show_10655027()
+        .then(() => {
+            State.skins.adsWatched = (State.skins.adsWatched || 0) + 1;
+            showToast('✅ +1 просмотр!');
+            
+            // Обновляем прогресс во всех скинах
+            State.skins.data.forEach(skin => {
+                if (skin.requirement?.type === 'ads' || skin.requirement?.type === 'video') {
+                    skin.requirement.current = State.skins.adsWatched;
+                }
+            });
+            
+            renderSkins();
+            
+            // Если модалка открыта - обновляем её
+            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
+                openSkinDetail(skinId);
+            }
+        })
+        .catch((error) => {
+            console.error('Ad error:', error);
+            showToast('❌ Ошибка при показе рекламы', true);
+        });
+}
+
+// Обновить прогресс коллекции
+function updateCollectionProgress() {
+    const collected = State.skins.owned.length;
+    const total = State.skins.data.length || 21;
+    const percent = (collected / total) * 100;
+    
+    const collectedSpan = document.getElementById('skins-collected');
+    const totalSpan = document.getElementById('skins-total');
+    const progressFill = document.getElementById('skins-progress-fill');
+    
+    if (collectedSpan) collectedSpan.textContent = collected;
+    if (totalSpan) totalSpan.textContent = total;
+    if (progressFill) progressFill.style.width = percent + '%';
 }
 
 // Убедитесь, что функция доступна глобально
