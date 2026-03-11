@@ -834,38 +834,44 @@ function renderSkins(filter = 'all') {
         return;
     }
     
-    // Проверяем, есть ли данные
     if (!State.skins.data || State.skins.data.length === 0) {
-        console.log('⚠️ Нет данных о скинах');
         grid.innerHTML = '<div class="loading">Загрузка скинов...</div>';
         return;
     }
     
-    console.log('📦 Данные скинов:', State.skins.data);
+    // Фильтруем скины
+    let skinsToShow = State.skins.data;
+    if (filter !== 'all') {
+        skinsToShow = State.skins.data.filter(s => s.rarity === filter);
+    }
     
-    let html = '';
-    State.skins.data.forEach(skin => {
+    // Ограничиваем до 6 скинов (2 ряда по 3)
+    skinsToShow = skinsToShow.slice(0, 6);
+    
+    let html = '<div class="skins-compact-grid">';
+    
+    skinsToShow.forEach(skin => {
         const owned = State.skins.owned.includes(skin.id);
         const selected = State.skins.selected === skin.id;
         
         html += `
-            <div class="skin-card ${owned ? 'owned' : 'locked'} ${selected ? 'selected' : ''}" 
+            <div class="skin-compact-card ${owned ? 'owned' : 'locked'} ${selected ? 'selected' : ''}" 
                  onclick="selectSkin('${skin.id}')"
                  data-id="${skin.id}">
-                <div class="skin-image">
+                <div class="skin-compact-image">
                     <img src="${skin.image}" alt="${skin.name}" 
                          onerror="this.src='imgg/clickimg.png'">
+                    ${!owned ? '<div class="skin-compact-lock">🔒</div>' : ''}
                 </div>
-                <div class="skin-name">${skin.name}</div>
-                <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
-                ${!owned ? '<div class="skin-lock">🔒</div>' : ''}
-                ${selected ? '<div class="skin-selected-badge">✓</div>' : ''}
+                <div class="skin-compact-name">${skin.name}</div>
+                <div class="skin-compact-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
+                ${selected ? '<div class="skin-compact-selected">✓</div>' : ''}
             </div>
         `;
     });
     
+    html += '</div>';
     grid.innerHTML = html;
-    console.log('✅ Скины отрендерены');
 }
 
 async function showRewardedVideoForSkin(skinId) {
