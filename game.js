@@ -380,21 +380,17 @@ async function loadSkinsList() {
         if (res.ok) {
             const data = await res.json();
             State.skins.data = data.skins || [];
-            console.log('✅ Скины загружены:', State.skins.data);
-            renderSkins(); // ← ДОБАВЬ ЭТО
         } else {
-            console.warn('⚠️ Сервер не ответил, использую заглушку');
+            // Запасные данные, если сервер не отвечает
             State.skins.data = [
                 { id: 'default_SP', name: 'Классический спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.0 } }
             ];
-            renderSkins(); // ← ДОБАВЬ ЭТО
         }
     } catch (err) {
-        console.error('❌ Ошибка загрузки:', err);
+        console.error('Failed to load skins:', err);
         State.skins.data = [
             { id: 'default_SP', name: 'Классический спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.0 } }
         ];
-        renderSkins(); // ← ДОБАВЬ ЭТО
     }
 }
 
@@ -826,77 +822,128 @@ function applySavedSkin() {
 }
 
 function renderSkins(filter = 'all') {
-    console.log('🎨 Рендеринг скинов...');
-    
     const grid = document.getElementById('skins-grid');
-    if (!grid) {
-        console.error('❌ Элемент skins-grid не найден!');
-        return;
-    }
+    if (!grid) return;
     
-    // Проверяем, есть ли данные
-    if (!State.skins.data || State.skins.data.length === 0) {
-        console.log('⚠️ Нет данных о скинах');
+    if (!State.skins.data.length) {
         grid.innerHTML = '<div class="loading">Загрузка скинов...</div>';
         return;
     }
     
-    console.log('📦 Данные скинов:', State.skins.data);
-    
-    let html = '';
-    State.skins.data.forEach(skin => {
-        const owned = State.skins.owned.includes(skin.id);
-        const selected = State.skins.selected === skin.id;
-        
-        html += `
-            <div class="skin-card ${owned ? 'owned' : 'locked'} ${selected ? 'selected' : ''}" 
-                 onclick="selectSkin('${skin.id}')"
-                 data-id="${skin.id}">
-                <div class="skin-image">
-                    <img src="${skin.image}" alt="${skin.name}" 
-                         onerror="this.src='imgg/clickimg.png'">
-                </div>
-                <div class="skin-name">${skin.name}</div>
-                <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
-                ${!owned ? '<div class="skin-lock">🔒</div>' : ''}
-                ${selected ? '<div class="skin-selected-badge">✓</div>' : ''}
-            </div>
-        `;
-    });
-    
-    grid.innerHTML = html;
-    console.log('✅ Скины отрендерены');
-}
-
-async function showRewardedVideoForSkin(skinId) {
-    // Показываем рекламу
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
+    let filteredSkins = State.skins.data;
+    if (filter !== 'all') {
+        filteredSkins = State.skins.data.filter(s => s.rarity === filter);
     }
     
-    showToast('📺 Загружаем рекламу...');
-    
-    try {
-        await window.show_10655027();
+    grid.innerHTML = filteredSkins.map(skin => {
+        const unlocked = State.skins.owned.includes(skin.id);
+        const selected = State.skins.selected === skin.id;
         
-        // Увеличиваем счетчик
-        State.skins.adsWatched = (State.skins.adsWatched || 0) + 1;
+        // Определяем условие разблокировки
+        let requirementText = '';
+        let progressPercent = 0;
+        let buttonHtml = '';
         
-        // Проверяем, не разблокировался ли скин
-        const skin = State.skins.data.find(s => s.id === skinId);
-        if (skin && skin.requirement?.type === 'ads') {
-            if (State.skins.adsWatched >= (skin.requirement.count || 10)) {
-                await unlockSkin(skinId);
+        if (!unlocked) {
+            const req = skin.requirement || {};
+            
+            switch(req.type) {
+                case 'ads':
+                    const adsNeeded = req.count || 10;
+                    const adsCurrent = State.skins.adsWatched || 0;
+                    progressPercent = Math.min(100, (adsCurrent / adsNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">📺 Просмотр рекламы: ${adsCurrent}/${adsNeeded}</div>`;
+                    buttonHtml = `<button class="skin-btn video" onclick="showRewardedVideoForSkin('${skin.id}')">
+                        📺 Смотреть (${adsCurrent}/${adsNeeded})
+                    </button>`;
+                    break;
+                    
+                case 'friends':
+                    const friendsNeeded = req.count || 10;
+                    const friendsCurrent = State.skins.friendsInvited || 0;
+                    progressPercent = Math.min(100, (friendsCurrent / friendsNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">👥 Пригласить друзей: ${friendsCurrent}/${friendsNeeded}</div>`;
+                    buttonHtml = `<button class="skin-btn friends" onclick="copyReferralLink()">
+                        👥 Пригласить (${friendsCurrent}/${friendsNeeded})
+                    </button>`;
+                    break;
+                    
+                case 'cpa':
+                    requirementText = `<div class="skin-req">🔗 Выполнить задание</div>`;
+                    buttonHtml = `<button class="skin-btn cpa" onclick="window.open('${req.url || '#'}', '_blank')">
+                        🔗 Перейти
+                    </button>`;
+                    break;
+                    
+                case 'level':
+                    const levelNeeded = req.level || 100;
+                    progressPercent = Math.min(100, (State.game.levels.multitap / levelNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">📊 Достичь ${levelNeeded} уровня</div>`;
+                    buttonHtml = `<button class="skin-btn level" disabled style="opacity:0.5">
+                        📊 Уровень ${State.game.levels.multitap}/${levelNeeded}
+                    </button>`;
+                    break;
+                    
+                default:
+                    requirementText = `<div class="skin-req">✨ Бесплатно</div>`;
+                    buttonHtml = `<button class="skin-btn free" onclick="unlockSkin('${skin.id}')">
+                        ✨ Получить
+                    </button>`;
+            }
+        } else if (selected) {
+            buttonHtml = `<div class="skin-selected">✅ Выбран</div>`;
+        } else {
+            buttonHtml = `<button class="skin-btn select" onclick="selectActiveSkin('${skin.id}')">
+                ✨ Выбрать
+            </button>`;
+        }
+        
+        // Бонус скина
+        let bonusText = '';
+        if (skin.bonus) {
+            if (skin.bonus.type === 'multiplier') {
+                const percent = Math.round((skin.bonus.value - 1) * 100);
+                bonusText = `<div class="skin-bonus">⚡ +${percent}% к доходу</div>`;
+            } else if (skin.bonus.type === 'interval') {
+                bonusText = `<div class="skin-bonus">⏱️ +${skin.bonus.value} монет/час</div>`;
             }
         }
         
-        renderSkins();
-        showToast('✅ +1 просмотр!');
-        
-    } catch (e) {
-        showToast('❌ Ошибка рекламы', true);
-    }
+        return `
+            <div class="skin-card ${unlocked ? 'unlocked' : 'locked'} ${selected ? 'selected' : ''}" 
+                 data-id="${skin.id}">
+                <div class="skin-image">
+                    <img src="${skin.image}" alt="${skin.name}" loading="lazy"
+                         onerror="this.src='imgg/clickimg.png'">
+                    ${!unlocked ? '<div class="skin-lock-icon">🔒</div>' : ''}
+                </div>
+                
+                <div class="skin-info">
+                    <div class="skin-name">${skin.name}</div>
+                    <div class="skin-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
+                    <div class="skin-desc">${skin.description || ''}</div>
+                    ${bonusText}
+                    
+                    ${!unlocked && progressPercent > 0 ? `
+                        <div class="skin-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${requirementText}
+                    
+                    <div class="skin-action">
+                        ${buttonHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function selectSkin(id) {
@@ -943,11 +990,8 @@ async function unlockSkin(id) {
 }
 
 function openSkins() {
-    console.log('📂 Открываем магазин скинов');
-    loadSkinsList().then(() => {
-        renderSkins(); // ← ДОБАВЬ ЭТО
-        openModal('skins-screen');
-    });
+    renderSkins();
+    openModal('skins-screen');
 }
 
 function filterSkins(category, e) {
