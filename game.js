@@ -1,6 +1,6 @@
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
-window.ENERGY_RECOVERY_INTERVAL = 2000; // 2 секунды
+window.ENERGY_RECOVERY_INTERVAL = 5000; // 5 секунды
 window.recoveryInterval = null;
 
 'use strict';
@@ -457,7 +457,7 @@ function updateUI() {
 // ==================== ЭНЕРГИЯ ====================
 function startEnergyRecovery() {
     if (State.temp.recoveryTimer) clearInterval(State.temp.recoveryTimer);
-    State.temp.recoveryTimer = setInterval(recoverEnergy, CONFIG.ENERGY_RECHARGE_INTERVAL);
+    State.temp.recoveryTimer = setInterval(recoverEnergy, ENERGY_RECOVERY_INTERVAL);
 }
 
 const recoverEnergy = async () => {
@@ -468,13 +468,11 @@ const recoverEnergy = async () => {
         return; // При бусте энергия не восстанавливается
     }
     
-    // ИСПРАВЛЕНО: State с большой буквы
     if (State.game.energy >= State.game.maxEnergy) {
         return; // Уже полная
     }
     
     if (!userId) {
-        // Локальное восстановление для тестов
         State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
         updateUI();
         return;
@@ -489,11 +487,15 @@ const recoverEnergy = async () => {
         
         if (res.ok) {
             const data = await res.json();
-            // Обновляем только если значение изменилось
-            if (data.energy !== State.game.energy) {
-                State.game.energy = data.energy;
-                updateUI();
+            // ВАЖНО: добавляем только 1, а не всё что сервер вернул
+            if (data.energy > State.game.energy) {
+                // Сервер говорит что энергия должна быть выше - ок
+                State.game.energy = Math.min(State.game.maxEnergy, data.energy);
+            } else {
+                // Если сервер вернул ту же или меньшую - добавляем 1 сами
+                State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
             }
+            updateUI();
         } else {
             // Если сервер не отвечает - локальное восстановление
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
