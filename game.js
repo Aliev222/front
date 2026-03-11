@@ -541,7 +541,7 @@ async function syncEnergyWithServer() {
     console.log(`📤 Синхронизация энергии: буфер=${State.temp.energyBuffer}, текущая=${State.game.energy}`);
     
     try {
-        const res = await fetch(`${API_URL}/api/sync-energy`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -576,7 +576,7 @@ async function fullSyncWithServer() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${API_URL}/api/user/${userId}`);
+        const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
         if (res.ok) {
             const data = await res.json();
             
@@ -609,7 +609,7 @@ async function requestEnergyRecovery() {
     }
     
     try {
-        const res = await fetch(`${API_URL}/api/recover-energy`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/recover-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -656,7 +656,7 @@ async function sendClickBatch() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${API_URL}/api/clicks`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -907,7 +907,7 @@ async function forceSync() {
     // 2. Запрашиваем актуальные данные с сервера
     if (userId) {
         try {
-            const res = await fetch(`${API_URL}/api/user/${userId}`);
+            const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
             if (res.ok) {
                 const data = await res.json();
                 
@@ -1573,7 +1573,7 @@ function recoverEnergyWithAd() {
             
             // ✅ Отправляем на сервер
             if (userId) {
-                fetch(`${API_URL}/api/update-energy`, {
+                fetch(`${CONFIG.API_URL}/api/update-energy`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -1714,7 +1714,7 @@ const checkOfflinePassiveIncome = async () => {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${API_URL}/api/passive-income`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
@@ -2553,7 +2553,7 @@ async function checkBoostStatus() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
+        const res = await fetch(`${CONFIG.CONFIG.CONFIG.API_URL}/api/mega-boost-status/${userId}`);
         if (res.ok) {
             const data = await res.json();
             if (data.active) {
@@ -2705,7 +2705,7 @@ function recoverEnergyWithAd() {
             
             // Отправляем на сервер
             if (userId) {
-                fetch(`${API_URL}/api/update-energy`, {
+                fetch(`${CONFIG.API_URL}/api/update-energy`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
