@@ -446,27 +446,110 @@ function updateUI() {
 }
 
 // ==================== ЭНЕРГИЯ ====================
+// ==================== ИДЕАЛЬНАЯ ЭНЕРГИЯ ====================
 function startEnergyRecovery() {
-    if (State.temp.recoveryTimer) clearInterval(State.temp.recoveryTimer);
+    console.log('⚡ Запуск идеальной системы энергии');
     
-    console.log('⚡ Запуск восстановления энергии: раз в 15 секунд');
+    // Очищаем старые таймеры
+    if (State.temp.animationTimer) clearInterval(State.temp.animationTimer);
+    if (State.temp.syncTimer) clearInterval(State.temp.syncTimer);
     
-    // ✅ Устанавливаем интервал 15 секунд (15000 мс)
-    State.temp.recoveryTimer = setInterval(() => {
-        // Не восстанавливаем при активном Mega Boost
+    // Буфер для синхронизации
+    State.temp.energyBuffer = 0;
+    
+    // === ТАЙМЕР 1: Плавная анимация (каждую секунду) ===
+    State.temp.animationTimer = setInterval(() => {
+        // Не восстанавливаем при Mega Boost
         if (document.getElementById('mega-boost-btn')?.classList.contains('active')) {
-            console.log('⚡ Mega Boost активен - пропускаем восстановление');
             return;
         }
         
-        // Если энергия не полная - запрашиваем восстановление
+        // Если энергия не полная - добавляем 1 (локально)
         if (State.game.energy < State.game.maxEnergy) {
-            console.log(`⚡ Энергия не полная (${State.game.energy}/${State.game.maxEnergy}), запрос на сервер...`);
-            requestEnergyRecovery();
-        } else {
-            console.log(`⚡ Энергия уже полная (${State.game.energy}/${State.game.maxEnergy})`);
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+            
+            // Обновляем UI
+            updateUI();
+            
+            // Копим для отправки на сервер
+            State.temp.energyBuffer++;
+            
+            console.log(`⚡ Локально +1 → ${State.game.energy} (буфер: ${State.temp.energyBuffer})`);
         }
-    }, 15000); // ← 15 секунд!
+    }, 1000); // Каждую секунду!
+    
+    // === ТАЙМЕР 2: Синхронизация с сервером (раз в 15 секунд) ===
+    State.temp.syncTimer = setInterval(() => {
+        if (!userId) return; // Офлайн режим
+        
+        syncEnergyWithServer();
+        
+    }, 15000); // 15 секунд
+}
+
+// Новая функция синхронизации с сервером
+async function syncEnergyWithServer() {
+    if (!userId) return;
+    
+    console.log(`📤 Синхронизация энергии: буфер=${State.temp.energyBuffer}, текущая=${State.game.energy}`);
+    
+    try {
+        const res = await fetch(`${API_URL}/api/sync-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                energy: State.game.energy,
+                gained: State.temp.energyBuffer || 0
+            })
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            const oldEnergy = State.game.energy;
+            State.game.energy = data.energy;
+            
+            console.log(`⚡ Синхронизация: ${oldEnergy} → ${State.game.energy}`);
+            
+            // Буфер сброшен (сервер учёл всё)
+            State.temp.energyBuffer = 0;
+            
+            updateUI();
+        } else {
+            console.error('Ошибка синхронизации энергии');
+        }
+    } catch (e) {
+        console.error('Energy sync error:', e);
+        // Не сбрасываем буфер - попробуем в следующий раз
+    }
+}
+
+// Полная синхронизация (раз в минуту для страховки)
+async function fullSyncWithServer() {
+    if (!userId) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/api/user/${userId}`);
+        if (res.ok) {
+            const data = await res.json();
+            
+            // Для энергии берём МАКСИМУМ
+            const oldEnergy = State.game.energy;
+            State.game.energy = Math.max(State.game.energy, data.energy);
+            State.game.energy = Math.min(State.game.energy, data.max_energy);
+            
+            // Монеты берём с сервера (они точнее)
+            State.game.coins = data.coins;
+            
+            if (oldEnergy !== State.game.energy) {
+                console.log(`🔄 Полная синхронизация: энергия скорректирована ${oldEnergy} → ${State.game.energy}`);
+            }
+            
+            updateUI();
+        }
+    } catch (e) {
+        console.error('Full sync error:', e);
+    }
 }
 
 // Новая функция для запроса восстановления
@@ -505,71 +588,45 @@ async function requestEnergyRecovery() {
     }
 }
 
-const recoverEnergy = async () => {
-    const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
-    
-    if (megaBoostActive) return;
-    if (State.game.energy >= State.game.maxEnergy) return;
-    if (!userId) {
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-        updateUI();
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${API_URL}/api/recover-energy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            if (data.energy !== undefined) {
-                State.game.energy = data.energy;
-                console.log(`⚡ Энергия от сервера: ${data.energy}`);
-                updateUI();
-            }
-        }
-    } catch (e) {
-        console.error('Energy recovery error:', e);
-    }
-};
+
 
 // ==================== КЛИКИ ====================
 let lastBatchTime = 0;
 
 async function sendClickBatch() {
-    const now = Date.now();
-    
-    // Проверяем, прошло ли 14 секунд с последней отправки
-    if (now - lastBatchTime < 14000) {
-        // Если не прошло - перезапускаем таймер
-        if (State.temp.batchTimer) clearTimeout(State.temp.batchTimer);
-        State.temp.batchTimer = setTimeout(sendClickBatch, 14000);
-        return;
-    }
-    
     const clicks = State.temp.clickBuffer;
     const gain = State.temp.gainBuffer;
+    const megaBoost = document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
     
-    console.log(`📤 Отправка батча: clicks=${clicks}, gain=${gain}`);
+    if (clicks === 0) return;
     
+    console.log(`📤 Отправка кликов: ${clicks} кликов, +${gain} монет`);
+    
+    // Сбрасываем буфер ДО отправки (чтобы новые клики не попали в этот батч)
     State.temp.clickBuffer = 0;
     State.temp.gainBuffer = 0;
-    lastBatchTime = now;
     
-    if (!userId || clicks === 0) return;
+    if (!userId) return;
     
     try {
-        await API.post('/api/click', {
-            user_id: userId,
-            clicks,
-            gain,
-            mega_boost: document.getElementById('mega-boost-btn')?.classList.contains('active') || false,
+        const res = await fetch(`${API_URL}/api/clicks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                clicks: clicks,
+                gain: gain,
+                mega_boost: megaBoost
+            })
         });
+        
+        if (!res.ok) throw new Error('Server error');
+        
+        console.log('✅ Клики отправлены успешно');
+        
     } catch (err) {
-        console.log('Click batch failed, will retry');
+        console.log('❌ Ошибка отправки кликов, вернём в буфер');
+        // Возвращаем в буфер
         State.temp.clickBuffer += clicks;
         State.temp.gainBuffer += gain;
     }
@@ -2455,8 +2512,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (userId) {
         await loadUserData();
-        startEnergyRecovery();
+        startPerfectEnergySystem();
         await loadReferralData();
+        
+        // Таймер для отправки кликов (раз в 14 секунд)
+        setInterval(sendClickBatch, 14000);
     } else {
         const saved = localStorage.getItem('ryohoGame');
         if (saved) {
@@ -2479,6 +2539,108 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Spirit Clicker ready');
 });
+
+// ==================== ЗАПУСК ИДЕАЛЬНОЙ СИСТЕМЫ ====================
+function startPerfectEnergySystem() {
+    console.log('⚡ Запуск идеальной системы энергии');
+    
+    // Очищаем старые таймеры
+    if (State.temp.animationTimer) clearInterval(State.temp.animationTimer);
+    if (State.temp.syncTimer) clearInterval(State.temp.syncTimer);
+    if (State.temp.fullSyncTimer) clearInterval(State.temp.fullSyncTimer);
+    
+    // Буфер для синхронизации
+    State.temp.energyBuffer = 0;
+    
+    // === ТАЙМЕР 1: Плавная анимация (каждую секунду) ===
+    State.temp.animationTimer = setInterval(() => {
+        // Не восстанавливаем при Mega Boost
+        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) {
+            return;
+        }
+        
+        // Если энергия не полная - добавляем 1 (локально)
+        if (State.game.energy < State.game.maxEnergy) {
+            const oldEnergy = State.game.energy;
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+            
+            // Обновляем UI
+            updateUI();
+            
+            // Копим для отправки на сервер
+            State.temp.energyBuffer++;
+            
+            console.log(`⚡ Локально +1: ${oldEnergy} → ${State.game.energy} (буфер: ${State.temp.energyBuffer})`);
+        }
+    }, 1000); // Каждую секунду!
+    
+    // === ТАЙМЕР 2: Синхронизация с сервером (раз в 15 секунд) ===
+    State.temp.syncTimer = setInterval(() => {
+        if (!userId) return; // Офлайн режим
+        
+        syncEnergyWithServer();
+        
+    }, 15000); // 15 секунд
+    
+    // === ТАЙМЕР 3: Полная синхронизация (раз в минуту для страховки) ===
+    State.temp.fullSyncTimer = setInterval(() => {
+        if (!userId) return;
+        
+        fullSyncWithServer();
+        
+    }, 60000); // 1 минута
+}
+
+// ==================== НОВЫЕ ФУНКЦИИ ДЛЯ ЭНЕРГИИ ====================
+
+// Функция восстановления после рекламы (обновленная)
+function recoverEnergyWithAd() {
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    window.show_10655027()
+        .then(() => {
+            const oldEnergy = State.game.energy;
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
+            updateUI();
+            
+            // Отправляем на сервер
+            if (userId) {
+                fetch(`${API_URL}/api/update-energy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        energy: State.game.energy 
+                    })
+                }).catch(() => {});
+            }
+            
+            showToast(`⚡ +50 энергии! (${oldEnergy} → ${State.game.energy})`);
+            
+            // Эффект вспышки
+            const energyBar = document.querySelector('.energy-bar-fill');
+            if (energyBar) {
+                energyBar.style.transition = 'all 0.3s ease';
+                energyBar.style.filter = 'brightness(1.5)';
+                setTimeout(() => energyBar.style.filter = 'none', 500);
+            }
+        })
+        .catch((error) => {
+            console.error('Ad error:', error);
+            showToast('❌ Ошибка при показе рекламы', true);
+        });
+}
+
+// Убедитесь, что функция доступна глобально
+window.recoverEnergyWithAd = recoverEnergyWithAd;
 
 // ==================== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ====================
 window.handleTap = handleTap;
@@ -2514,6 +2676,10 @@ window.recoverEnergy = recoverEnergy;
 window.startEnergyRecovery = startEnergyRecovery;
 window.forceSync = forceSync;
 window.sendClickBatch = sendClickBatch;
+window.syncEnergyWithServer = syncEnergyWithServer;
+window.fullSyncWithServer = fullSyncWithServer;
+window.startPerfectEnergySystem = startPerfectEnergySystem;
+window.recoverEnergyWithAd = recoverEnergyWithAd;
 // Проверка
 console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
 console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
