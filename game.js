@@ -514,6 +514,8 @@ async function sendClickBatch() {
     const gain = State.temp.gainBuffer;
     const tournamentScore = State.temp.tournamentScore;
 
+    console.log(`📤 Отправка батча: clicks=${clicks}, gain=${gain}`);
+
     State.temp.clickBuffer = 0;
     State.temp.gainBuffer = 0;
     State.temp.tournamentScore = 0;
