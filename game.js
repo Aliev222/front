@@ -546,9 +546,9 @@ function handleTap(e) {
 
     // Игнорируем клики по кнопкам
     if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-        '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+        '.mini-boost-button, .skin-category, .skin-card, .skin-compact-card, ' + // ← ДОБАВИЛ skin-compact-card
+        '.task-button, .btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, ' +
+        '.game-card, .modal-screen, .modal-content, .game-modal, .game-modal-content')) {
         return;
     }
 
@@ -2442,11 +2442,10 @@ function setupGlobalClickHandler() {
     
     // Добавляем новые на весь документ
     document.addEventListener('click', function(e) {
-        // Проверяем, не кликнули ли по интерактивному элементу
         if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+            '.mini-boost-button, .skin-category, .skin-card, .skin-compact-card, ' + // ← ДОБАВИЛ
+            '.task-button, .btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, ' +
+            '.game-card, .modal-screen, .modal-content, .game-modal, .game-modal-content')) {
             return;
         }
         handleTap(e);
