@@ -487,15 +487,14 @@ const recoverEnergy = async () => {
         
         if (res.ok) {
             const data = await res.json();
-            // ВАЖНО: добавляем только 1, а не всё что сервер вернул
-            if (data.energy > State.game.energy) {
-                // Сервер говорит что энергия должна быть выше - ок
+            
+            // ✅ ПРАВИЛЬНО: Доверяем серверу и просто ставим то, что он вернул
+            if (data.energy !== undefined) {
+                // Просто обновляем энергию тем значением, которое вернул сервер
                 State.game.energy = Math.min(State.game.maxEnergy, data.energy);
-            } else {
-                // Если сервер вернул ту же или меньшую - добавляем 1 сами
-                State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+                console.log(`⚡ Энергия от сервера: ${data.energy}`);
+                updateUI();
             }
-            updateUI();
         } else {
             // Если сервер не отвечает - локальное восстановление
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
