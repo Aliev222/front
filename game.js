@@ -136,18 +136,18 @@ function getLocalSkins() {
         { id: 'skin_lvl_1', name: 'Начинающий спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'level', value: 1 } },
         { id: 'skin_lvl_2', name: 'Опытный спирикс', image: 'imgg/skins/Coin_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'level', value: 10 } },
         { id: 'skin_lvl_3', name: 'Мастер спирикс', image: 'imgg/skins/Galaxy_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'level', value: 25 } },
-        { id: 'skin_lvl_4', name: 'Элитный спирикс', image: 'imgg/skins/King_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'level', value: 50 } },
-        { id: 'skin_lvl_5', name: 'Легендарный спирикс', image: 'imgg/skins/Monster_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'level', value: 75 } },
-        { id: 'skin_lvl_6', name: 'Мифический спирикс', image: 'imgg/skins/Ninja_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.6 }, requirement: { type: 'level', value: 100 } },
-        { id: 'skin_lvl_7', name: 'Божественный спирикс', image: 'imgg/skins/Shadow_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'level', value: 150 } },
+        { id: 'skin_lvl_4', name: 'Элитный спирикс', image: 'imgg/skins/King_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'level', value: 40 } },
+        { id: 'skin_lvl_5', name: 'Легендарный спирикс', image: 'imgg/skins/Monster_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'level', value: 60 } },
+        { id: 'skin_lvl_6', name: 'Мифический спирикс', image: 'imgg/skins/Ninja_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.6 }, requirement: { type: 'level', value: 80 } },
+        { id: 'skin_lvl_7', name: 'Божественный спирикс', image: 'imgg/skins/Shadow_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'level', value: 100 } },
         
         // За видео (6 шт)
-        { id: 'skin_video_1', name: 'Звездный спирикс', image: 'imgg/skins/Techno_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'ads', count: 1 } },
-        { id: 'skin_video_2', name: 'Космический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'ads', count: 5 } },
-        { id: 'skin_video_3', name: 'Галактический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'ads', count: 10 } },
-        { id: 'skin_video_4', name: 'Небесный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'ads', count: 20 } },
-        { id: 'skin_video_5', name: 'Божественный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'ads', count: 50 } },
-        { id: 'skin_video_6', name: 'Всемогущий спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'ads', count: 100 } },
+        { id: 'skin_video_1', name: 'Звездный спирикс', image: 'imgg/skins/Techno_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'ads', count: 5 } },
+        { id: 'skin_video_2', name: 'Космический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'ads', count: 10 } },
+        { id: 'skin_video_3', name: 'Галактический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'ads', count: 20 } },
+        { id: 'skin_video_4', name: 'Небесный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'ads', count: 25 } },
+        { id: 'skin_video_5', name: 'Божественный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'ads', count: 35 } },
+        { id: 'skin_video_6', name: 'Всемогущий спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'ads', count: 50 } },
         
         // За друзей (6 шт)
         { id: 'skin_friend_1', name: 'Дружный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'friends', count: 1 } },
@@ -951,7 +951,7 @@ function applySavedSkin() {
     
     const skin = getSkinById(State.skins.selected);
     img.src = (skin?.image || 'imgg/skins/default_SP.png') + '?t=' + Date.now();
-    img.onerror = () => img.src = 'imgg/clickimg.png';
+    img.onerror = () => img.src = 'imgg/default_SP.png';
 }
 
 function renderSkins() {
