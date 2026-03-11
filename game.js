@@ -1,6 +1,7 @@
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.ENERGY_RECOVERY_INTERVAL = 15000; // 5 секунды
+window.CLICK_BATCH_INTERVAL = 15000;
 window.recoveryInterval = null;
 
 'use strict';
@@ -484,17 +485,27 @@ const recoverEnergy = async () => {
 };
 
 // ==================== КЛИКИ ====================
+let lastBatchTime = 0;
+
 async function sendClickBatch() {
+    const now = Date.now();
+    
+    // Проверяем, прошло ли 14 секунд с последней отправки
+    if (now - lastBatchTime < 14000) {
+        // Если не прошло - перезапускаем таймер
+        if (State.temp.batchTimer) clearTimeout(State.temp.batchTimer);
+        State.temp.batchTimer = setTimeout(sendClickBatch, 14000);
+        return;
+    }
+    
     const clicks = State.temp.clickBuffer;
     const gain = State.temp.gainBuffer;
-    const tournamentScore = State.temp.tournamentScore;
-
+    
     console.log(`📤 Отправка батча: clicks=${clicks}, gain=${gain}`);
-
+    
     State.temp.clickBuffer = 0;
     State.temp.gainBuffer = 0;
-    State.temp.tournamentScore = 0;
-    State.temp.batchTimer = null;
+    lastBatchTime = now;
     
     if (!userId || clicks === 0) return;
     
@@ -504,8 +515,6 @@ async function sendClickBatch() {
             clicks,
             gain,
             mega_boost: document.getElementById('mega-boost-btn')?.classList.contains('active') || false,
-
-            
         });
     } catch (err) {
         console.log('Click batch failed, will retry');
@@ -567,7 +576,7 @@ function handleTap(e) {
     State.temp.clickBuffer++;
     State.temp.gainBuffer += gain;
     if (!State.temp.batchTimer) {
-        State.temp.batchTimer = setTimeout(sendClickBatch, CONFIG.CLICK_BATCH_INTERVAL);
+        State.temp.batchTimer = setTimeout(sendClickBatch, 15000);
     }
     
     // Обновление достижений
