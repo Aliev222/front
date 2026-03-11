@@ -533,5 +533,97 @@
             </div>
         </div>
     </div>
+    <canvas id="stars-canvas"></canvas>
+    <script>
+    (function() {
+        const canvas = document.getElementById('stars-canvas');
+        const ctx = canvas.getContext('2d');
+        const STAR_COUNT = 160;
+        const stars = [];
+
+        function resize() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function randomStar() {
+            const isBig = Math.random() < 0.15; // 15% звёзд крупные
+            return {
+                x:  Math.random() * canvas.width  - canvas.width  / 2,
+                y:  Math.random() * canvas.height - canvas.height / 2,
+                z:  Math.random() * canvas.width,
+                pz: 0,
+                big: isBig
+            };
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+        for (let i = 0; i < STAR_COUNT; i++) stars.push(randomStar());
+
+        function isNight() {
+            return document.body.classList.contains('night-mode');
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width  / 2;
+            const cy = canvas.height / 2;
+            const speed = 4;
+
+            for (let s of stars) {
+                s.pz = s.z;
+                s.z -= speed;
+                if (s.z <= 0) {
+                    s.x   = Math.random() * canvas.width  - cx;
+                    s.y   = Math.random() * canvas.height - cy;
+                    s.z   = canvas.width;
+                    s.pz  = s.z;
+                    s.big = Math.random() < 0.15;
+                }
+
+                const sx  = (s.x / s.z)  * canvas.width  + cx;
+                const sy  = (s.y / s.z)  * canvas.height + cy;
+                const spx = (s.x / s.pz) * canvas.width  + cx;
+                const spy = (s.y / s.pz) * canvas.height + cy;
+
+                const progress = 1 - s.z / canvas.width;
+                const opacity  = Math.min(1, progress * 1.5);
+                const size     = s.big
+                    ? Math.max(1, progress * 5)
+                    : Math.max(0.5, progress * 2.5);
+
+                const r = isNight() ? '200,160,255' : '80,30,140';
+
+                // Хвост
+                ctx.beginPath();
+                ctx.moveTo(spx, spy);
+                ctx.lineTo(sx, sy);
+                ctx.strokeStyle = `rgba(${r},${opacity * 0.8})`;
+                ctx.lineWidth = size * 0.6;
+                ctx.stroke();
+
+                // Точка на конце
+                ctx.beginPath();
+                ctx.arc(sx, sy, size * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${r},${opacity})`;
+                ctx.fill();
+
+                // Свечение для крупных звёзд
+                if (s.big && progress > 0.4) {
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
+                    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2.5);
+                    glow.addColorStop(0, `rgba(${r},${opacity * 0.4})`);
+                    glow.addColorStop(1, `rgba(${r},0)`);
+                    ctx.fillStyle = glow;
+                    ctx.fill();
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    </script>
 </body>
 </html>

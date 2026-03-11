@@ -105,9 +105,9 @@ html, body {
     position: fixed;
     width: 100%;
     font-family: 'Space Mono', monospace;
-    background: var(--bg-primary);
+    background: transparent;
     color: var(--text-primary);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: color 0.3s ease;
 }
 
 body.modal-open {
@@ -120,18 +120,23 @@ body.modal-open {
     inset: 0;
     z-index: -4;
     background: var(--bg-primary);
-    transition: background 0.3s ease;
+    transition: background 0.5s ease;
 }
 
-.space-bg::after {
-    content: '';
-    position: absolute;
+body.night-mode .space-bg {
+    background: #0d0d14;
+}
+
+#stars-canvas {
+    position: fixed;
     inset: 0;
-    background-image:
-        linear-gradient(rgba(127, 73, 180, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(127, 73, 180, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
+    z-index: -3;
     pointer-events: none;
+    opacity: 0.9;
+}
+
+body:not(.night-mode) #stars-canvas {
+    opacity: 1;
 }
 
 /* ==================== GAME CONTAINER ==================== */
@@ -147,8 +152,7 @@ body.modal-open {
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
-    background: var(--bg-primary);
-    transition: background 0.3s ease;
+    background: transparent;
 }
 
 /* ==================== GLASS CARD ==================== */
@@ -1754,7 +1758,8 @@ body.modal-open {
     background: var(--accent);
     border-color: var(--accent);
     color: white;
-    box-shadow: 0 0 15px var(--accent-glow);
+    box-shadow: 0 0 15px var(--accent-glow), 0 4px 12px rgba(127, 73, 180, 0.5);
+    font-weight: 700;
 }
 
 /* Сетка скинов */
@@ -2052,14 +2057,15 @@ body.modal-open {
 .skin-detail-image {
     position: relative;
     width: 100%;
-    aspect-ratio: 1;
+    height: 150px;
     background: var(--detail-section-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
     box-sizing: border-box;
     border-radius: 26px 26px 0 0;
+    flex-shrink: 0;
 }
 
 .skin-detail-image img {
@@ -2095,10 +2101,10 @@ body.modal-open {
 
 .skin-detail-info {
     flex: 1;
-    padding: 22px;
+    padding: 16px 20px 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .skin-detail-header {
