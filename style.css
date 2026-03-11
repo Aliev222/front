@@ -664,15 +664,15 @@ body.modal-open {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;  /* Вместо 100% */
-    height: 100vh; /* Вместо 100% */
+    width: 100%;
+    height: 100%;
     z-index: 10000;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(10px);
 }
 
 .modal-screen.active {
-    display: flex !important
+    display: flex !important;
 }
 
 .modal-screen > .glass {
@@ -2492,8 +2492,8 @@ body.modal-open {
 }
 
 .skins-modal {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     display: flex;
     flex-direction: column;
@@ -2507,6 +2507,7 @@ body.modal-open {
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(127, 73, 180, 0.3);
+    flex-shrink: 0;
 }
 
 .skins-title {
@@ -2514,6 +2515,7 @@ body.modal-open {
     font-weight: bold;
     color: white;
     text-shadow: 0 0 10px #7F49B4;
+    margin: 0;
 }
 
 .skins-close {
@@ -2528,6 +2530,7 @@ body.modal-open {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 /* Прогресс коллекции */
@@ -2539,6 +2542,7 @@ body.modal-open {
     background: rgba(0, 0, 0, 0.3);
     color: white;
     font-size: 14px;
+    flex-shrink: 0;
 }
 
 .progress-bar-mini {
@@ -2565,6 +2569,7 @@ body.modal-open {
     scrollbar-width: none;
     -ms-overflow-style: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 .skins-filters::-webkit-scrollbar {
@@ -2602,15 +2607,34 @@ body.modal-open {
 }
 
 /* Карточка скина */
+.skins-grid {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Карточка скина - ИСПРАВЛЕНО! */
 .skin-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
-    padding: 12px;
+    padding: 12px 8px;
     text-align: center;
     position: relative;
     border: 2px solid transparent;
     transition: all 0.2s ease;
     cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .skin-card:active {
@@ -2632,12 +2656,17 @@ body.modal-open {
     aspect-ratio: 1;
     margin-bottom: 8px;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .skin-image img {
-    width: 100%;
-    height: 100%;
+    width: 80%;
+    height: 80%;
     object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .skin-lock {
@@ -2654,6 +2683,7 @@ body.modal-open {
     font-size: 12px;
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 2;
 }
 
 .skin-name {
@@ -2664,6 +2694,7 @@ body.modal-open {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
 }
 
 .skin-rarity {
@@ -2709,6 +2740,7 @@ body.modal-open {
     color: white;
     font-size: 12px;
     border: 2px solid white;
+    z-index: 2;
 }
 
 /* ==================== ДЕТАЛИ СКИНА ==================== */
@@ -2731,12 +2763,15 @@ body.modal-open {
 }
 
 .skin-detail-content {
-    width: 100%;
-    height: 100%;
+    width: 90%;
+    max-width: 400px;
+    max-height: 90vh;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 30px;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    position: relative;
 }
 
 .skin-detail-image {
@@ -2748,11 +2783,12 @@ body.modal-open {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    box-sizing: border-box;
 }
 
 .skin-detail-image img {
-    width: 100%;
-    height: 100%;
+    width: 80%;
+    height: 80%;
     object-fit: contain;
 }
 
@@ -2779,7 +2815,7 @@ body.modal-open {
     padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 .skin-detail-header {
@@ -2787,10 +2823,11 @@ body.modal-open {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .skin-detail-header h3 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: bold;
     color: white;
     margin: 0;
@@ -2825,7 +2862,7 @@ body.modal-open {
 }
 
 .skin-detail-description {
-    font-size: 16px;
+    font-size: 14px;
     color: rgba(255, 255, 255, 0.8);
     line-height: 1.5;
     margin: 0;
@@ -2835,8 +2872,8 @@ body.modal-open {
     background: rgba(127, 73, 180, 0.2);
     border: 1px solid #7F49B4;
     border-radius: 12px;
-    padding: 16px;
-    font-size: 18px;
+    padding: 14px;
+    font-size: 16px;
     font-weight: bold;
     color: #FFD700;
     text-align: center;
@@ -2849,7 +2886,7 @@ body.modal-open {
 }
 
 .requirement-text {
-    font-size: 16px;
+    font-size: 14px;
     color: white;
     margin-bottom: 12px;
 }
@@ -2873,7 +2910,7 @@ body.modal-open {
     padding: 16px;
     border-radius: 30px;
     border: none;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -2924,7 +2961,5 @@ body.modal-open {
     
     .skin-detail-content {
         max-width: 500px;
-        height: 90%;
-        border-radius: 30px;
     }
 }
