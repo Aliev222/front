@@ -164,19 +164,6 @@ const showToast = (msg, isError = false) => {
     setTimeout(() => toast.remove(), 2000);
 };
 
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СКИНОВ ====================
-
-function getRarityName(rarity) {
-    const rarityNames = {
-        'common': 'Обычный',
-        'rare': 'Редкий',
-        'legendary': 'Легендарный',
-        'super': 'Супер редкий',
-        'mythic': 'Мифический'
-    };
-    return rarityNames[rarity] || rarity;
-}
-
 // Стили для тостов (добавляем один раз)
 if (!document.getElementById('toast-styles')) {
     const style = document.createElement('style');
@@ -546,9 +533,9 @@ function handleTap(e) {
 
     // Игнорируем клики по кнопкам
     if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-        '.mini-boost-button, .skin-category, .skin-card, .skin-compact-card, ' + // ← ДОБАВИЛ skin-compact-card
-        '.task-button, .btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, ' +
-        '.game-card, .modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+        '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
         return;
     }
 
@@ -838,16 +825,18 @@ function applySavedSkin() {
     img.onerror = () => img.src = 'imgg/clickimg.png';
 }
 
-function renderSkins() {
+function renderSkins(filter = 'all') {
     console.log('🎨 Рендеринг скинов...');
     
     const grid = document.getElementById('skins-grid');
     if (!grid) {
-        console.error('❌ skins-grid не найден');
+        console.error('❌ Элемент skins-grid не найден!');
         return;
     }
     
+    // Проверяем, есть ли данные
     if (!State.skins.data || State.skins.data.length === 0) {
+        console.log('⚠️ Нет данных о скинах');
         grid.innerHTML = '<div class="loading">Загрузка скинов...</div>';
         return;
     }
@@ -860,25 +849,24 @@ function renderSkins() {
         const selected = State.skins.selected === skin.id;
         
         html += `
-            <div class="skin-card ${owned ? 'unlocked' : 'locked'} ${selected ? 'selected' : ''}" 
+            <div class="skin-card ${owned ? 'owned' : 'locked'} ${selected ? 'selected' : ''}" 
                  onclick="selectSkin('${skin.id}')"
                  data-id="${skin.id}">
                 <div class="skin-image">
                     <img src="${skin.image}" alt="${skin.name}" 
                          onerror="this.src='imgg/clickimg.png'">
-                    ${!owned ? '<div class="skin-lock-overlay">🔒</div>' : ''}
                 </div>
                 <div class="skin-name">${skin.name}</div>
-                <div class="skin-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
+                <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
+                ${!owned ? '<div class="skin-lock">🔒</div>' : ''}
                 ${selected ? '<div class="skin-selected-badge">✓</div>' : ''}
-                ${owned && !selected ? '<div class="skin-owned-badge">✓</div>' : ''}
             </div>
         `;
     });
     
     grid.innerHTML = html;
-    console.log('✅ Рендер завершен');
-}a
+    console.log('✅ Скины отрендерены');
+}
 
 async function showRewardedVideoForSkin(skinId) {
     // Показываем рекламу
@@ -2442,10 +2430,11 @@ function setupGlobalClickHandler() {
     
     // Добавляем новые на весь документ
     document.addEventListener('click', function(e) {
+        // Проверяем, не кликнули ли по интерактивному элементу
         if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .skin-compact-card, ' + // ← ДОБАВИЛ
-            '.task-button, .btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, ' +
-            '.game-card, .modal-screen, .modal-content, .game-modal, .game-modal-content')) {
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
             return;
         }
         handleTap(e);
