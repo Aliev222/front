@@ -2025,9 +2025,11 @@ body.modal-open {
     z-index: 12000;
     background: rgba(0, 0, 0, 0.92);
     backdrop-filter: blur(15px);
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 16px 40px;
 }
 
 .skin-detail-modal.active {
@@ -2037,16 +2039,14 @@ body.modal-open {
 .skin-detail-content {
     width: 100%;
     max-width: 400px;
-    max-height: 90vh;
     background: var(--detail-bg);
     border: 2px solid var(--accent);
     border-radius: 28px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     position: relative;
     transition: background 0.3s ease;
-    -webkit-overflow-scrolling: touch;
+    margin: auto;
 }
 
 .skin-detail-image {
