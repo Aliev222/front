@@ -1,7 +1,21 @@
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
-window.ENERGY_RECOVERY_INTERVAL = 15000; // 5 секунды
-window.CLICK_BATCH_INTERVAL = 15000;
+const SYNC_INTERVAL = 15000; // 15 секунд
+let syncTimer = null;
+
+function startSync() {
+    if (syncTimer) clearInterval(syncTimer);
+    
+    syncTimer = setInterval(async () => {
+        // 1. Сначала отправляем клики
+        await sendClickBatch();
+        
+        // 2. Потом запрашиваем восстановление
+        await recoverEnergy();
+        
+        console.log('🔄 Синхронизация завершена');
+    }, SYNC_INTERVAL);
+}
 window.recoveryInterval = null;
 
 'use strict';
@@ -450,7 +464,8 @@ function updateUI() {
 // ==================== ЭНЕРГИЯ ====================
 function startEnergyRecovery() {
     if (State.temp.recoveryTimer) clearInterval(State.temp.recoveryTimer);
-    State.temp.recoveryTimer = setInterval(recoverEnergy, ENERGY_RECOVERY_INTERVAL);
+    
+    startSync();
 }
 
 const recoverEnergy = async () => {
