@@ -1,21 +1,5 @@
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
-const SYNC_INTERVAL = 15000; // 15 секунд
-let syncTimer = null;
-
-function startSync() {
-    if (syncTimer) clearInterval(syncTimer);
-    
-    syncTimer = setInterval(async () => {
-        // 1. Сначала отправляем клики
-        await sendClickBatch();
-        
-        // 2. Потом запрашиваем восстановление
-        await recoverEnergy();
-        
-        console.log('🔄 Синхронизация завершена');
-    }, SYNC_INTERVAL);
-}
 window.recoveryInterval = null;
 
 'use strict';
@@ -590,9 +574,6 @@ function handleTap(e) {
     // Буферизация для отправки
     State.temp.clickBuffer++;
     State.temp.gainBuffer += gain;
-    if (!State.temp.batchTimer) {
-        State.temp.batchTimer = setTimeout(sendClickBatch, 15000);
-    }
     
     // Обновление достижений
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
@@ -752,6 +733,43 @@ function handleTap(e) {
             }
         } catch (err) {}
     }
+}
+
+// ==================== СИНХРОНИЗАЦИЯ ====================
+let syncTimer = null;
+const SYNC_INTERVAL = 15000; // 15 секунд
+
+async function forceSync() {
+    console.log(`🔄 Синхронизация... кликов в буфере: ${State.temp.clickBuffer}`);
+    
+    // 1. Отправляем накопленные клики
+    if (State.temp.clickBuffer > 0) {
+        await sendClickBatch();
+    }
+    
+    // 2. Запрашиваем актуальные данные с сервера (БЕЗ КЭША!)
+    if (userId) {
+        try {
+            const res = await fetch(`${API_URL}/api/user/${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.energy !== undefined) {
+                    const oldEnergy = State.game.energy;
+                    State.game.energy = data.energy;
+                    State.game.coins = data.coins;
+                    console.log(`⚡ Сервер: ${oldEnergy} → ${data.energy}`);
+                    updateUI();
+                }
+            }
+        } catch (e) {
+            console.error('Sync error:', e);
+        }
+    }
+}
+
+function startSync() {
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = setInterval(forceSync, SYNC_INTERVAL);
 }
 
 // ==================== СКИНЫ ====================
