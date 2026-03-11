@@ -39,6 +39,26 @@ if (tg) {
     }
 }
 
+const iframe = document.querySelector('iframe');
+if (iframe) {
+    // Достаем State из iframe
+    const gameState = iframe.contentWindow.State;
+    console.log('State из iframe:', gameState);
+    console.log('State.game.energy:', gameState?.game?.energy);
+    
+    // Теперь можно работать с функциями игры
+    console.log('recoverEnergy есть?', typeof iframe.contentWindow.recoverEnergy);
+    console.log('handleTap есть?', typeof iframe.contentWindow.handleTap);
+    
+    // Вызываем функцию восстановления
+    if (iframe.contentWindow.recoverEnergy) {
+        console.log('Вызываем recoverEnergy()...');
+        iframe.contentWindow.recoverEnergy();
+    }
+} else {
+    console.log('Iframe не найден');
+}
+
 // ==================== СОСТОЯНИЕ (ОДНО!) ====================
 const State = {
     user: { 
