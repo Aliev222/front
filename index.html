@@ -531,5 +531,78 @@
             </div>
         </div>
     </div>
+    <!-- МОДАЛКА СПИСКА СКИНОВ -->
+    <div class="modal-screen" id="skins-screen">
+        <div class="skins-modal">
+            <!-- Шапка -->
+            <div class="skins-header">
+                <h2 class="skins-title">🎨 СКИНЫ</h2>
+                <button class="skins-close" onclick="closeModal('skins-screen')">✕</button>
+            </div>
+
+            <!-- Прогресс коллекции (маленький) -->
+            <div class="collection-progress">
+                <span>📊 <span id="skins-collected">0</span>/<span id="skins-total">21</span></span>
+                <div class="progress-bar-mini">
+                    <div class="progress-fill" id="skins-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="skins-filters">
+                <button class="filter-btn active" onclick="filterSkins('all', this)">Все</button>
+                <button class="filter-btn" onclick="filterSkins('common', this)">Обычные</button>
+                <button class="filter-btn" onclick="filterSkins('rare', this)">Редкие</button>
+                <button class="filter-btn" onclick="filterSkins('legendary', this)">Легендарные</button>
+                <button class="filter-btn" onclick="filterSkins('super', this)">Супер</button>
+            </div>
+
+            <!-- Сетка скинов (2 в ряд) -->
+            <div class="skins-grid" id="skins-grid">
+                <!-- Сюда будут грузиться скины -->
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ДЕТАЛЕЙ СКИНА -->
+    <div class="skin-detail-modal" id="skin-detail-modal">
+        <div class="skin-detail-content">
+            <!-- Крупное фото -->
+            <div class="skin-detail-image">
+                <img src="" alt="" id="skin-detail-img">
+                <button class="detail-close" onclick="closeSkinDetail()">✕</button>
+            </div>
+
+            <!-- Информация -->
+            <div class="skin-detail-info">
+                <div class="skin-detail-header">
+                    <h3 id="skin-detail-name">Название скина</h3>
+                    <span class="skin-rarity-badge" id="skin-detail-rarity">редкость</span>
+                </div>
+
+                <p class="skin-detail-description" id="skin-detail-description">Описание скина</p>
+
+                <div class="skin-detail-bonus" id="skin-detail-bonus">
+                    ⚡ Бонус: +50% к доходу
+                </div>
+
+                <!-- Условие получения -->
+                <div class="skin-requirement" id="skin-requirement-block">
+                    <div class="requirement-text" id="skin-requirement-text"></div>
+                    <div class="requirement-progress" id="skin-requirement-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="requirement-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="requirement-progress-text">0/10</span>
+                    </div>
+                </div>
+
+                <!-- Кнопка действия -->
+                <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
+                    Получить
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
