@@ -38,8 +38,12 @@ if (tg) {
 
 // ==================== СОСТОЯНИЕ (ОДНО!) ====================
 const State = {
-    user: { id: userId, username, referrerId },
-        achievements: {
+    user: { 
+        id: userId, 
+        username, 
+        referrerId 
+    },
+    achievements: {
         clicks: 0,
         upgrades: 0,
         games: 0,
@@ -93,7 +97,10 @@ const State = {
     
 };
 
+
 // Глобальный доступ
+window.State = State;
+window.state = State;
 window.State = State;
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
