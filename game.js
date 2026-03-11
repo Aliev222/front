@@ -429,28 +429,51 @@ function startEnergyRecovery() {
     State.temp.recoveryTimer = setInterval(recoverEnergy, CONFIG.ENERGY_RECHARGE_INTERVAL);
 }
 
-async function recoverEnergy() {
+const recoverEnergy = async () => {
+    // Проверяем буст
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
-    if (megaBoostActive || State.game.energy >= State.game.maxEnergy) return;
+    
+    if (megaBoostActive) {
+        return; // При бусте энергия не восстанавливается
+    }
+    
+    if (state.energy >= state.maxEnergy) {
+        return; // Уже полная
+    }
     
     if (!userId) {
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+        // Локальное восстановление для тестов
+        state.energy = Math.min(state.maxEnergy, state.energy + 1);
         updateUI();
         return;
     }
     
     try {
-        const data = await API.post('/api/recover-energy', { user_id: userId });
-        if (data?.energy !== undefined) {
-            State.game.energy = data.energy;
+        const res = await fetch(`${API_URL}/api/recover-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            // Обновляем только если значение изменилось
+            if (data.energy !== state.energy) {
+                state.energy = data.energy;
+                updateUI();
+            }
+        } else {
+            // Если сервер не отвечает - локальное восстановление
+            state.energy = Math.min(state.maxEnergy, state.energy + 1);
             updateUI();
         }
-    } catch (err) {
-        // Локальное восстановление при ошибке
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
+    } catch (e) {
+        console.error('Energy recovery error:', e);
+        // При ошибке сети - локальное восстановление
+        state.energy = Math.min(state.maxEnergy, state.energy + 1);
         updateUI();
     }
-}
+};
 
 // ==================== КЛИКИ ====================
 async function sendClickBatch() {
@@ -1407,23 +1430,36 @@ function startTournamentTimer(seconds) {
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
-async function checkOfflinePassiveIncome() {
+// Пассивный доход - проверяем при загрузке и каждые 30 минут
+const checkOfflinePassiveIncome = async () => {
     if (!userId) return;
+    
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
+        const res = await fetch(`${API_URL}/api/passive-income`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId })
         });
+        
         if (res.ok) {
             const data = await res.json();
             if (data.income > 0) {
-                State.game.coins = data.coins;
+                state.coins = data.coins;
                 updateUI();
-                showToast(`💰 +${data.income} монет (офлайн)!`);
+                showToast(data.message);
+                // Анимация монеток
+                playBonusAnimation();
             }
         }
-    } catch (err) {}
+    } catch (e) {
+        console.error('Passive income error:', e);
+    }
+};
+
+// Запускаем проверку при загрузке и каждые 30 минут
+if (userId) {
+    setTimeout(() => checkOfflinePassiveIncome(), 2000);
+    setInterval(checkOfflinePassiveIncome, 30 * 60 * 1000);
 }
 
 
