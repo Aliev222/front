@@ -1,6 +1,6 @@
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
-window.ENERGY_RECOVERY_INTERVAL = 5000; // 5 секунды
+window.ENERGY_RECOVERY_INTERVAL = 15000; // 5 секунды
 window.recoveryInterval = null;
 
 'use strict';
@@ -429,15 +429,7 @@ function updateUI() {
 
         // Время восстановления
         const missing = State.game.maxEnergy - State.game.energy;
-        const regenEl = document.getElementById('energyRegenInfo');
-        if (regenEl) {
-            if (missing > 0) {
-                const seconds = Math.ceil(missing * 2);
-                regenEl.textContent = `⚡ +1/2сек (${seconds}сек до полной)`;
-            } else {
-                regenEl.textContent = '⚡ Energy full!';
-            }
-        }
+        
 
         // Уровень
         const globalLevelEl = document.getElementById('globalLevel');
@@ -461,17 +453,10 @@ function startEnergyRecovery() {
 }
 
 const recoverEnergy = async () => {
-    // Проверяем буст
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
-    if (megaBoostActive) {
-        return; // При бусте энергия не восстанавливается
-    }
-    
-    if (State.game.energy >= State.game.maxEnergy) {
-        return; // Уже полная
-    }
-    
+    if (megaBoostActive) return;
+    if (State.game.energy >= State.game.maxEnergy) return;
     if (!userId) {
         State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
         updateUI();
@@ -487,24 +472,14 @@ const recoverEnergy = async () => {
         
         if (res.ok) {
             const data = await res.json();
-            
-            // ✅ ПРАВИЛЬНО: Доверяем серверу и просто ставим то, что он вернул
             if (data.energy !== undefined) {
-                // Просто обновляем энергию тем значением, которое вернул сервер
-                State.game.energy = Math.min(State.game.maxEnergy, data.energy);
+                State.game.energy = data.energy;
                 console.log(`⚡ Энергия от сервера: ${data.energy}`);
                 updateUI();
             }
-        } else {
-            // Если сервер не отвечает - локальное восстановление
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-            updateUI();
         }
     } catch (e) {
         console.error('Energy recovery error:', e);
-        // При ошибке сети - локальное восстановление
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-        updateUI();
     }
 };
 
