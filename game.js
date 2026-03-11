@@ -529,7 +529,7 @@ async function sendClickBatch() {
             gain,
             mega_boost: document.getElementById('mega-boost-btn')?.classList.contains('active') || false,
 
-            tournament_score: tournamentScore
+            
         });
     } catch (err) {
         console.log('Click batch failed, will retry');
