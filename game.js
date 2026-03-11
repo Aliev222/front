@@ -448,13 +448,14 @@ const recoverEnergy = async () => {
         return; // При бусте энергия не восстанавливается
     }
     
-    if (state.energy >= state.maxEnergy) {
+    // ИСПРАВЛЕНО: State с большой буквы
+    if (State.game.energy >= State.game.maxEnergy) {
         return; // Уже полная
     }
     
     if (!userId) {
         // Локальное восстановление для тестов
-        state.energy = Math.min(state.maxEnergy, state.energy + 1);
+        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
         updateUI();
         return;
     }
@@ -469,19 +470,19 @@ const recoverEnergy = async () => {
         if (res.ok) {
             const data = await res.json();
             // Обновляем только если значение изменилось
-            if (data.energy !== state.energy) {
-                state.energy = data.energy;
+            if (data.energy !== State.game.energy) {
+                State.game.energy = data.energy;
                 updateUI();
             }
         } else {
             // Если сервер не отвечает - локальное восстановление
-            state.energy = Math.min(state.maxEnergy, state.energy + 1);
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
             updateUI();
         }
     } catch (e) {
         console.error('Energy recovery error:', e);
         // При ошибке сети - локальное восстановление
-        state.energy = Math.min(state.maxEnergy, state.energy + 1);
+        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
         updateUI();
     }
 };
@@ -1455,7 +1456,7 @@ const checkOfflinePassiveIncome = async () => {
         if (res.ok) {
             const data = await res.json();
             if (data.income > 0) {
-                state.coins = data.coins;
+                State.game.coins = data.coins;
                 updateUI();
                 showToast(data.message);
                 // Анимация монеток
