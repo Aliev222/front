@@ -747,24 +747,59 @@ async function forceSync() {
         await sendClickBatch();
     }
     
-    // 2. Запрашиваем актуальные данные с сервера (БЕЗ КЭША!)
+    // 2. Запрашиваем актуальные данные с сервера
     if (userId) {
         try {
-            const res = await fetch(`${API_URL}/api/user/${userId}`);
+            const res = await fetch(`${API_URL}/api/user/${userId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store' // Запрещаем кэширование
+            });
+            
             if (res.ok) {
                 const data = await res.json();
-                if (data.energy !== undefined) {
-                    const oldEnergy = State.game.energy;
-                    State.game.energy = data.energy;
-                    State.game.coins = data.coins;
-                    console.log(`⚡ Сервер: ${oldEnergy} → ${data.energy}`);
-                    updateUI();
+                
+                // Сохраняем старые значения для лога
+                const oldEnergy = State.game.energy;
+                const oldCoins = State.game.coins;
+                
+                // Обновляем состояние
+                State.game.energy = data.energy;
+                State.game.coins = data.coins;
+                State.game.maxEnergy = data.max_energy;
+                State.game.profitPerTap = data.profit_per_tap;
+                State.game.profitPerHour = data.profit_per_hour;
+                State.game.levels.multitap = data.multitap_level || 0;
+                State.game.levels.profit = data.profit_level || 0;
+                State.game.levels.energy = data.energy_level || 0;
+                
+                // Скины
+                if (data.owned_skins) State.skins.owned = data.owned_skins;
+                if (data.selected_skin) State.skins.selected = data.selected_skin;
+                if (data.ads_watched !== undefined) State.skins.adsWatched = data.ads_watched;
+                
+                // Логируем изменения
+                if (oldEnergy !== data.energy) {
+                    console.log(`⚡ Энергия: ${oldEnergy} → ${data.energy} (сервер)`);
                 }
+                if (oldCoins !== data.coins) {
+                    console.log(`💰 Монеты: ${oldCoins} → ${data.coins}`);
+                }
+                
+                updateUI();
+                applySavedSkin();
+            } else {
+                console.error('❌ Ошибка загрузки данных:', res.status);
             }
         } catch (e) {
-            console.error('Sync error:', e);
+            console.error('❌ Sync error:', e);
         }
     }
+}
+
+// Запускаем синхронизацию при загрузке
+if (userId) {
+    setTimeout(() => forceSync(), 1000);
 }
 
 function startSync() {
@@ -795,24 +830,117 @@ function renderSkins(filter = 'all') {
         return;
     }
     
-    const filtered = filter === 'all' ? State.skins.data : State.skins.data.filter(s => s.rarity === filter);
+    let filteredSkins = State.skins.data;
+    if (filter !== 'all') {
+        filteredSkins = State.skins.data.filter(s => s.rarity === filter);
+    }
     
-    grid.innerHTML = filtered.map(skin => {
-        const unlocked = State.skins.owned.includes(skin.id) || skin.requirement?.type === 'free';
-        const owned = State.skins.owned.includes(skin.id);
+    grid.innerHTML = filteredSkins.map(skin => {
+        const unlocked = State.skins.owned.includes(skin.id);
         const selected = State.skins.selected === skin.id;
         
+        // Определяем условие разблокировки
+        let requirementText = '';
+        let progressPercent = 0;
+        let buttonHtml = '';
+        
+        if (!unlocked) {
+            const req = skin.requirement || {};
+            
+            switch(req.type) {
+                case 'ads':
+                    const adsNeeded = req.count || 10;
+                    const adsCurrent = State.skins.adsWatched || 0;
+                    progressPercent = Math.min(100, (adsCurrent / adsNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">📺 Просмотр рекламы: ${adsCurrent}/${adsNeeded}</div>`;
+                    buttonHtml = `<button class="skin-btn video" onclick="showRewardedVideoForSkin('${skin.id}')">
+                        📺 Смотреть (${adsCurrent}/${adsNeeded})
+                    </button>`;
+                    break;
+                    
+                case 'friends':
+                    const friendsNeeded = req.count || 10;
+                    const friendsCurrent = State.skins.friendsInvited || 0;
+                    progressPercent = Math.min(100, (friendsCurrent / friendsNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">👥 Пригласить друзей: ${friendsCurrent}/${friendsNeeded}</div>`;
+                    buttonHtml = `<button class="skin-btn friends" onclick="copyReferralLink()">
+                        👥 Пригласить (${friendsCurrent}/${friendsNeeded})
+                    </button>`;
+                    break;
+                    
+                case 'cpa':
+                    requirementText = `<div class="skin-req">🔗 Выполнить задание</div>`;
+                    buttonHtml = `<button class="skin-btn cpa" onclick="window.open('${req.url || '#'}', '_blank')">
+                        🔗 Перейти
+                    </button>`;
+                    break;
+                    
+                case 'level':
+                    const levelNeeded = req.level || 100;
+                    progressPercent = Math.min(100, (State.game.levels.multitap / levelNeeded) * 100);
+                    
+                    requirementText = `<div class="skin-req">📊 Достичь ${levelNeeded} уровня</div>`;
+                    buttonHtml = `<button class="skin-btn level" disabled style="opacity:0.5">
+                        📊 Уровень ${State.game.levels.multitap}/${levelNeeded}
+                    </button>`;
+                    break;
+                    
+                default:
+                    requirementText = `<div class="skin-req">✨ Бесплатно</div>`;
+                    buttonHtml = `<button class="skin-btn free" onclick="unlockSkin('${skin.id}')">
+                        ✨ Получить
+                    </button>`;
+            }
+        } else if (selected) {
+            buttonHtml = `<div class="skin-selected">✅ Выбран</div>`;
+        } else {
+            buttonHtml = `<button class="skin-btn select" onclick="selectActiveSkin('${skin.id}')">
+                ✨ Выбрать
+            </button>`;
+        }
+        
+        // Бонус скина
+        let bonusText = '';
+        if (skin.bonus) {
+            if (skin.bonus.type === 'multiplier') {
+                const percent = Math.round((skin.bonus.value - 1) * 100);
+                bonusText = `<div class="skin-bonus">⚡ +${percent}% к доходу</div>`;
+            } else if (skin.bonus.type === 'interval') {
+                bonusText = `<div class="skin-bonus">⏱️ +${skin.bonus.value} монет/час</div>`;
+            }
+        }
+        
         return `
-            <div class="skin-card ${unlocked ? '' : 'locked'} ${selected ? 'selected' : ''}" 
-                 data-id="${skin.id}" onclick="selectSkin('${skin.id}')">
-                ${!unlocked ? '<div class="skin-lock">🔒</div>' : ''}
-                ${owned && selected ? '<div class="skin-equipped">✓</div>' : ''}
+            <div class="skin-card ${unlocked ? 'unlocked' : 'locked'} ${selected ? 'selected' : ''}" 
+                 data-id="${skin.id}">
                 <div class="skin-image">
                     <img src="${skin.image}" alt="${skin.name}" loading="lazy"
                          onerror="this.src='imgg/clickimg.png'">
+                    ${!unlocked ? '<div class="skin-lock-icon">🔒</div>' : ''}
                 </div>
-                <div class="skin-name">${skin.name}</div>
-                <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
+                
+                <div class="skin-info">
+                    <div class="skin-name">${skin.name}</div>
+                    <div class="skin-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
+                    <div class="skin-desc">${skin.description || ''}</div>
+                    ${bonusText}
+                    
+                    ${!unlocked && progressPercent > 0 ? `
+                        <div class="skin-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${requirementText}
+                    
+                    <div class="skin-action">
+                        ${buttonHtml}
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
