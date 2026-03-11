@@ -164,6 +164,19 @@ const showToast = (msg, isError = false) => {
     setTimeout(() => toast.remove(), 2000);
 };
 
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СКИНОВ ====================
+
+function getRarityName(rarity) {
+    const rarityNames = {
+        'common': 'Обычный',
+        'rare': 'Редкий',
+        'legendary': 'Легендарный',
+        'super': 'Супер редкий',
+        'mythic': 'Мифический'
+    };
+    return rarityNames[rarity] || rarity;
+}
+
 // Стили для тостов (добавляем один раз)
 if (!document.getElementById('toast-styles')) {
     const style = document.createElement('style');
@@ -825,12 +838,12 @@ function applySavedSkin() {
     img.onerror = () => img.src = 'imgg/clickimg.png';
 }
 
-function renderSkins(filter = 'all') {
+function renderSkins() {
     console.log('🎨 Рендеринг скинов...');
     
     const grid = document.getElementById('skins-grid');
     if (!grid) {
-        console.error('❌ Элемент skins-grid не найден!');
+        console.error('❌ skins-grid не найден');
         return;
     }
     
@@ -839,40 +852,33 @@ function renderSkins(filter = 'all') {
         return;
     }
     
-    // Фильтруем скины
-    let skinsToShow = State.skins.data;
-    if (filter !== 'all') {
-        skinsToShow = State.skins.data.filter(s => s.rarity === filter);
-    }
+    console.log('📦 Данные скинов:', State.skins.data);
     
-    // Ограничиваем до 6 скинов (2 ряда по 3)
-    skinsToShow = skinsToShow.slice(0, 6);
-    
-    let html = '<div class="skins-compact-grid">';
-    
-    skinsToShow.forEach(skin => {
+    let html = '';
+    State.skins.data.forEach(skin => {
         const owned = State.skins.owned.includes(skin.id);
         const selected = State.skins.selected === skin.id;
         
         html += `
-            <div class="skin-compact-card ${owned ? 'owned' : 'locked'} ${selected ? 'selected' : ''}" 
+            <div class="skin-card ${owned ? 'unlocked' : 'locked'} ${selected ? 'selected' : ''}" 
                  onclick="selectSkin('${skin.id}')"
                  data-id="${skin.id}">
-                <div class="skin-compact-image">
+                <div class="skin-image">
                     <img src="${skin.image}" alt="${skin.name}" 
                          onerror="this.src='imgg/clickimg.png'">
-                    ${!owned ? '<div class="skin-compact-lock">🔒</div>' : ''}
+                    ${!owned ? '<div class="skin-lock-overlay">🔒</div>' : ''}
                 </div>
-                <div class="skin-compact-name">${skin.name}</div>
-                <div class="skin-compact-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
-                ${selected ? '<div class="skin-compact-selected">✓</div>' : ''}
+                <div class="skin-name">${skin.name}</div>
+                <div class="skin-rarity ${skin.rarity}">${getRarityName(skin.rarity)}</div>
+                ${selected ? '<div class="skin-selected-badge">✓</div>' : ''}
+                ${owned && !selected ? '<div class="skin-owned-badge">✓</div>' : ''}
             </div>
         `;
     });
     
-    html += '</div>';
     grid.innerHTML = html;
-}
+    console.log('✅ Рендер завершен');
+}a
 
 async function showRewardedVideoForSkin(skinId) {
     // Показываем рекламу
