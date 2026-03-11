@@ -1,7 +1,7 @@
-/* ===============================
-   SPIRIT CLICKER - ПОЛНАЯ РАБОЧАЯ ВЕРСИЯ
-   ВСЁ В ОДНОМ ФАЙЛЕ - ИСПРАВЛЕНО
-   ============================== */
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+window.API_URL = 'https://ryoho.onrender.com';
+window.ENERGY_RECOVERY_INTERVAL = 2000; // 2 секунды
+window.recoveryInterval = null;
 
 'use strict';
 
@@ -9,12 +9,15 @@ console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
 
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
-    API_URL: 'https://ryoho.onrender.com',
+    API_URL: window.API_URL,
     CLICK_BATCH_INTERVAL: 1000,
-    ENERGY_RECHARGE_INTERVAL: 2000,
+    ENERGY_RECHARGE_INTERVAL: window.ENERGY_RECOVERY_INTERVAL,
     PASSIVE_INCOME_INTERVAL: 3600000,
     CACHE_TTL: 30000
 };
+
+// Делаем CONFIG глобальным
+window.CONFIG = CONFIG;
 
 // ==================== TELEGRAM INIT ====================
 const tg = window.Telegram?.WebApp;
