@@ -302,7 +302,7 @@ async function loadUserData() {
         await loadSkinsList();
         await loadReferralData();
         await checkBoostStatus();
-        await loadTasks();
+
         
         applySavedSkin();
         updateUI();
