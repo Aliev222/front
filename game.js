@@ -1665,23 +1665,21 @@ async function updateTournamentScore(score) {
 
 function renderLeaderboard(data) {
     const list = document.getElementById('leaderboard-list');
-    const playerRank = document.getElementById('player-rank');
-    const playerScore = document.getElementById('player-score');
     
-    if (list) {
-        list.innerHTML = data.players.map(p => `
-            <div class="leaderboard-item">
-                <span class="player-rank">${p.rank}</span>
-                <div class="player-avatar">
-                    <img src="${p.avatar}" alt="avatar" 
-                         onerror="this.src='imgg/default_avatar.png'"
-                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                </div>
-                <span class="player-name">${p.name}</span>
-                <span class="player-score">${formatNumber(p.score)}</span>
+    list.innerHTML = data.players.map(p => `
+        <div class="leaderboard-item">
+            <span class="player-rank">${p.rank}</span>
+            <div class="player-avatar">
+                <img src="${p.avatar}" 
+                     alt="avatar"
+                     onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'default-avatar\'>${p.name[0]?.toUpperCase() || '?'}</div>'"
+                     loading="lazy">
             </div>
-        `).join('');
-    }
+            <span class="player-name">${p.name}</span>
+            <span class="player-score">${formatNumber(p.score)}</span>
+        </div>
+    `).join('');
+
     
     if (playerRank) playerRank.textContent = `#${data.playerRank}`;
     if (playerScore) playerScore.textContent = formatNumber(data.playerScore);
