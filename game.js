@@ -1603,12 +1603,10 @@ let tournamentTimer = null;
 
 async function loadTournamentData() {
     try {
-        // Загружаем таблицу лидеров
-        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/tournament/leaderboard`);
+        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/leaderboard`);
         const leaderboardData = await leaderboardRes.json();
         
-        // Загружаем ранг игрока
-        const rankRes = await fetch(`${CONFIG.API_URL}/api/tournament/player-rank/${userId}`);
+        const rankRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/player-rank/${userId}`);
         const rankData = await rankRes.json();
         
         if (leaderboardData.success) {
@@ -1620,26 +1618,8 @@ async function loadTournamentData() {
             });
             startTournamentTimer(leaderboardData.time_left);
         }
-        
     } catch (err) {
         console.error('Tournament error:', err);
-        showToast('❌ Ошибка загрузки турнира', true);
-        
-        // Заглушка на случай ошибки
-        const mockData = {
-            players: [
-                { rank: 1, name: 'CryptoKing', score: 157890 },
-                { rank: 2, name: 'SpiritMaster', score: 143200 },
-                { rank: 3, name: 'ClickerPro', score: 128450 },
-                { rank: 4, name: 'CoinHunter', score: 112300 },
-                { rank: 5, name: 'TapLegend', score: 98700 }
-            ],
-            playerRank: 42,
-            playerScore: State.game.coins,
-            timeLeft: 86399
-        };
-        renderLeaderboard(mockData);
-        startTournamentTimer(mockData.timeLeft);
     }
 }
 
@@ -1665,24 +1645,21 @@ async function updateTournamentScore(score) {
 
 function renderLeaderboard(data) {
     const list = document.getElementById('leaderboard-list');
+    const playerRankEl = document.getElementById('player-rank');  // Переименуй
+    const playerScoreEl = document.getElementById('player-score');
     
-    list.innerHTML = data.players.map(p => `
-        <div class="leaderboard-item">
-            <span class="player-rank">${p.rank}</span>
-            <div class="player-avatar">
-                <img src="${p.avatar}" 
-                     alt="avatar"
-                     onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\'default-avatar\'>${p.name[0]?.toUpperCase() || '?'}</div>'"
-                     loading="lazy">
+    if (list) {
+        list.innerHTML = data.players.map(p => `
+            <div class="leaderboard-item ${p.isMe ? 'current-player' : ''}">
+                <span class="player-rank">${p.rank}</span>
+                <span class="player-name">${p.name}</span>
+                <span class="player-score">${formatNumber(p.score)}</span>
             </div>
-            <span class="player-name">${p.name}</span>
-            <span class="player-score">${formatNumber(p.score)}</span>
-        </div>
-    `).join('');
-
+        `).join('');
+    }
     
-    if (playerRank) playerRank.textContent = `#${data.playerRank}`;
-    if (playerScore) playerScore.textContent = formatNumber(data.playerScore);
+    if (playerRankEl) playerRankEl.textContent = `#${data.playerRank}`;
+    if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore);
 }
 function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
@@ -2578,7 +2555,8 @@ async function checkBoostStatus() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${CONFIG.CONFIG.CONFIG.API_URL}/api/mega-boost-status/${userId}`);
+        // ЗАМЕНИ API_URL НА CONFIG.API_URL
+        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
         if (res.ok) {
             const data = await res.json();
             if (data.active) {
