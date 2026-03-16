@@ -10,12 +10,11 @@ console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
 const CONFIG = {
     API_URL: window.API_URL,
     CLICK_BATCH_INTERVAL: 1000,
-    ENERGY_RECHARGE_INTERVAL: window.ENERGY_RECOVERY_INTERVAL,
+    ENERGY_RECHARGE_INTERVAL: 1000,
     PASSIVE_INCOME_INTERVAL: 3600000,
     CACHE_TTL: 30000
 };
 
-// Делаем CONFIG глобальным
 window.CONFIG = CONFIG;
 
 // ==================== TELEGRAM INIT ====================
@@ -38,33 +37,9 @@ if (tg) {
     }
 }
 
-const iframe = document.querySelector('iframe');
-if (iframe) {
-    // Достаем State из iframe
-    const gameState = iframe.contentWindow.State;
-    console.log('State из iframe:', gameState);
-    console.log('State.game.energy:', gameState?.game?.energy);
-    
-    // Теперь можно работать с функциями игры
-    console.log('recoverEnergy есть?', typeof iframe.contentWindow.recoverEnergy);
-    console.log('handleTap есть?', typeof iframe.contentWindow.handleTap);
-    
-    // Вызываем функцию восстановления
-    if (iframe.contentWindow.recoverEnergy) {
-        console.log('Вызываем recoverEnergy()...');
-        iframe.contentWindow.recoverEnergy();
-    }
-} else {
-    console.log('Iframe не найден');
-}
-
-// ==================== СОСТОЯНИЕ (ОДНО!) ====================
+// ==================== СОСТОЯНИЕ ====================
 const State = {
-    user: { 
-        id: userId, 
-        username, 
-        referrerId 
-    },
+    user: { id: userId, username, referrerId },
     achievements: {
         clicks: 0,
         upgrades: 0,
@@ -73,7 +48,6 @@ const State = {
         adsWatched: 0,
         completed: []
     },
-
     game: {
         coins: 0,
         energy: 500,
@@ -84,9 +58,6 @@ const State = {
         prices: { multitap: 50, profit: 40, energy: 30 },
         levels: { multitap: 0, profit: 0, energy: 0 }
     },
-    
-    
-
     skins: {
         owned: ['default_SP'],
         selected: 'default_SP',
@@ -94,7 +65,6 @@ const State = {
         friendsInvited: 0,
         data: []
     },
-    
     settings: {
         theme: localStorage.getItem('ryohoSettings') ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).theme || 'day' : 'day',
@@ -105,7 +75,6 @@ const State = {
             JSON.parse(localStorage.getItem('ryohoSettings')).vibration !== undefined ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).vibration : true : true
     },
-    
     temp: {
         clickBuffer: 0,
         gainBuffer: 0,
@@ -113,55 +82,16 @@ const State = {
         recoveryTimer: null,
         lastClick: 0,
         tournamentScore: 0,
-    },     
+        energyBuffer: 0,
+        animationTimer: null,
+        syncTimer: null,
+        fullSyncTimer: null
+    },
     cache: new Map()
-
-    
 };
 
-
-// Глобальный доступ
 window.State = State;
 window.state = State;
-window.State = State;
-console.log('✅ window.State создан:', window.State);
-
-
-let currentFilter = 'all';
-
-// ==================== ЛОКАЛЬНЫЕ СКИНЫ (ЗАГЛУШКА) ====================
-function getLocalSkins() {
-    return [
-        // Обычные (7 шт) - за уровень
-        { id: 'skin_lvl_1', name: 'Начинающий спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'level', value: 1 } },
-        { id: 'skin_lvl_2', name: 'Опытный спирикс', image: 'imgg/skins/Coin_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'level', value: 10 } },
-        { id: 'skin_lvl_3', name: 'Мастер спирикс', image: 'imgg/skins/Galaxy_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'level', value: 25 } },
-        { id: 'skin_lvl_4', name: 'Элитный спирикс', image: 'imgg/skins/King_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'level', value: 40 } },
-        { id: 'skin_lvl_5', name: 'Легендарный спирикс', image: 'imgg/skins/Monster_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'level', value: 60 } },
-        { id: 'skin_lvl_6', name: 'Мифический спирикс', image: 'imgg/skins/Ninja_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.6 }, requirement: { type: 'level', value: 80 } },
-        { id: 'skin_lvl_7', name: 'Божественный спирикс', image: 'imgg/skins/Shadow_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'level', value: 100 } },
-        
-        // За видео (6 шт)
-        { id: 'skin_video_1', name: 'Звездный спирикс', image: 'imgg/skins/Techno_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'ads', count: 5 } },
-        { id: 'skin_video_2', name: 'Космический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'ads', count: 10 } },
-        { id: 'skin_video_3', name: 'Галактический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'ads', count: 20 } },
-        { id: 'skin_video_4', name: 'Небесный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'ads', count: 25 } },
-        { id: 'skin_video_5', name: 'Божественный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'ads', count: 35 } },
-        { id: 'skin_video_6', name: 'Всемогущий спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'ads', count: 50 } },
-        
-        // За друзей (6 шт)
-        { id: 'skin_friend_1', name: 'Дружный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'friends', count: 1 } },
-        { id: 'skin_friend_2', name: 'Популярный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'friends', count: 3 } },
-        { id: 'skin_friend_3', name: 'Известный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'friends', count: 5 } },
-        { id: 'skin_friend_4', name: 'Звездный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'friends', count: 10 } },
-        { id: 'skin_friend_5', name: 'Легендарный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'friends', count: 20 } },
-        { id: 'skin_friend_6', name: 'Император спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'friends', count: 50 } },
-        
-        // За ссылку (1 шт)
-        { id: 'skin_cpa_1', name: 'Тайный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.5 }, requirement: { type: 'link', url: 'https://example.com' } }
-    ];
-}
-
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 const formatNumber = (num) => {
@@ -173,7 +103,6 @@ const formatNumber = (num) => {
 };
 
 const showToast = (msg, isError = false) => {
-    // Удаляем предыдущий тост если есть
     const oldToast = document.querySelector('.toast-message');
     if (oldToast) oldToast.remove();
     
@@ -184,38 +113,24 @@ const showToast = (msg, isError = false) => {
         bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
-        background: ${isError ? 'rgba(244,67,54,0.9)' : 'rgba(76,175,80,0.9)'};
+        background: ${isError ? '#e74c3c' : '#7F49B4'};
         color: white;
-        padding: 10px 20px;
-        border-radius: 30px;
+        padding: 12px 24px;
+        border-radius: 40px;
         font-size: 14px;
-        z-index: 10001;
+        font-weight: 600;
+        z-index: 20000;
         animation: toastFade 2s forwards;
-        border: 1px solid #7F49B4;
-        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 15px rgba(127, 73, 180, 0.5);
         white-space: nowrap;
-        pointer-events: none;
+        border: 1px solid rgba(255,255,255,0.3);
     `;
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
 };
 
-// Стили для тостов (добавляем один раз)
-if (!document.getElementById('toast-styles')) {
-    const style = document.createElement('style');
-    style.id = 'toast-styles';
-    style.textContent = `
-        @keyframes toastFade {
-            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
+// ==================== ДОСТИЖЕНИЯ ====================
 const ACHIEVEMENTS = [
     {
         id: 'click_100',
@@ -279,7 +194,6 @@ function checkAchievements() {
     ACHIEVEMENTS.forEach(achievement => {
         if (!State.achievements.completed.includes(achievement.id) && 
             achievement.condition(stats)) {
-            // Достижение выполнено!
             State.achievements.completed.push(achievement.id);
             State.game.coins += achievement.reward;
             showAchievementNotification(achievement);
@@ -289,43 +203,42 @@ function checkAchievements() {
 }
 
 function showAchievementNotification(achievement) {
-    const notif = document.createElement('div');
-    notif.className = 'achievement-notification';
-    notif.innerHTML = `
-        <div class="achievement-icon">${achievement.icon}</div>
-        <div class="achievement-info">
-            <div class="achievement-title">🏆 Достижение!</div>
-            <div class="achievement-name">${achievement.title}</div>
-            <div class="achievement-reward">+${achievement.reward} монет</div>
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast';
+    toast.innerHTML = `
+        <div class="achievement-toast-icon">${achievement.icon}</div>
+        <div class="achievement-toast-info">
+            <div class="achievement-toast-title">🏆 Достижение!</div>
+            <div class="achievement-toast-name">${achievement.title}</div>
+            <div class="achievement-toast-reward">+${achievement.reward} 🪙</div>
         </div>
     `;
-    document.body.appendChild(notif);
+    document.body.appendChild(toast);
     
-    setTimeout(() => notif.classList.add('show'), 100);
-    setTimeout(() => notif.remove(), 5000);
-    
-    // Звук достижения
+    setTimeout(() => toast.classList.add('show'), 100);
+    createConfetti();
     playAchievementSound();
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }
 
 function playAchievementSound() {
     if (!State.settings.sound) return;
-    
     try {
         if (!window.audioCtx) window.audioCtx = new AudioContext();
         const now = window.audioCtx.currentTime;
-        
         for (let i = 0; i < 3; i++) {
             const osc = window.audioCtx.createOscillator();
             const gain = window.audioCtx.createGain();
             osc.connect(gain);
             gain.connect(window.audioCtx.destination);
-            
             osc.type = 'sine';
             osc.frequency.setValueAtTime(600 + i * 200, now + i * 0.1);
             gain.gain.setValueAtTime(0.2, now + i * 0.1);
             gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
-            
             osc.start(now + i * 0.1);
             osc.stop(now + i * 0.1 + 0.3);
         }
@@ -337,7 +250,6 @@ const API = {
     async request(endpoint, options = {}, retries = 2) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        
         try {
             const res = await fetch(CONFIG.API_URL + endpoint, {
                 ...options,
@@ -390,7 +302,6 @@ async function loadUserData() {
         await loadSkinsList();
         await loadReferralData();
         await checkBoostStatus();
-        await loadTasks();
         
         applySavedSkin();
         updateUI();
@@ -411,23 +322,45 @@ async function loadPrices() {
     }
 }
 
+// ==================== ЛОКАЛЬНЫЕ СКИНЫ ====================
+function getLocalSkins() {
+    return [
+        { id: 'skin_lvl_1', name: 'Начинающий спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'level', value: 1 } },
+        { id: 'skin_lvl_2', name: 'Опытный спирикс', image: 'imgg/skins/Coin_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'level', value: 10 } },
+        { id: 'skin_lvl_3', name: 'Мастер спирикс', image: 'imgg/skins/Galaxy_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'level', value: 25 } },
+        { id: 'skin_lvl_4', name: 'Элитный спирикс', image: 'imgg/skins/King_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'level', value: 40 } },
+        { id: 'skin_lvl_5', name: 'Легендарный спирикс', image: 'imgg/skins/Monster_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'level', value: 60 } },
+        { id: 'skin_lvl_6', name: 'Мифический спирикс', image: 'imgg/skins/Ninja_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.6 }, requirement: { type: 'level', value: 80 } },
+        { id: 'skin_lvl_7', name: 'Божественный спирикс', image: 'imgg/skins/Shadow_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'level', value: 100 } },
+        { id: 'skin_video_1', name: 'Звездный спирикс', image: 'imgg/skins/Techno_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'ads', count: 5 } },
+        { id: 'skin_video_2', name: 'Космический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'ads', count: 10 } },
+        { id: 'skin_video_3', name: 'Галактический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'ads', count: 20 } },
+        { id: 'skin_video_4', name: 'Небесный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'ads', count: 25 } },
+        { id: 'skin_video_5', name: 'Божественный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'ads', count: 35 } },
+        { id: 'skin_video_6', name: 'Всемогущий спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'ads', count: 50 } },
+        { id: 'skin_friend_1', name: 'Дружный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'friends', count: 1 } },
+        { id: 'skin_friend_2', name: 'Популярный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'friends', count: 3 } },
+        { id: 'skin_friend_3', name: 'Известный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'friends', count: 5 } },
+        { id: 'skin_friend_4', name: 'Звездный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'friends', count: 10 } },
+        { id: 'skin_friend_5', name: 'Легендарный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'friends', count: 20 } },
+        { id: 'skin_friend_6', name: 'Император спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'friends', count: 50 } },
+        { id: 'skin_cpa_1', name: 'Тайный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.5 }, requirement: { type: 'link', url: 'https://example.com' } }
+    ];
+}
+
 async function loadSkinsList() {
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/skins/list`);
         if (res.ok) {
             const data = await res.json();
             State.skins.data = data.skins || [];
-            console.log('✅ Скины загружены с сервера:', State.skins.data);
         } else {
-            console.warn('⚠️ Сервер не ответил, использую локальные скины');
-            State.skins.data = getLocalSkins();  // ← ОДНА СТРОКА!
+            State.skins.data = getLocalSkins();
         }
     } catch (err) {
-        console.error('❌ Ошибка загрузки скинов:', err);
-        State.skins.data = getLocalSkins();  // ← ОДНА СТРОКА!
+        State.skins.data = getLocalSkins();
     }
     
-    // Добавляем текущий прогресс
     State.skins.data.forEach(skin => {
         if (skin.requirement?.type === 'level') {
             skin.requirement.current = State.game.levels.multitap || 0;
@@ -441,6 +374,7 @@ async function loadSkinsList() {
     renderSkins();
     updateCollectionProgress();
 }
+
 // ==================== UI ОБНОВЛЕНИЕ ====================
 let pendingUI = false;
 
@@ -449,19 +383,15 @@ function updateUI() {
     pendingUI = true;
     
     requestAnimationFrame(() => {
-        // Баланс
         const coinEl = document.getElementById('coinBalance');
         if (coinEl) coinEl.textContent = formatNumber(State.game.coins);
 
-        // Доход в час
         const hourEl = document.getElementById('profitPerHour');
         if (hourEl) hourEl.textContent = formatNumber(State.game.profitPerHour);
         
-        // Доход за клик
         const tapEl = document.getElementById('profitPerTap');
         if (tapEl) tapEl.textContent = State.game.profitPerTap;
 
-        // Энергия
         const energyFill = document.getElementById('energyFill');
         const energyText = document.getElementById('energyText');
         const maxEnergyEl = document.getElementById('maxEnergyText');
@@ -473,15 +403,9 @@ function updateUI() {
             maxEnergyEl.textContent = State.game.maxEnergy;
         }
 
-        // Время восстановления
-        const missing = State.game.maxEnergy - State.game.energy;
-        
-
-        // Уровень
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) globalLevelEl.textContent = State.game.levels.multitap;
 
-        // Цена глобального апгрейда
         const globalPriceEl = document.getElementById('globalPrice');
         if (globalPriceEl) {
             const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
@@ -492,56 +416,34 @@ function updateUI() {
     });
 }
 
-
-// ==================== ИДЕАЛЬНАЯ ЭНЕРГИЯ ====================
-function startEnergyRecovery() {
-    console.log('⚡ Запуск идеальной системы энергии');
-    
-    // Очищаем старые таймеры
+// ==================== ЭНЕРГИЯ ====================
+function startPerfectEnergySystem() {
     if (State.temp.animationTimer) clearInterval(State.temp.animationTimer);
     if (State.temp.syncTimer) clearInterval(State.temp.syncTimer);
     
-    // Буфер для синхронизации
     State.temp.energyBuffer = 0;
     
-    // === ТАЙМЕР 1: Плавная анимация (каждую секунду) ===
     State.temp.animationTimer = setInterval(() => {
-        // Не восстанавливаем при Mega Boost
-        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) {
-            return;
-        }
+        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) return;
         
-        // Если энергия не полная - добавляем 1 (локально)
         if (State.game.energy < State.game.maxEnergy) {
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-            
-            // Обновляем UI
             updateUI();
-            
-            // Копим для отправки на сервер
             State.temp.energyBuffer++;
-            
-            console.log(`⚡ Локально +1 → ${State.game.energy} (буфер: ${State.temp.energyBuffer})`);
         }
-    }, 1000); // Каждую секунду!
+    }, 1000);
     
-    // === ТАЙМЕР 2: Синхронизация с сервером (раз в 15 секунд) ===
     State.temp.syncTimer = setInterval(() => {
-        if (!userId) return; // Офлайн режим
-        
+        if (!userId) return;
         syncEnergyWithServer();
-        
-    }, 15000); // 15 секунд
+    }, 15000);
 }
 
-// Новая функция синхронизации с сервером
 async function syncEnergyWithServer() {
     if (!userId) return;
     
-    console.log(`📤 Синхронизация энергии: буфер=${State.temp.energyBuffer}, текущая=${State.game.energy}`);
-    
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
+        await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -550,28 +452,12 @@ async function syncEnergyWithServer() {
                 gained: State.temp.energyBuffer || 0
             })
         });
-        
-        if (res.ok) {
-            const data = await res.json();
-            const oldEnergy = State.game.energy;
-            State.game.energy = data.energy;
-            
-            console.log(`⚡ Синхронизация: ${oldEnergy} → ${State.game.energy}`);
-            
-            // Буфер сброшен (сервер учёл всё)
-            State.temp.energyBuffer = 0;
-            
-            updateUI();
-        } else {
-            console.error('Ошибка синхронизации энергии');
-        }
+        State.temp.energyBuffer = 0;
     } catch (e) {
         console.error('Energy sync error:', e);
-        // Не сбрасываем буфер - попробуем в следующий раз
     }
 }
 
-// Полная синхронизация (раз в минуту для страховки)
 async function fullSyncWithServer() {
     if (!userId) return;
     
@@ -579,63 +465,15 @@ async function fullSyncWithServer() {
         const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
         if (res.ok) {
             const data = await res.json();
-            
-            // Для энергии берём МАКСИМУМ
-            const oldEnergy = State.game.energy;
+            State.game.coins = data.coins;
             State.game.energy = Math.max(State.game.energy, data.energy);
             State.game.energy = Math.min(State.game.energy, data.max_energy);
-            
-            // Монеты берём с сервера (они точнее)
-            State.game.coins = data.coins;
-            
-            if (oldEnergy !== State.game.energy) {
-                console.log(`🔄 Полная синхронизация: энергия скорректирована ${oldEnergy} → ${State.game.energy}`);
-            }
-            
             updateUI();
         }
     } catch (e) {
         console.error('Full sync error:', e);
     }
 }
-
-// Новая функция для запроса восстановления
-async function requestEnergyRecovery() {
-    if (!userId) {
-        // Офлайн режим - восстанавливаем сами
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
-        updateUI();
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${CONFIG.API_URL}/api/recover-energy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            const oldEnergy = State.game.energy;
-            State.game.energy = data.energy;
-            console.log(`⚡ Восстановление: ${oldEnergy} → ${State.game.energy} (+3 за 15 сек)`);
-            updateUI();
-        } else {
-            console.error('Ошибка сервера при восстановлении энергии');
-            // Если сервер не отвечает - восстанавливаем локально
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
-            updateUI();
-        }
-    } catch (e) {
-        console.error('Energy recovery error:', e);
-        // При ошибке - восстанавливаем локально
-        State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 3);
-        updateUI();
-    }
-}
-
-
 
 // ==================== КЛИКИ ====================
 let lastBatchTime = 0;
@@ -647,16 +485,13 @@ async function sendClickBatch() {
     
     if (clicks === 0) return;
     
-    console.log(`📤 Отправка кликов: ${clicks} кликов, +${gain} монет`);
-    
-    // Сбрасываем буфер ДО отправки (чтобы новые клики не попали в этот батч)
     State.temp.clickBuffer = 0;
     State.temp.gainBuffer = 0;
     
     if (!userId) return;
     
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
+        await fetch(`${CONFIG.API_URL}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -666,33 +501,21 @@ async function sendClickBatch() {
                 mega_boost: megaBoost
             })
         });
-        
-        if (!res.ok) throw new Error('Server error');
-        
-        console.log('✅ Клики отправлены успешно');
-        
     } catch (err) {
-        console.log('❌ Ошибка отправки кликов, вернём в буфер');
-        // Возвращаем в буфер
         State.temp.clickBuffer += clicks;
         State.temp.gainBuffer += gain;
     }
 }
 
 function handleTap(e) {
-    // Предотвращаем стандартное поведение
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
-    // Игнорируем клики по кнопкам
     if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
-        return;
-    }
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
 
-    // Координаты для анимации
     let clientX, clientY;
     if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -702,7 +525,6 @@ function handleTap(e) {
         clientY = e.clientY;
     }
 
-    // Проверка буста
     const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
     
     if (!megaBoostActive && State.game.energy < 1) {
@@ -710,223 +532,96 @@ function handleTap(e) {
         return;
     }
 
-    // Расчет дохода
     let gain = State.game.profitPerTap;
     
     const skin = State.skins.data.find(s => s.id === State.skins.selected);
-    if (skin?.bonus?.type === 'multiplier') {
-        gain *= skin.bonus.value;
-    }
+    if (skin?.bonus?.type === 'multiplier') gain *= skin.bonus.value;
     
     if (megaBoostActive) gain *= 2;
-    gain = Math.floor(gain);
-    if (isNaN(gain) || gain < 1) gain = 1;
+    gain = Math.floor(gain) || 1;
 
-    // Обновление состояния
     State.game.coins += gain;
-    if (!megaBoostActive) {
-        State.game.energy = Math.max(0, State.game.energy - 1);
-    }
+    if (!megaBoostActive) State.game.energy = Math.max(0, State.game.energy - 1);
     
-    // Буферизация для отправки
     State.temp.clickBuffer++;
     State.temp.gainBuffer += gain;
     
-    // Обновление достижений
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
     checkAchievements();
     
-    // ОБНОВЛЕНИЕ ТУРНИРНОГО СЧЕТА
     State.temp.tournamentScore = State.game.coins;
-
     updateUI();
 
-    // ========== АНИМАЦИЯ ==========
-    
-    const skinEffect = getSkinEffect(State.skins.selected);
-    if (skinEffect && skinEffect.particleCount > 5) {
-        // Дополнительные частицы для редких скинов
-        for (let i = 0; i < skinEffect.particleCount; i++) {
-            setTimeout(() => {
-                const particle = document.createElement('div');
-                const angle = (i / skinEffect.particleCount) * Math.PI * 2;
-                const distance = 30 + Math.random() * 30;
-                
-                particle.style.cssText = `
-                    position: fixed;
-                    left: ${clientX}px;
-                    top: ${clientY}px;
-                    width: 6px;
-                    height: 6px;
-                    background: ${skinEffect.particleColor[i % skinEffect.particleColor.length]};
-                    border-radius: 50%;
-                    pointer-events: none;
-                    z-index: 9998;
-                    box-shadow: 0 0 10px currentColor;
-                    animation: skinParticle 1s ease-out forwards;
-                `;
-                
-                // Устанавливаем переменные для анимации
-                particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
-                particle.style.setProperty('--ty', Math.sin(angle) * distance - 20 + 'px');
-                
-                document.body.appendChild(particle);
-                setTimeout(() => particle.remove(), 1000);
-            }, i * 30);
-        }
-    }
-
-    // Добавь стили для частиц
-    const particleStyle = document.createElement('style');
-    particleStyle.textContent = `
-        @keyframes skinParticle {
-            0% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0);
-            }
-        }
+    // Анимация
+    const effect = document.createElement('div');
+    effect.className = 'tap-effect-global';
+    effect.style.cssText = `
+        position: fixed;
+        left: ${clientX}px;
+        top: ${clientY}px;
+        transform: translate(-50%, -50%);
+        color: ${megaBoostActive ? '#FFD700' : '#7F49B4'};
+        font-size: 28px;
+        font-weight: bold;
+        text-shadow: 0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'};
+        pointer-events: none;
+        z-index: 9999;
+        white-space: nowrap;
+        transition: all 0.6s ease-out;
     `;
-    document.head.appendChild(particleStyle);
+    effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
+    document.body.appendChild(effect);
     
-    try {
-        const effect = document.createElement('div');
-        effect.className = 'tap-effect-global';
-        effect.style.cssText = `
-            position: fixed;
-            left: ${clientX}px;
-            top: ${clientY}px;
-            transform: translate(-50%, -50%);
-            color: ${megaBoostActive ? '#ffaa00' : 'white'};
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 0 10px ${megaBoostActive ? '#ffaa00' : '#7F49B4'};
-            pointer-events: none;
-            z-index: 9999;
-            white-space: nowrap;
-            transition: all 0.6s ease-out;
-        `;
-        effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
-        document.body.appendChild(effect);
-        
-        requestAnimationFrame(() => {
-            effect.style.transform = 'translate(-50%, -150px)';
-            effect.style.opacity = '0';
-        });
-        
-        setTimeout(() => effect.remove(), 600);
-    } catch (err) {}
+    requestAnimationFrame(() => {
+        effect.style.transform = 'translate(-50%, -150px)';
+        effect.style.opacity = '0';
+    });
+    
+    setTimeout(() => effect.remove(), 600);
 
-    if (megaBoostActive) {
-        // Добавляем дополнительные искры
-        for (let i = 0; i < 5; i++) {
-            setTimeout(() => {
-                const spark = document.createElement('div');
-                spark.style.cssText = `
-                    position: fixed;
-                    left: ${clientX + (Math.random() - 0.5) * 50}px;
-                    top: ${clientY + (Math.random() - 0.5) * 50}px;
-                    width: 4px;
-                    height: 4px;
-                    background: ${['#ffaa00', '#ff5500', '#ffff00'][Math.floor(Math.random() * 3)]};
-                    border-radius: 50%;
-                    pointer-events: none;
-                    z-index: 9998;
-                    animation: sparkFade 0.5s ease-out forwards;
-                `;
-                document.body.appendChild(spark);
-                setTimeout(() => spark.remove(), 500);
-            }, i * 50);
-        }
-    }
-
-    // Добавь стиль для искр
-    const sparkStyle = document.createElement('style');
-    sparkStyle.textContent = `
-        @keyframes sparkFade {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(2) translateY(-20px); }
-        }
-    `;
-    document.head.appendChild(sparkStyle);
-
-    // ========== ЗВУК ==========
+    // Звук
     if (State.settings.sound) {
         try {
-            if (!window.audioCtx) {
-                window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (window.audioCtx.state === 'suspended') {
-                window.audioCtx.resume().catch(() => {});
-            }
-            
+            if (!window.audioCtx) window.audioCtx = new AudioContext();
             const now = window.audioCtx.currentTime;
             const osc = window.audioCtx.createOscillator();
             const gainNode = window.audioCtx.createGain();
             osc.connect(gainNode);
             gainNode.connect(window.audioCtx.destination);
-            
             osc.type = megaBoostActive ? 'sawtooth' : 'sine';
             osc.frequency.setValueAtTime(megaBoostActive ? 800 : 650, now);
             osc.frequency.exponentialRampToValueAtTime(megaBoostActive ? 400 : 450, now + 0.1);
             gainNode.gain.setValueAtTime(0.2, now);
             gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            
             osc.start(now);
             osc.stop(now + 0.2);
         } catch (err) {}
     }
 
-    // ========== ВИБРАЦИЯ ==========
+    // Вибро
     if (State.settings.vibration) {
         try {
-            if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            } else if (navigator.vibrate) {
-                navigator.vibrate(20);
-            }
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            else if (navigator.vibrate) navigator.vibrate(20);
         } catch (err) {}
     }
 }
 
 // ==================== СИНХРОНИЗАЦИЯ ====================
 let syncTimer = null;
-const SYNC_INTERVAL = 15000; // 15 секунд
+const SYNC_INTERVAL = 15000;
 
 async function forceSync() {
-    console.log(`🔄 Синхронизация... кликов в буфере: ${State.temp.clickBuffer}`);
+    if (State.temp.clickBuffer > 0) await sendClickBatch();
     
-    // 1. Отправляем накопленные клики
-    if (State.temp.clickBuffer > 0) {
-        await sendClickBatch();
-    }
-    
-    // 2. Запрашиваем актуальные данные с сервера
     if (userId) {
         try {
             const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
             if (res.ok) {
                 const data = await res.json();
-                
-                // ✅ Сохраняем старые значения
-                const oldEnergy = State.game.energy;
-                const oldCoins = State.game.coins;
-                
-                // ✅ Обновляем монеты (всегда берем с сервера)
                 State.game.coins = data.coins;
-                
-                // ✅ ДЛЯ ЭНЕРГИИ: берем МАКСИМАЛЬНОЕ значение
-                // (локальное восстановление + серверное)
                 State.game.energy = Math.max(State.game.energy, data.energy);
-                
-                // ✅ Ограничиваем максимумом
                 State.game.energy = Math.min(State.game.energy, data.max_energy);
-                
-                console.log(`⚡ Синхронизация: локальная=${oldEnergy}, сервер=${data.energy}, берем=${State.game.energy}`);
-                
                 updateUI();
             }
         } catch (e) {
@@ -941,6 +636,8 @@ function startSync() {
 }
 
 // ==================== СКИНЫ ====================
+let currentFilter = 'all';
+
 function getSkinById(id) {
     return State.skins.data.find(s => s.id === id);
 }
@@ -951,21 +648,14 @@ function applySavedSkin() {
     
     const skin = getSkinById(State.skins.selected);
     img.src = (skin?.image || 'imgg/skins/default_SP.png') + '?t=' + Date.now();
-    img.onerror = () => img.src = 'imgg/default_SP.png';
+    img.onerror = () => img.src = 'imgg/clickimg.png';
 }
 
 function renderSkins() {
     const grid = document.getElementById('skins-grid');
-    if (!grid) {
-        console.error('❌ skins-grid не найден');
-        return;
-    }
-    
-    console.log('🎨 Рендерим скины:', State.skins.data);
+    if (!grid) return;
     
     let filtered = State.skins.data;
-    
-    // Фильтрация по редкости
     if (currentFilter && currentFilter !== 'all') {
         filtered = filtered.filter(s => s.rarity === currentFilter);
     }
@@ -976,18 +666,13 @@ function renderSkins() {
     }
     
     grid.innerHTML = filtered.map(skin => {
-        
-        // Проверяем, есть ли скин в owned
-
-        const isOwned = State.skins.owned && State.skins.owned.includes(skin.id);
+        const isOwned = State.skins.owned.includes(skin.id);
         const isSelected = State.skins.selected === skin.id;
         const isLocked = !isOwned;
         
-        console.log(`🖼️ Скин ${skin.id}: owned=${isOwned}, selected=${isSelected}`);
-        
         return `
             <div class="skin-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-id="${skin.id}">
+                 data-id="${skin.id}" onclick="openSkinDetail('${skin.id}')">
                 <div class="skin-image">
                     <img src="${skin.image}" alt="${skin.name}" 
                          onerror="this.src='imgg/clickimg.png'">
@@ -999,28 +684,31 @@ function renderSkins() {
             </div>
         `;
     }).join('');
+}
 
-    // Добавляем обработчики кликов на карточки
-    document.querySelectorAll('.skin-card').forEach(card => {
-        card.addEventListener('click', function(e) {
-            const skinId = this.dataset.id;
-            console.log('👆 Клик по скину:', skinId);
-            openSkinDetail(skinId);
+function filterSkins(category, event) {
+    currentFilter = category;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (event?.target) event.target.classList.add('active');
+    else {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(category) || 
+                (category === 'all' && btn.textContent === 'All')) {
+                btn.classList.add('active');
+            }
         });
-    });
+    }
+    
+    renderSkins();
 }
 
 function selectSkin(id) {
     const skin = getSkinById(id);
     if (!skin) return;
     
-    if (State.skins.owned.includes(id)) {
-        selectActiveSkin(id);
-    } else if (skin.requirement?.type === 'free') {
-        unlockSkin(id);
-    } else {
-        showToast(`❌ Скин "${skin.name}" еще не открыт!`, true);
-    }
+    if (State.skins.owned.includes(id)) selectActiveSkin(id);
+    else showToast(`❌ Скин "${skin.name}" еще не открыт!`, true);
 }
 
 async function selectActiveSkin(id) {
@@ -1030,9 +718,8 @@ async function selectActiveSkin(id) {
         State.skins.selected = id;
         applySavedSkin();
         renderSkins();
-        showToast(`✨ Скин выбран!`);
+        showToast('✨ Скин выбран!');
     } catch (err) {
-        console.error('Select skin error:', err);
         showToast('❌ Ошибка выбора скина', true);
     }
 }
@@ -1043,130 +730,179 @@ async function unlockSkin(id) {
         const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: id, method: 'free' });
         if (res.success) {
             State.skins.owned.push(id);
-            showToast('✅ Новый скин разблокирован!');
+            showToast('✅ Новый скин!');
             renderSkins();
             applySavedSkin();
         }
     } catch (err) {
-        console.error('Unlock skin error:', err);
         showToast('❌ Ошибка разблокировки', true);
     }
 }
-
 
 function openSkins() {
     renderSkins();
     openModal('skins-screen');
 }
 
-function filterSkins(category, event) {
-    console.log('🔍 Фильтр:', category);
-    currentFilter = category;
-    
-    // Обновляем активную кнопку
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Добавляем active нажатую кнопку
-    if (event && event.target) {
-        event.target.classList.add('active');
-    } else {
-        // Если event нет, ищем кнопку по тексту
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            if (btn.textContent.toLowerCase().includes(category) || 
-                (category === 'all' && btn.textContent === 'Все')) {
-                btn.classList.add('active');
-            }
-        });
-    }
-    
-    renderSkins();
-}
-
 function getSkinEffect(skinId) {
     const skin = State.skins.data.find(s => s.id === skinId);
     if (!skin) return null;
     
-    // Эффекты в зависимости от редкости
     switch(skin.rarity) {
-        case 'legendary':
-            return {
-                color: '#ffaa00',
-                particleColor: ['#ffaa00', '#ff5500', '#ffff00'],
-                particleCount: 15,
-                sound: 'legendary'
-            };
-        case 'super':
-            return {
-                color: '#ff6b6b',
-                particleColor: ['#ff6b6b', '#ff8e8e', '#ffb6b6'],
-                particleCount: 10,
-                sound: 'super'
-            };
-        case 'rare':
-            return {
-                color: '#4ecdc4',
-                particleColor: ['#4ecdc4', '#6ed4cc', '#8edbd4'],
-                particleCount: 8,
-                sound: 'rare'
-            };
-        default:
-            return {
-                color: '#7F49B4',
-                particleColor: ['#7F49B4', '#9b6bdf', '#b88ce8'],
-                particleCount: 5,
-                sound: 'common'
-            };
+        case 'legendary': return { color: '#FFD700', particleColor: ['#FFD700', '#FFA500', '#FF4500'], particleCount: 15 };
+        case 'super': return { color: '#FF6B6B', particleColor: ['#FF6B6B', '#FF8E8E', '#FFB6B6'], particleCount: 10 };
+        case 'rare': return { color: '#4ECDC4', particleColor: ['#4ECDC4', '#6ED4CC', '#8EDBD4'], particleCount: 8 };
+        default: return { color: '#7F49B4', particleColor: ['#7F49B4', '#9B6BDF', '#B88CE8'], particleCount: 5 };
     }
 }
 
-function playSkinSound(rarity) {
-    if (!State.settings.sound) return;
+function openSkinDetail(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) return;
     
-    try {
-        if (!window.audioCtx) {
-            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const modal = document.getElementById('skin-detail-modal');
+    if (!modal) return;
+    
+    const isOwned = State.skins.owned.includes(skin.id);
+    const isSelected = State.skins.selected === skin.id;
+    
+    document.getElementById('skin-detail-img').src = skin.image || 'imgg/clickimg.png';
+    document.getElementById('skin-detail-name').textContent = skin.name || 'Скин';
+    
+    const rarityEl = document.getElementById('skin-detail-rarity');
+    rarityEl.textContent = skin.rarity || 'common';
+    rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
+    
+    document.getElementById('skin-detail-description').textContent = skin.description || 'Нет описания';
+    
+    const bonusEl = document.getElementById('skin-detail-bonus');
+    if (skin.bonus) {
+        if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = `⚡ x${skin.bonus.value} к доходу`;
+        else bonusEl.innerHTML = `⚡ +${skin.bonus.value || 0}`;
+    } else {
+        bonusEl.innerHTML = '⚡ Бонус: нет';
+    }
+    
+    const reqBlock = document.getElementById('skin-requirement-block');
+    const reqText = document.getElementById('skin-requirement-text');
+    const reqProgress = document.getElementById('skin-requirement-progress');
+    const progressText = document.getElementById('requirement-progress-text');
+    const progressFill = document.getElementById('requirement-progress-fill');
+    const actionBtn = document.getElementById('skin-action-btn');
+    
+    if (isOwned) {
+        reqBlock.style.display = 'none';
+        actionBtn.textContent = isSelected ? '✓ ВЫБРАН' : 'ВЫБРАТЬ';
+        actionBtn.onclick = isSelected ? closeSkinDetail : () => selectSkinFromDetail(skin.id);
+    } else {
+        reqBlock.style.display = 'block';
+        
+        if (skin.requirement?.type === 'level') {
+            const current = State.game.levels.multitap || 0;
+            const value = skin.requirement.value || 1;
+            const percent = Math.min(100, (current / value) * 100);
+            
+            reqText.textContent = `🔓 Требуется уровень ${value}`;
+            progressText.textContent = `${current}/${value}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            actionBtn.textContent = current >= value ? 'ПОЛУЧИТЬ' : 'ПРОКАЧАТЬ';
+            actionBtn.onclick = current >= value ? () => unlockSkinFromDetail(skin.id) : () => {
+                closeSkinDetail();
+                switchTab('main');
+            };
+        } else if (skin.requirement?.type === 'ads') {
+            const current = State.skins.adsWatched || 0;
+            const count = skin.requirement.count || 1;
+            const percent = Math.min(100, (current / count) * 100);
+            
+            reqText.textContent = `🔓 Посмотри ${count} видео`;
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            actionBtn.textContent = current >= count ? 'ПОЛУЧИТЬ' : 'СМОТРЕТЬ ВИДЕО';
+            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+        } else {
+            reqText.textContent = `🔓 Условие: особое`;
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = 'НЕДОСТУПНО';
         }
-        
-        const now = window.audioCtx.currentTime;
-        const osc = window.audioCtx.createOscillator();
-        const gain = window.audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(window.audioCtx.destination);
-        
-        switch(rarity) {
-            case 'legendary':
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.setValueAtTime(1200, now + 0.05);
-                osc.frequency.setValueAtTime(1600, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                break;
-            case 'super':
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.setValueAtTime(900, now + 0.05);
-                osc.frequency.setValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-                break;
-            case 'rare':
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.setValueAtTime(600, now + 0.05);
-                osc.frequency.setValueAtTime(800, now + 0.1);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                break;
-        }
-        
-        osc.start(now);
-        osc.stop(now + 0.3);
-    } catch (err) {}
+    }
+    
+    modal.classList.add('active');
 }
 
+function closeSkinDetail() {
+    document.getElementById('skin-detail-modal')?.classList.remove('active');
+}
+
+async function selectSkinFromDetail(skinId) {
+    if (!userId) return showToast('❌ Авторизуйтесь', true);
+    try {
+        await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
+        State.skins.selected = skinId;
+        applySavedSkin();
+        showToast('✨ Скин выбран!');
+        closeSkinDetail();
+        renderSkins();
+    } catch (err) {
+        showToast('❌ Ошибка выбора', true);
+    }
+}
+
+async function unlockSkinFromDetail(skinId) {
+    if (!userId) return showToast('❌ Авторизуйтесь', true);
+    if (State.skins.owned.includes(skinId)) {
+        showToast('✅ Скин уже есть');
+        closeSkinDetail();
+        return;
+    }
+    
+    try {
+        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
+        if (res.success) {
+            State.skins.owned.push(skinId);
+            showToast('✅ Новый скин!');
+            closeSkinDetail();
+            renderSkins();
+            updateCollectionProgress();
+        }
+    } catch (err) {
+        showToast('❌ Ошибка получения', true);
+    }
+}
+
+function watchAdForSkin(skinId) {
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    window.show_10655027()
+        .then(() => {
+            State.skins.adsWatched++;
+            showToast('✅ +1 просмотр!');
+            renderSkins();
+            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
+                openSkinDetail(skinId);
+            }
+        })
+        .catch(() => showToast('❌ Ошибка', true));
+}
+
+function updateCollectionProgress() {
+    const collected = State.skins.owned.length;
+    const total = State.skins.data.length || 21;
+    const percent = (collected / total) * 100;
+    
+    document.getElementById('skins-collected').textContent = collected;
+    document.getElementById('skins-total').textContent = total;
+    document.getElementById('skins-progress-fill').style.width = percent + '%';
+}
 
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
@@ -1193,7 +929,6 @@ async function upgradeBoost(type) {
             State.game.levels[type] = result.new_level;
             State.game.prices[type] = result.next_cost || 0;
             State.achievements.upgrades = (State.achievements.upgrades || 0) + 1;
-
             
             if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
             if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
@@ -1227,19 +962,7 @@ async function upgradeAll() {
     
     for (const type of ['multitap', 'profit', 'energy']) {
         try {
-            const result = await API.post('/api/upgrade', { user_id: userId, boost_type: type });
-            if (result) {
-                State.game.coins = result.coins;
-                State.game.levels[type] = result.new_level;
-                State.game.prices[type] = result.next_cost || 0;
-                State.achievements.upgrades = (State.achievements.upgrades || 0) + 1;
-                if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
-                if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
-                if (result.max_energy) {
-                    State.game.maxEnergy = result.max_energy;
-                    State.game.energy = result.max_energy;
-                }
-            }
+            await upgradeBoost(type);
         } catch (err) {}
     }
     
@@ -1249,320 +972,211 @@ async function upgradeAll() {
     checkAchievements();
     updateUI();
 }
-// ==================== ЗАДАНИЯ ====================
 
-// Массив заданий (как в топ-играх)
-const TASKS = [
-    // Ежедневные
+function playUpgradeSound() {
+    if (!State.settings.sound) return;
+    try {
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        const now = window.audioCtx.currentTime;
+        for (let i = 0; i < 3; i++) {
+            const osc = window.audioCtx.createOscillator();
+            const gain = window.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(window.audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400 + i * 200, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        }
+    } catch (err) {}
+}
+
+// ==================== ВИДЕО-ЗАДАНИЯ ====================
+const VIDEO_TASKS = [
     {
-        id: 'daily_login',
-        title: '📅 Ежедневный вход',
-        description: 'Заходи в игру каждый день',
+        id: 'video_1',
+        title: '📺 Бонусные монеты',
+        description: 'Посмотри видео и получи 1000 монет',
         reward: 1000,
-        icon: '📅',
-        category: 'daily',
-        type: 'login',
-        progress: 0,
-        total: 1,
-        completed: false
-    },
-    {
-        id: 'daily_clicks',
-        title: '👆 100 кликов',
-        description: 'Сделай 100 кликов за день',
-        reward: 2000,
-        icon: '👆',
-        category: 'daily',
-        type: 'clicks',
-        progress: 0,
-        total: 100,
-        completed: false
-    },
-    {
-        id: 'daily_energy',
-        title: '⚡ Потрать энергию',
-        description: 'Потрать 500 энергии',
-        reward: 1500,
-        icon: '⚡',
-        category: 'daily',
-        type: 'energy',
-        progress: 0,
-        total: 500,
-        completed: false
-    },
-    
-    // Достижения
-    {
-        id: 'achieve_clicks_1000',
-        title: '🏆 1000 кликов',
-        description: 'Сделай 1000 кликов всего',
-        reward: 5000,
-        icon: '🏆',
-        category: 'achievements',
-        type: 'total_clicks',
-        progress: 0,
-        total: 1000,
-        completed: false
-    },
-    {
-        id: 'achieve_upgrades_10',
-        title: '⬆️ 10 улучшений',
-        description: 'Купи 10 улучшений',
-        reward: 3000,
-        icon: '⬆️',
-        category: 'achievements',
-        type: 'upgrades',
-        progress: 0,
-        total: 10,
-        completed: false
-    },
-    
-    // Специальные
-    {
-        id: 'special_referral',
-        title: '👥 Пригласи друга',
-        description: 'Пригласи 1 друга в игру',
-        reward: 10000,
-        icon: '👥',
-        category: 'special',
-        type: 'referral',
-        progress: 0,
-        total: 1,
+        icon: '🎥',
+        type: 'coins',
         completed: false,
-        link: 'https://t.me/Ryoho_bot?start=ref_'
+        available: true
     },
     {
-        id: 'special_skin',
-        title: '🎨 Получи скин',
-        description: 'Открой свой первый скин',
-        reward: 5000,
-        icon: '🎨',
-        category: 'special',
-        type: 'skin',
-        progress: 0,
-        total: 1,
-        completed: false
+        id: 'video_2',
+        title: '⚡ Бонус энергии',
+        description: 'Посмотри видео и получи +50 энергии',
+        reward: 50,
+        icon: '⚡',
+        type: 'energy',
+        completed: false,
+        available: true
     },
     {
-        id: 'special_tournament',
-        title: '🏅 Топ 10 в турнире',
-        description: 'Попади в топ-10 турнира',
-        reward: 15000,
-        icon: '🏅',
-        category: 'special',
-        type: 'tournament',
-        progress: 0,
-        total: 10,
-        completed: false
+        id: 'video_3',
+        title: '🔥 Удвоение монет',
+        description: 'Посмотри видео и удвой доход на 5 минут',
+        reward: 'x2',
+        icon: '🔥',
+        type: 'boost',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'video_4',
+        title: '💎 Бонус за просмотр',
+        description: 'Посмотри видео и получи 2500 монет',
+        reward: 2500,
+        icon: '💎',
+        type: 'coins',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'video_5',
+        title: '🔄 Сброс заданий',
+        description: 'Посмотри видео и обнови все задания',
+        reward: 'Обновить',
+        icon: '🔄',
+        type: 'refresh',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'video_6',
+        title: '🎁 Сундук с монетами',
+        description: 'Посмотри видео и открой сундук',
+        reward: '500-5000',
+        icon: '🎁',
+        type: 'chest',
+        completed: false,
+        available: true
     }
 ];
 
-
-function renderTasks() {
+function loadVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
     
-    let filtered = TASKS;
-    if (currentTaskFilter !== 'all') {
-        filtered = TASKS.filter(t => t.category === currentTaskFilter);
+    const now = new Date();
+    const lastReset = localStorage.getItem('videoTasksReset');
+    
+    if (!lastReset || new Date(lastReset).getDate() !== now.getDate()) {
+        VIDEO_TASKS.forEach(task => {
+            task.completed = false;
+            task.available = true;
+        });
+        localStorage.setItem('videoTasksReset', now.toISOString());
     }
     
-    container.innerHTML = filtered.map(task => {
-        const progressPercent = (task.progress / task.total) * 100;
-        
-        return `
-            <div class="task-card ${task.completed ? 'completed' : ''}" onclick="handleTaskClick('${task.id}')">
-                <div class="task-icon">${task.icon}</div>
-                <div class="task-info">
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-desc">${task.description}</div>
-                    <div class="task-reward">
-                        <span class="reward-icon">🎁</span>
-                        <span>+${task.reward}</span>
-                    </div>
-                    
-                    ${!task.completed ? `
-                        <div class="task-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                            </div>
-                            <div class="progress-text">${task.progress}/${task.total}</div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                ${task.completed ? `
-                    <button class="task-action completed" disabled>✅ Выполнено</button>
-                ` : task.progress >= task.total ? `
-                    <button class="task-action claim" onclick="claimTask('${task.id}', event)">🎁 Забрать</button>
-                ` : `
-                    <button class="task-action start" onclick="startTask('${task.id}', event)">▶ Начать</button>
-                `}
+    renderVideoTasks();
+}
+
+function renderVideoTasks() {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    
+    container.innerHTML = VIDEO_TASKS.map(task => `
+        <div class="task-card ${task.completed ? 'completed' : ''} ${!task.available && !task.completed ? 'disabled' : ''}">
+            <div class="task-icon" style="background: ${task.type === 'coins' ? 'rgba(255,215,0,0.2)' : 
+                task.type === 'energy' ? 'rgba(76,175,80,0.2)' : 
+                task.type === 'boost' ? 'rgba(255,107,107,0.2)' : 
+                'rgba(127,73,180,0.2)'}">
+                ${task.icon}
             </div>
-        `;
-    }).join('');
+            
+            <div class="task-info">
+                <div class="task-title">${task.title}</div>
+                <div class="task-desc">${task.description}</div>
+                <div class="task-reward" style="color: #FFD700;">
+                    🎁 ${typeof task.reward === 'number' ? task.reward + ' 🪙' : task.reward}
+                </div>
+            </div>
+            
+            <button class="task-action" 
+                    onclick="watchVideoForTask('${task.id}')"
+                    style="background: ${task.completed ? '#4CAF50' : 
+                        task.type === 'coins' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 
+                        task.type === 'energy' ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 
+                        task.type === 'boost' ? 'linear-gradient(135deg, #FF6B6B, #FF4757)' : 
+                        'linear-gradient(135deg, #7F49B4, #9B6BDF)'}"
+                    ${task.completed || !task.available ? 'disabled' : ''}>
+                ${task.completed ? '✅' : !task.available ? '⏳' : '📺 Смотреть'}
+            </button>
+        </div>
+    `).join('');
 }
 
-function completeTask(taskId) {
-    showToast(`✅ Задание выполнено!`);
-    // Здесь можно добавить логику начисления награды
-    loadTasks(); // Перезагружаем список задач
-}
-
-// Добавь функцию для загрузки задач (если ее нет)
-async function loadTasks() {
-    if (!userId) return;
+async function watchVideoForTask(taskId) {
+    const task = VIDEO_TASKS.find(t => t.id === taskId);
+    if (!task || task.completed || !task.available) return;
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама временно недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем видео...');
     
     try {
-        // Загружаем прогресс с сервера
-        const completedTasks = await API.get(`/api/tasks/${userId}`).catch(() => []);
+        await window.show_10655027();
+        await claimVideoReward(task);
         
-        // Обновляем прогресс в заданиях
-        TASKS.forEach(task => {
-            task.completed = completedTasks.includes(task.id);
-            
-            // Обновляем прогресс в зависимости от типа
-            if (task.type === 'total_clicks') {
-                task.progress = State.achievements.clicks || 0;
-            } else if (task.type === 'upgrades') {
-                task.progress = State.achievements.upgrades || 0;
-            } else if (task.type === 'referral') {
-                task.progress = State.skins.friendsInvited || 0;
-            } else if (task.type === 'skin') {
-                task.progress = State.skins.owned.length - 1; // минус default_SP
-            }
-        });
+        task.completed = true;
         
-        renderTasks();
-        updateTasksStats();
-        
-    } catch (err) {
-        console.error('Tasks error:', err);
-    }
-}
-function updateTasksStats() {
-    const completedCount = TASKS.filter(t => t.completed).length;
-    document.getElementById('tasks-completed-count').textContent = completedCount;
-    document.getElementById('tasks-coins').textContent = formatNumber(State.game.coins);
-}
-function filterTasks(category) {
-    currentTaskFilter = category;
-    
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent.toLowerCase().includes(category) || 
-            (category === 'all' && btn.textContent === 'Все')) {
-            btn.classList.add('active');
-        }
-    });
-    
-    renderTasks();
-}
-function handleTaskClick(taskId) {
-    const task = TASKS.find(t => t.id === taskId);
-    if (!task) return;
-    
-    if (task.completed) {
-        showToast('✅ Задание уже выполнено');
-    } else if (task.progress >= task.total) {
-        claimTask(taskId);
-    }
-}
-function startTask(taskId, event) {
-    event.stopPropagation();
-    const task = TASKS.find(t => t.id === taskId);
-    if (!task) return;
-    
-    if (task.link) {
-        window.open(task.link + userId, '_blank');
-    } else {
-        // Переходим в нужный раздел
-        if (task.type === 'skin') {
-            switchTab('skins');
-        } else if (task.type === 'referral') {
-            switchTab('friends');
-        } else {
-            switchTab('main');
-        }
-    }
-}async function claimTask(taskId, event) {
-    if (event) event.stopPropagation();
-    
-    const task = TASKS.find(t => t.id === taskId);
-    if (!task || task.completed) return;
-    
-    try {
-        const res = await API.post('/api/complete-task', {
-            user_id: userId,
-            task_id: taskId
-        });
-        
-        if (res.success) {
-            task.completed = true;
-            State.game.coins += task.reward;
-            
-            showToast(`🎁 +${task.reward} монет!`);
-            createTaskConfetti();
-            
-            renderTasks();
-            updateTasksStats();
-            updateUI();
-        }
-    } catch (err) {
-        console.error('Claim task error:', err);
-        showToast('❌ Ошибка', true);
-    }
-}
-
-// Конфетти для заданий
-function createTaskConfetti() {
-    for (let i = 0; i < 30; i++) {
         setTimeout(() => {
-            const confetti = document.createElement('div');
-            confetti.style.cssText = `
-                position: fixed;
-                left: ${Math.random() * 100}vw;
-                top: -10px;
-                width: 8px;
-                height: 8px;
-                background: ${['#FFD700', '#7F49B4', '#4CAF50'][Math.floor(Math.random() * 3)]};
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 20000;
-                animation: taskConfetti ${Math.random() * 2 + 2}s linear forwards;
-                box-shadow: 0 0 10px currentColor;
-            `;
-            document.body.appendChild(confetti);
-            setTimeout(() => confetti.remove(), 3000);
-        }, i * 50);
+            task.available = true;
+            task.completed = false;
+            renderVideoTasks();
+        }, 24 * 60 * 60 * 1000);
+        
+        renderVideoTasks();
+        showToast('✅ Награда получена!');
+        createConfetti();
+        
+    } catch (error) {
+        console.error('Video error:', error);
+        showToast('❌ Ошибка при просмотре видео', true);
     }
 }
 
-// Добавить стили для конфетти заданий
-const taskConfettiStyle = document.createElement('style');
-taskConfettiStyle.textContent = `
-    @keyframes taskConfetti {
-        to {
-            transform: translateY(100vh) rotate(360deg);
-        }
+async function claimVideoReward(task) {
+    switch(task.type) {
+        case 'coins':
+            State.game.coins += task.reward;
+            break;
+        case 'energy':
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
+            break;
+        case 'boost':
+            activateMegaBoost();
+            break;
+        case 'chest':
+            const randomReward = Math.floor(Math.random() * 4500) + 500;
+            State.game.coins += randomReward;
+            showToast(`🎁 +${randomReward} монет!`);
+            break;
+        case 'refresh':
+            VIDEO_TASKS.forEach(t => {
+                t.completed = false;
+                t.available = true;
+            });
+            break;
     }
-`;
-document.head.appendChild(taskConfettiStyle);
-
-// Открыть модалку заданий
-function openTasks() {
-    loadTasks();
-    openModal('tasks-screen');
+    
+    updateUI();
+    
+    if (userId) {
+        await fetch(`${CONFIG.API_URL}/api/ad-watched`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, reward_type: task.type })
+        }).catch(() => {});
+    }
 }
-
-
-// Заглушка для выполнения задачи
-function completeTask(taskId) {
-    showToast(`✅ Задание "${taskId}" выполнено!`);
-    loadTasks(); // Перезагружаем задачи
-}
-
-
 
 // ==================== РЕФЕРАЛЫ ====================
 async function loadReferralData() {
@@ -1574,13 +1188,10 @@ async function loadReferralData() {
 
         const data = await API.get(`/api/referral-data/${userId}`);
         
-        const countEl = document.getElementById('referral-count');
-        const earnEl = document.getElementById('referral-earnings');
-        if (countEl) countEl.textContent = data.count || 0;
-        if (earnEl) earnEl.textContent = data.earnings || 0;
+        document.getElementById('referral-count').textContent = data.count || 0;
+        document.getElementById('referral-earnings').textContent = data.earnings || 0;
         
-        State.skins.friendsInvited = data.count || 0;  // ✅ ЭТО ВАЖНО!
-        
+        State.skins.friendsInvited = data.count || 0;
     } catch (err) {
         console.error('Referral error:', err);
     }
@@ -1617,11 +1228,8 @@ function saveSettings() {
 }
 
 function applyTheme() {
-    if (State.settings.theme === 'night') {
-        document.body.classList.add('night-mode');
-    } else {
-        document.body.classList.remove('night-mode');
-    }
+    if (State.settings.theme === 'night') document.body.classList.add('night-mode');
+    else document.body.classList.remove('night-mode');
 }
 
 function toggleTheme() {
@@ -1635,14 +1243,6 @@ function toggleSound() {
     State.settings.sound = !State.settings.sound;
     saveSettings();
     updateSettingsUI();
-    if (State.settings.sound) {
-        // Тестовый звук при включении
-        try {
-            const audio = new Audio();
-            audio.volume = 0;
-            audio.play().catch(() => {});
-        } catch (e) {}
-    }
 }
 
 function toggleVibration() {
@@ -1718,7 +1318,7 @@ function switchTab(tab, el) {
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'tournament') loadTournamentData();
-    if (tab === 'tasks') openTasks();
+    if (tab === 'tasks') loadVideoTasks();
 }
 
 function openSettings() {
@@ -1734,77 +1334,7 @@ function closeSettingsOutside(e) {
     if (box && !box.contains(e.target)) closeSettings();
 }
 
-// ==================== ЭНЕРГИЯ - МОДАЛКА ====================
-function showEnergyRecoveryModal() {
-    if (document.querySelector('.energy-recovery-modal')) return;
-    
-    const modal = document.createElement('div');
-    modal.className = 'energy-recovery-modal';
-    modal.innerHTML = `
-        <div class="modal-content glass">
-            <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
-            <h3>⚡ Энергия закончилась!</h3>
-            <p>Посмотри рекламу и получи +50 энергии</p>
-            <button class="btn-primary" onclick="recoverEnergyWithAd()">
-                📺 Смотреть рекламу
-            </button>
-            <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
-                ⏳ Подождать
-            </button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function recoverEnergyWithAd() {
-    // Закрываем модалку
-    const modal = document.querySelector('.energy-recovery-modal');
-    if (modal) modal.remove();
-    
-    // Проверяем рекламу
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
-    }
-    
-    showToast('📺 Загружаем рекламу...');
-    
-    // Показываем рекламу
-    window.show_10655027()
-        .then(() => {
-            // Начисляем энергию (+50)
-            const oldEnergy = State.game.energy;
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
-            updateUI();
-            
-            // ✅ Отправляем на сервер
-            if (userId) {
-                fetch(`${CONFIG.API_URL}/api/update-energy`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        user_id: userId, 
-                        energy: State.game.energy 
-                    })
-                }).catch(() => {});
-            }
-            
-            showToast(`⚡ +50 энергии! (${oldEnergy} → ${State.game.energy})`);
-            
-            // Эффект вспышки
-            const energyBar = document.querySelector('.energy-bar-fill');
-            if (energyBar) {
-                energyBar.style.transition = 'all 0.3s ease';
-                energyBar.style.filter = 'brightness(1.5)';
-                setTimeout(() => energyBar.style.filter = 'none', 500);
-            }
-        })
-        .catch((error) => {
-            console.error('Ad error:', error);
-            showToast('❌ Ошибка при показе рекламы', true);
-        });
-}
-
+// ==================== ТУРНИР ====================
 let tournamentTimer = null;
 
 async function loadTournamentData() {
@@ -1826,27 +1356,6 @@ async function loadTournamentData() {
         }
     } catch (err) {
         console.error('Tournament error:', err);
-    }
-}
-
-
-// Функция для обновления счета в турнире (вызывать при кликах)
-async function updateTournamentScore(score) {
-    if (!userId) return;
-    
-    try {
-        // Отправляем обновленный счет на сервер
-        await fetch(`${CONFIG.API_URL}/api/tournament/update-score`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                user_id: userId, 
-                score: score 
-            })
-        }).catch(() => {}); // Игнорируем ошибки, не критично
-        
-    } catch (err) {
-        console.error('Tournament score update error:', err);
     }
 }
 
@@ -1874,6 +1383,7 @@ function renderLeaderboard(data) {
     if (playerRankEl) playerRankEl.textContent = `#${data.playerRank || 0}`;
     if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore || 0);
 }
+
 function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
     
@@ -1884,110 +1394,205 @@ function startTournamentTimer(seconds) {
     
     tournamentTimer = setInterval(() => {
         remaining--;
-        
         if (remaining <= 0) {
             clearInterval(tournamentTimer);
             timerEl.textContent = 'Турнир завершен';
-            loadTournamentData(); // Загружаем новый турнир
+            loadTournamentData();
             return;
         }
-        
         const hours = Math.floor(remaining / 3600);
         const minutes = Math.floor((remaining % 3600) / 60);
         const secs = remaining % 60;
-        
         timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }, 1000);
 }
 
-// ==================== ПАССИВНЫЙ ДОХОД ====================
-// Пассивный доход - проверяем при загрузке и каждые 30 минут
-const checkOfflinePassiveIncome = async () => {
+// ==================== ЭНЕРГИЯ - МОДАЛКА ====================
+function showEnergyRecoveryModal() {
+    if (document.querySelector('.energy-recovery-modal')) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'energy-recovery-modal';
+    modal.innerHTML = `
+        <div class="modal-content glass">
+            <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
+            <h3>⚡ Энергия закончилась!</h3>
+            <p>Посмотри рекламу и получи +50 энергии</p>
+            <button class="btn-primary" onclick="recoverEnergyWithAd()">
+                📺 Смотреть рекламу
+            </button>
+            <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
+                ⏳ Подождать
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function recoverEnergyWithAd() {
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    window.show_10655027()
+        .then(() => {
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
+            updateUI();
+            
+            if (userId) {
+                fetch(`${CONFIG.API_URL}/api/update-energy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, energy: State.game.energy })
+                }).catch(() => {});
+            }
+            
+            showToast(`⚡ +50 энергии!`);
+            
+            const energyBar = document.querySelector('.energy-bar-fill');
+            if (energyBar) {
+                energyBar.style.transition = 'all 0.3s ease';
+                energyBar.style.filter = 'brightness(1.5)';
+                setTimeout(() => energyBar.style.filter = 'none', 500);
+            }
+        })
+        .catch(() => showToast('❌ Ошибка при показе рекламы', true));
+}
+
+// ==================== MEGA BOOST ====================
+let boostEndTime = null;
+let boostInterval = null;
+
+function activateMegaBoost() {
+    if (!userId) {
+        showToast('❌ Авторизуйтесь', true);
+        return;
+    }
+    
+    const boostBtn = document.getElementById('mega-boost-btn');
+    if (boostBtn?.classList.contains('active')) {
+        showToast('⚡ Буст уже активен!', true);
+        return;
+    }
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем рекламу...');
+    
+    window.show_10655027()
+        .then(() => {
+            const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+            
+            if (boostBtn) boostBtn.classList.add('active');
+            
+            const timerEl = document.getElementById('mega-boost-timer');
+            if (timerEl) {
+                timerEl.style.display = 'block';
+                timerEl.textContent = '3:00';
+            }
+            
+            showBoostIndicator();
+            
+            const energyBar = document.querySelector('.energy-bar-bg');
+            if (energyBar) energyBar.classList.add('boost-active');
+            
+            if (boostInterval) clearInterval(boostInterval);
+            boostInterval = setInterval(() => {
+                const now = new Date();
+                const diff = expiresAt - now;
+                
+                if (diff <= 0) {
+                    clearInterval(boostInterval);
+                    if (boostBtn) boostBtn.classList.remove('active');
+                    if (timerEl) timerEl.style.display = 'none';
+                    document.querySelector('.mega-boost-indicator')?.remove();
+                    if (energyBar) energyBar.classList.remove('boost-active');
+                    showToast('⏰ Буст закончился');
+                    return;
+                }
+                
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+            showToast('🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!');
+            
+            fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            }).catch(() => {});
+        })
+        .catch(() => showToast('❌ Ошибка при показе рекламы', true));
+}
+
+function showBoostIndicator() {
+    const oldIndicator = document.querySelector('.mega-boost-indicator');
+    if (oldIndicator) oldIndicator.remove();
+    
+    const energyContainer = document.querySelector('.energy-bar-container');
+    if (energyContainer) {
+        const indicator = document.createElement('div');
+        indicator.className = 'mega-boost-indicator';
+        indicator.innerHTML = '🔥 MEGA BOOST ACTIVE 🔥';
+        energyContainer.appendChild(indicator);
+    }
+}
+
+async function checkBoostStatus() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-        
+        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
         if (res.ok) {
             const data = await res.json();
-            if (data.income > 0) {
-                State.game.coins = data.coins;
-                updateUI();
-                showToast(data.message);
-                // Анимация монеток
-                playBonusAnimation();
+            if (data.active) {
+                boostEndTime = new Date(data.expires_at);
+                const boostBtn = document.getElementById('mega-boost-btn');
+                if (boostBtn) boostBtn.classList.add('active');
+                
+                const timerEl = document.getElementById('mega-boost-timer');
+                if (timerEl) timerEl.style.display = 'block';
+                
+                showBoostIndicator();
+                
+                const energyBar = document.querySelector('.energy-bar-bg');
+                if (energyBar) energyBar.classList.add('boost-active');
+                
+                if (boostInterval) clearInterval(boostInterval);
+                boostInterval = setInterval(() => {
+                    const now = new Date();
+                    const diff = boostEndTime - now;
+                    
+                    if (diff <= 0) {
+                        clearInterval(boostInterval);
+                        if (boostBtn) boostBtn.classList.remove('active');
+                        if (timerEl) timerEl.style.display = 'none';
+                        document.querySelector('.mega-boost-indicator')?.remove();
+                        if (energyBar) energyBar.classList.remove('boost-active');
+                        return;
+                    }
+                    
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 200);
             }
         }
-    } catch (e) {
-        console.error('Passive income error:', e);
-    }
-};
-
-// Запускаем проверку при загрузке и каждые 30 минут
-if (userId) {
-    setTimeout(() => checkOfflinePassiveIncome(), 2000);
-    setInterval(checkOfflinePassiveIncome, 30 * 60 * 1000);
-}
-
-async function loadDailyTournamentData() {
-    try {
-        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/leaderboard`);
-        const leaderboardData = await leaderboardRes.json();
-        
-        const rankRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/player-rank/${userId}`);
-        const rankData = await rankRes.json();
-        
-        if (leaderboardData.success) {
-            renderDailyLeaderboard({
-                players: leaderboardData.players,
-                playerRank: rankData.rank,
-                playerScore: rankData.score,
-                timeLeft: leaderboardData.time_left,
-                prizes: leaderboardData.prizes
-            });
-            startDailyTournamentTimer(leaderboardData.time_left);
-        }
     } catch (err) {
-        console.error('Daily tournament error:', err);
+        console.error('Boost status error:', err);
     }
 }
-
-
-function playUpgradeSound() {
-    if (!State.settings.sound) return;
-    
-    try {
-        if (!window.audioCtx) {
-            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (window.audioCtx.state === 'suspended') {
-            window.audioCtx.resume();
-        }
-        
-        const now = window.audioCtx.currentTime;
-        
-        // Фанфары апгрейда
-        for (let i = 0; i < 3; i++) {
-            const osc = window.audioCtx.createOscillator();
-            const gain = window.audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(window.audioCtx.destination);
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400 + i * 200, now + i * 0.1);
-            gain.gain.setValueAtTime(0.2, now + i * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
-            
-            osc.start(now + i * 0.1);
-            osc.stop(now + i * 0.1 + 0.3);
-        }
-    } catch (err) {}
-}
-
 
 // ==================== МИНИ-ИГРЫ ====================
 function openGame(game) {
@@ -2012,23 +1617,14 @@ async function playCoinflip() {
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
-    if (bet > State.game.coins) {
-        showToast('❌ Недостаточно монет', true);
-        return;
-    }
-    if (bet < 10) {
-        showToast('❌ Минимальная ставка 10', true);
-        return;
-    }
+    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
     const resultEl = document.getElementById('coin-result');
     const coin = document.getElementById('coin');
     
-    // Анимация подбрасывания
     resultEl.textContent = '🪙 Подбрасываем...';
     coin.classList.add('flipping');
-    
-    // Звук подбрасывания
     playSound('coinflip');
     
     setTimeout(async () => {
@@ -2040,20 +1636,15 @@ async function playCoinflip() {
                     body: JSON.stringify({ user_id: userId, bet })
                 });
                 
-                if (!res.ok) throw new Error('Server error');
-                
                 const data = await res.json();
                 coin.classList.remove('flipping');
                 
-                // Анимация результата
                 if (data.message.includes('won')) {
                     coin.classList.add('win');
                     setTimeout(() => coin.classList.remove('win'), 1000);
                     createConfetti();
                     playSound('win');
-                } else {
-                    playSound('lose');
-                }
+                } else playSound('lose');
                 
                 resultEl.textContent = data.message || '🎮 Сыграно!';
                 State.game.coins = data.coins;
@@ -2062,23 +1653,19 @@ async function playCoinflip() {
                 updateUI();
                 
             } catch (err) {
-                console.error('Coinflip error:', err);
                 coin.classList.remove('flipping');
                 resultEl.textContent = '❌ Ошибка сервера';
                 showToast('❌ Ошибка', true);
             }
         } else {
-            // Локальная игра (без сервера)
             const win = Math.random() < 0.5;
             coin.classList.remove('flipping');
-            
             if (win) {
                 State.game.coins += bet;
                 coin.classList.add('win');
                 setTimeout(() => coin.classList.remove('win'), 1000);
                 resultEl.textContent = '🦅 Вы выиграли! +' + bet;
-                const modal = document.getElementById('game-coinflip');
-                createConfetti(modal);
+                createConfetti();
                 playSound('win');
             } else {
                 State.game.coins -= bet;
@@ -2095,14 +1682,8 @@ async function playSlots() {
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
-    if (bet > State.game.coins) {
-        showToast('❌ Недостаточно монет', true);
-        return;
-    }
-    if (bet < 10) {
-        showToast('❌ Минимальная ставка 10', true);
-        return;
-    }
+    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
     const resultEl = document.getElementById('slots-result');
     const slot1 = document.getElementById('slot1');
@@ -2138,15 +1719,10 @@ async function playSlots() {
                     slot3.textContent = data.slots[2];
                     resultEl.textContent = data.message;
                     
-                    if (data.message.includes('JACKPOT')) {
+                    if (data.message.includes('JACKPOT') || data.message.includes('won')) {
                         playSound('win');
-                    } else if (data.message.includes('won')) {
-                        playSound('win');
-                        const modal = document.getElementById('game-slots');
-                        createConfetti(modal);
-                    } else {
-                        playSound('lose');
-                    }
+                        createConfetti();
+                    } else playSound('lose');
                     
                     State.game.coins = data.coins;
                     updateUI();
@@ -2156,7 +1732,6 @@ async function playSlots() {
                     playSound('lose');
                 });
             } else {
-                // Локальная игра
                 const s1 = symbols[Math.floor(Math.random() * symbols.length)];
                 const s2 = symbols[Math.floor(Math.random() * symbols.length)];
                 const s3 = symbols[Math.floor(Math.random() * symbols.length)];
@@ -2193,14 +1768,8 @@ async function playDice() {
     const bet = parseInt(betInput.value);
     const pred = predSelect.value;
     
-    if (bet > State.game.coins) {
-        showToast('❌ Недостаточно монет', true);
-        return;
-    }
-    if (bet < 10) {
-        showToast('❌ Минимальная ставка 10', true);
-        return;
-    }
+    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
     const resultEl = document.getElementById('dice-result');
     const dice1 = document.getElementById('dice1');
@@ -2235,12 +1804,9 @@ async function playDice() {
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('won')) {
-                        const modal = document.getElementById('game-dice');
-                        createConfetti(modal);
+                        createConfetti();
                         playSound('win');
-                    } else {
-                        playSound('lose');
-                    }
+                    } else playSound('lose');
                     
                     State.game.coins = data.coins;
                     updateUI();
@@ -2278,37 +1844,22 @@ async function playDice() {
     }, 70);
 }
 
-// Roulette
-// Roulette
 async function playWheel() {
     try {
         const betInput = document.getElementById('wheel-bet');
-        if (!betInput) {
-            showToast('❌ Элемент ставки не найден', true);
-            return;
-        }
+        if (!betInput) return showToast('❌ Элемент ставки не найден', true);
         
         const bet = parseInt(betInput.value);
         const betType = document.getElementById('wheel-color')?.value;
         const betNumber = document.getElementById('wheel-number')?.value;
         
-        if (isNaN(bet) || bet < 10) {
-            showToast('❌ Минимальная ставка 10', true);
-            return;
-        }
-        
-        if (bet > State.game.coins) {
-            showToast('❌ Недостаточно монет', true);
-            return;
-        }
+        if (isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
+        if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
 
         const resultEl = document.getElementById('wheel-result');
         const wheel = document.getElementById('wheel');
         
-        if (!resultEl || !wheel) {
-            showToast('❌ Ошибка интерфейса', true);
-            return;
-        }
+        if (!resultEl || !wheel) return showToast('❌ Ошибка интерфейса', true);
         
         resultEl.textContent = '🎡 Крутим...';
         playSound('spin');
@@ -2334,32 +1885,21 @@ async function playWheel() {
                             bet_value: betType === 'number' ? parseInt(betNumber) : null
                         })
                     })
-                    .then(res => {
-                        if (!res.ok) throw new Error('Server error');
-                        return res.json();
-                    })
+                    .then(res => res.json())
                     .then(data => {
                         wheel.textContent = data.result_number;
                         
-                        // Цвет результата
                         const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                        if (data.result_number === 0) {
-                            wheel.style.color = '#2ecc71'; // зеленый
-                        } else if (redNumbers.includes(data.result_number)) {
-                            wheel.style.color = '#e74c3c'; // красный
-                        } else {
-                            wheel.style.color = '#95a5a6'; // серый
-                        }
+                        if (data.result_number === 0) wheel.style.color = '#2ecc71';
+                        else if (redNumbers.includes(data.result_number)) wheel.style.color = '#e74c3c';
+                        else wheel.style.color = '#95a5a6';
                         
                         resultEl.textContent = data.message || '🎮 Сыграно!';
                         
                         if (data.message?.includes('won')) {
-                           const modal = document.getElementById('game-Wheel');
-                            createConfetti(modal);
+                            createConfetti();
                             playSound('win');
-                        } else {
-                            playSound('lose');
-                        }
+                        } else playSound('lose');
                         
                         State.game.coins = data.coins;
                         updateUI();
@@ -2370,19 +1910,13 @@ async function playWheel() {
                         playSound('lose');
                     });
                 } else {
-                    // Локальная игра (без сервера)
                     const result = Math.floor(Math.random() * 37);
                     wheel.textContent = result;
                     
                     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                    
-                    if (result === 0) {
-                        wheel.style.color = '#2ecc71';
-                    } else if (redNumbers.includes(result)) {
-                        wheel.style.color = '#e74c3c';
-                    } else {
-                        wheel.style.color = '#95a5a6';
-                    }
+                    if (result === 0) wheel.style.color = '#2ecc71';
+                    else if (redNumbers.includes(result)) wheel.style.color = '#e74c3c';
+                    else wheel.style.color = '#95a5a6';
                     
                     let win = false;
                     if (betType === 'red' && redNumbers.includes(result)) win = true;
@@ -2411,17 +1945,14 @@ async function playWheel() {
     }
 }
 
-// Конфетти для джекпота
+// ==================== КОНФЕТТИ ====================
 function createConfetti(container = document.body) {
-    // Если передан контейнер модалки, используем его, иначе всё окно
     const targetContainer = container || document.body;
     const rect = targetContainer.getBoundingClientRect();
     
     for (let i = 0; i < 50; i++) {
         setTimeout(() => {
             const confetti = document.createElement('div');
-            
-            // Ограничиваем конфетти пределами контейнера
             const left = rect.left + Math.random() * rect.width;
             const top = rect.top - 10;
             
@@ -2431,11 +1962,12 @@ function createConfetti(container = document.body) {
                 top: ${top}px;
                 width: 8px;
                 height: 8px;
-                background: hsl(${Math.random() * 360}, 100%, 50%);
+                background: ${['#7F49B4', '#FFD700', '#FF6B6B', '#4ECDC4'][Math.floor(Math.random() * 4)]};
                 border-radius: 50%;
                 pointer-events: none;
-                z-index: 20000;  /* Выше модалок */
+                z-index: 20000;
                 animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
+                box-shadow: 0 0 10px currentColor;
             `;
             document.body.appendChild(confetti);
             setTimeout(() => confetti.remove(), 3000);
@@ -2443,7 +1975,6 @@ function createConfetti(container = document.body) {
     }
 }
 
-// Добавить стили для конфетти
 const confettiStyle = document.createElement('style');
 confettiStyle.textContent = `
     @keyframes confettiFall {
@@ -2454,18 +1985,12 @@ confettiStyle.textContent = `
 `;
 document.head.appendChild(confettiStyle);
 
-// Универсальная функция звука для игр
+// ==================== ЗВУКИ ====================
 function playSound(type) {
     if (!State.settings.sound) return;
     
     try {
-        if (!window.audioCtx) {
-            window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (window.audioCtx.state === 'suspended') {
-            window.audioCtx.resume().catch(() => {});
-        }
-        
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
         const now = window.audioCtx.currentTime;
         const osc = window.audioCtx.createOscillator();
         const gain = window.audioCtx.createGain();
@@ -2510,786 +2035,12 @@ function playSound(type) {
     } catch (err) {}
 }
 
-
-// ==================== MEGA BOOST ====================
-let boostEndTime = null;
-let boostInterval = null;
-
-function activateMegaBoost() {
-    if (!userId) {
-        showToast('❌ Авторизуйтесь', true);
-        return;
-    }
-    
-    const boostBtn = document.getElementById('mega-boost-btn');
-    if (boostBtn?.classList.contains('active')) {
-        showToast('⚡ Буст уже активен!', true);
-        return;
-    }
-    
-    // Проверяем рекламу
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
-    }
-    
-    showToast('📺 Загружаем рекламу...');
-    
-    // Показываем рекламу
-    window.show_10655027()
-        .then(() => {
-            showToast('✅ Реклама просмотрена! Активируем буст...');
-            
-            // Активируем буст ЛОКАЛЬНО (без сервера!)
-            const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // +3 минуты
-            
-            // Визуальная активация
-            if (boostBtn) boostBtn.classList.add('active');
-            
-            // Показываем таймер
-            const timerEl = document.getElementById('mega-boost-timer');
-            if (timerEl) {
-                timerEl.style.display = 'block';
-                timerEl.textContent = '3:00';
-            }
-            
-            // Добавляем индикатор
-            showBoostIndicator();
-            
-            // Добавляем эффект на energy bar
-            const energyBar = document.querySelector('.energy-bar-bg');
-            if (energyBar) {
-                energyBar.classList.add('boost-active');
-            }
-            
-            // Запускаем таймер
-            if (boostInterval) clearInterval(boostInterval);
-            boostInterval = setInterval(() => {
-                const now = new Date();
-                const diff = expiresAt - now;
-                
-                if (diff <= 0) {
-                    clearInterval(boostInterval);
-                    if (boostBtn) boostBtn.classList.remove('active');
-                    if (timerEl) timerEl.style.display = 'none';
-                    document.querySelector('.mega-boost-indicator')?.remove();
-                    if (energyBar) energyBar.classList.remove('boost-active');
-                    showToast('⏰ Буст закончился');
-                    return;
-                }
-                
-                const mins = Math.floor(diff / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-                if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-            }, 1000);
-            
-            showToast('🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!');
-            
-            // ОПЦИОНАЛЬНО: отправляем на сервер в фоне (не ждем ответа)
-            fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId })
-            }).catch(() => {});
-        })
-        .catch((error) => {
-            console.error('Ad error:', error);
-            showToast('❌ Ошибка при показе рекламы', true);
-        });
-}
-
-
-async function activateBoostOnServer() {
-    try {
-        const res = await fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-        
-        if (!res.ok) throw new Error('Server error');
-        
-        const data = await res.json();
-        
-        if (data.already_active) {
-            showToast(data.message, true);
-            return;
-        }
-        
-        // Активируем буст локально на 3 минуты
-        const expiresAt = new Date(data.expires_at);
-        startLocalBoost(expiresAt);
-        showToast('🔥 MEGA BOOST АКТИВИРОВАН НА 3 МИНУТЫ!');
-        
-    } catch (err) {
-        console.error('Boost error:', err);
-        showToast('❌ Ошибка активации буста', true);
-    }
-}
-
-function startLocalBoost(expiresAt) {
-    const boostBtn = document.getElementById('mega-boost-btn');
-    if (!boostBtn) return;
-    
-    boostEndTime = expiresAt;
-    boostBtn.classList.add('active');
-    
-    // Показываем таймер
-    const timerEl = document.getElementById('mega-boost-timer');
-    if (timerEl) {
-        timerEl.style.display = 'block';
-    }
-    
-    // Добавляем индикатор
-    showBoostIndicator();
-    
-    // Добавляем эффект на energy bar
-    const energyBar = document.querySelector('.energy-bar-bg');
-    if (energyBar) {
-        energyBar.classList.add('boost-active');
-    }
-    
-    // Запускаем обновление таймера
-    if (boostInterval) clearInterval(boostInterval);
-    boostInterval = setInterval(updateBoostTimer, 200);
-    
-    // Добавляем стили для эффектов
-    addBoostStyles();
-}
-
-function updateBoostTimer() {
-    if (!boostEndTime) return;
-    
-    const now = new Date();
-    const diff = boostEndTime - now;
-    const timerEl = document.getElementById('mega-boost-timer');
-    
-    if (diff <= 0) {
-        // Буст закончился
-        clearInterval(boostInterval);
-        boostInterval = null;
-        boostEndTime = null;
-        
-        const boostBtn = document.getElementById('mega-boost-btn');
-        if (boostBtn) {
-            boostBtn.classList.remove('active');
-        }
-        
-        if (timerEl) {
-            timerEl.style.display = 'none';
-            timerEl.textContent = '3:00';
-        }
-        
-        // Убираем индикатор
-        const indicator = document.querySelector('.mega-boost-indicator');
-        if (indicator) indicator.remove();
-        
-        // Убираем эффект с energy bar
-        const energyBar = document.querySelector('.energy-bar-bg');
-        if (energyBar) {
-            energyBar.classList.remove('boost-active');
-        }
-        
-        showToast('⏰ Буст закончился');
-        return;
-    }
-    
-    const totalSeconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    if (timerEl) {
-        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        // Эффект мигания когда мало времени
-        if (totalSeconds < 10) {
-            timerEl.classList.add('urgent');
-        } else {
-            timerEl.classList.remove('urgent');
-        }
-    }
-}
-
-function showBoostIndicator() {
-    const oldIndicator = document.querySelector('.mega-boost-indicator');
-    if (oldIndicator) oldIndicator.remove();
-    
-    const energyContainer = document.querySelector('.energy-bar-container');
-    if (energyContainer) {
-        const indicator = document.createElement('div');
-        indicator.className = 'mega-boost-indicator';
-        indicator.innerHTML = '🔥 MEGA BOOST ACTIVE 🔥';
-        energyContainer.appendChild(indicator);
-    }
-}
-
-function addBoostStyles() {
-    // Стили уже должны быть в CSS, но добавим для надежности
-    const style = document.getElementById('boost-styles');
-    if (style) return;
-    
-    const newStyle = document.createElement('style');
-    newStyle.id = 'boost-styles';
-    newStyle.textContent = `
-        .energy-bar-bg.boost-active {
-            box-shadow: 0 0 20px #ffaa00, 0 0 40px #ff5500;
-            animation: boostPulse 1s infinite;
-        }
-        
-        @keyframes boostPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .mega-boost-indicator {
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(45deg, #ffaa00, #ff5500);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-            white-space: nowrap;
-            animation: indicatorGlow 1s infinite;
-            box-shadow: 0 0 20px #ffaa00;
-            z-index: 100;
-        }
-        
-        @keyframes indicatorGlow {
-            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
-            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
-        }
-        
-        .mini-boost-timer.urgent {
-            animation: urgentBlink 0.5s infinite;
-            background: #ff0000;
-        }
-        
-        @keyframes urgentBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-    `;
-    document.head.appendChild(newStyle);
-}
-
-// Функция для проверки статуса буста при загрузке
-async function checkBoostStatus() {
-    if (!userId) return;
-    
-    try {
-        // ЗАМЕНИ API_URL НА CONFIG.API_URL
-        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data.active) {
-                startLocalBoost(new Date(data.expires_at));
-            }
-        }
-    } catch (err) {
-        console.error('Boost status error:', err);
-    }
-}
-
-// ==================== УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК КЛИКОВ ====================
-function setupGlobalClickHandler() {
-    // Удаляем старые обработчики
-    document.removeEventListener('click', handleTap);
-    document.removeEventListener('touchstart', handleTap);
-    
-    // Добавляем новые на весь документ
-    document.addEventListener('click', function(e) {
-        // Проверяем, не кликнули ли по интерактивному элементу
-        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
-            return;
-        }
-        handleTap(e);
-    });
-    
-    document.addEventListener('touchstart', function(e) {
-        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) {
-            return;
-        }
-        handleTap(e);
-    }, { passive: false });
-    
-    console.log('✅ Глобальный обработчик кликов привязан');
-}
-
-// ==================== ИНИЦИАЛИЗАЦИЯ ====================
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 Spirit Clicker starting...');
-    
-    loadSettings();
-    
-    if (userId) {
-        await loadUserData();
-        startPerfectEnergySystem();
-        await loadReferralData();
-        
-        // Таймер для отправки кликов (раз в 14 секунд)
-        setInterval(sendClickBatch, 14000);
-    } else {
-        const saved = localStorage.getItem('ryohoGame');
-        if (saved) {
-            try { Object.assign(State.game, JSON.parse(saved)); } catch(e) {}
-        }
-        updateUI();
-    }
-    
-    // Привязываем глобальный обработчик
-    setupGlobalClickHandler();
-    
-    // Автосохранение
-    setInterval(() => {
-        localStorage.setItem('ryohoGame', JSON.stringify(State.game));
-    }, 10000);
-    
-    setInterval(checkOfflinePassiveIncome, CONFIG.PASSIVE_INCOME_INTERVAL);
-    
-    applySavedSkin();
-    
-    console.log('✅ Spirit Clicker ready');
-});
-
-// ==================== ЗАПУСК ИДЕАЛЬНОЙ СИСТЕМЫ ====================
-function startPerfectEnergySystem() {
-    console.log('⚡ Запуск идеальной системы энергии');
-    
-    // Очищаем старые таймеры
-    if (State.temp.animationTimer) clearInterval(State.temp.animationTimer);
-    if (State.temp.syncTimer) clearInterval(State.temp.syncTimer);
-    if (State.temp.fullSyncTimer) clearInterval(State.temp.fullSyncTimer);
-    
-    // Буфер для синхронизации
-    State.temp.energyBuffer = 0;
-    
-    // === ТАЙМЕР 1: Плавная анимация (каждую секунду) ===
-    State.temp.animationTimer = setInterval(() => {
-        // Не восстанавливаем при Mega Boost
-        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) {
-            return;
-        }
-        
-        // Если энергия не полная - добавляем 1 (локально)
-        if (State.game.energy < State.game.maxEnergy) {
-            const oldEnergy = State.game.energy;
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-            
-            // Обновляем UI
-            updateUI();
-            
-            // Копим для отправки на сервер
-            State.temp.energyBuffer++;
-            
-            console.log(`⚡ Локально +1: ${oldEnergy} → ${State.game.energy} (буфер: ${State.temp.energyBuffer})`);
-        }
-    }, 1000); // Каждую секунду!
-    
-    // === ТАЙМЕР 2: Синхронизация с сервером (раз в 15 секунд) ===
-    State.temp.syncTimer = setInterval(() => {
-        if (!userId) return; // Офлайн режим
-        
-        syncEnergyWithServer();
-        
-    }, 15000); // 15 секунд
-    
-    // === ТАЙМЕР 3: Полная синхронизация (раз в минуту для страховки) ===
-    State.temp.fullSyncTimer = setInterval(() => {
-        if (!userId) return;
-        
-        fullSyncWithServer();
-        
-    }, 60000); // 1 минута
-}
-
-// ==================== НОВЫЕ ФУНКЦИИ ДЛЯ ЭНЕРГИИ ====================
-
-// Функция восстановления после рекламы (обновленная)
-function recoverEnergyWithAd() {
-    const modal = document.querySelector('.energy-recovery-modal');
-    if (modal) modal.remove();
-    
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
-    }
-    
-    showToast('📺 Загружаем рекламу...');
-    
-    window.show_10655027()
-        .then(() => {
-            const oldEnergy = State.game.energy;
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
-            updateUI();
-            
-            // Отправляем на сервер
-            if (userId) {
-                fetch(`${CONFIG.API_URL}/api/update-energy`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        user_id: userId, 
-                        energy: State.game.energy 
-                    })
-                }).catch(() => {});
-            }
-            
-            showToast(`⚡ +50 энергии! (${oldEnergy} → ${State.game.energy})`);
-            
-            // Эффект вспышки
-            const energyBar = document.querySelector('.energy-bar-fill');
-            if (energyBar) {
-                energyBar.style.transition = 'all 0.3s ease';
-                energyBar.style.filter = 'brightness(1.5)';
-                setTimeout(() => energyBar.style.filter = 'none', 500);
-            }
-        })
-        .catch((error) => {
-            console.error('Ad error:', error);
-            showToast('❌ Ошибка при показе рекламы', true);
-        });
-}
-
-// ==================== ДЕТАЛИ СКИНОВ ====================
-
-// Открыть детали скина
-function openSkinDetail(skinId) {
-    console.log('🔍 Открываем детали скина:', skinId);
-    
-    const skin = State.skins.data.find(s => s.id === skinId);
-    if (!skin) {
-        console.error('❌ Скин не найден:', skinId);
-        return;
-    }
-    
-    const modal = document.getElementById('skin-detail-modal');
-    if (!modal) {
-        console.error('❌ Модалка skin-detail-modal не найдена');
-        return;
-    }
-    
-    const isOwned = State.skins.owned.includes(skin.id);
-    const isSelected = State.skins.selected === skin.id;
-    
-    // Заполняем данные
-    document.getElementById('skin-detail-img').src = skin.image || 'imgg/clickimg.png';
-    document.getElementById('skin-detail-name').textContent = skin.name || 'Скин';
-    
-    const rarityEl = document.getElementById('skin-detail-rarity');
-    rarityEl.textContent = skin.rarity || 'common';
-    rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
-    
-    document.getElementById('skin-detail-description').textContent = 
-        skin.description || 'Нет описания';
-    
-    // Бонус
-    const bonusEl = document.getElementById('skin-detail-bonus');
-    if (skin.bonus) {
-        if (skin.bonus.type === 'multiplier') {
-            bonusEl.innerHTML = `⚡ Бонус: x${skin.bonus.value} к доходу`;
-        } else if (skin.bonus.type === 'interval') {
-            bonusEl.innerHTML = `⚡ Бонус: +${skin.bonus.value} энергии/сек`;
-        } else {
-            bonusEl.innerHTML = `⚡ Бонус: +${skin.bonus.value || 0}`;
-        }
-    } else {
-        bonusEl.innerHTML = '⚡ Бонус: нет';
-    }
-    
-    // Блок требования
-    const reqBlock = document.getElementById('skin-requirement-block');
-    const reqText = document.getElementById('skin-requirement-text');
-    const reqProgress = document.getElementById('skin-requirement-progress');
-    const progressText = document.getElementById('requirement-progress-text');
-    const progressFill = document.getElementById('requirement-progress-fill');
-    const actionBtn = document.getElementById('skin-action-btn');
-    
-    if (isOwned) {
-        // Скин уже есть
-        reqBlock.style.display = 'none';
-        
-        if (isSelected) {
-            actionBtn.textContent = '✓ ВЫБРАН';
-            actionBtn.setAttribute('data-type', 'selected');
-            actionBtn.onclick = closeSkinDetail;
-        } else {
-            actionBtn.textContent = 'ВЫБРАТЬ';
-            actionBtn.setAttribute('data-type', 'owned');
-            actionBtn.onclick = () => selectSkinFromDetail(skin.id);
-        }
-    } else {
-        // Скин не получен
-        reqBlock.style.display = 'block';
-        
-        if (skin.requirement?.type === 'level') {
-            const current = State.game.levels.multitap || 0;
-            const value = skin.requirement.value || 1;
-            const percent = Math.min(100, (current / value) * 100);
-            
-            reqText.textContent = `🔓 Требуется уровень ${value}`;
-            progressText.textContent = `${current}/${value}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-            
-            if (current >= value) {
-                actionBtn.textContent = 'ПОЛУЧИТЬ';
-                actionBtn.setAttribute('data-type', 'level');
-                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
-            } else {
-                actionBtn.textContent = 'ПРОКАЧАТЬ УРОВЕНЬ';
-                actionBtn.setAttribute('data-type', 'level');
-                actionBtn.onclick = () => {
-                    closeSkinDetail();
-                    switchTab('main');
-                    showToast('📊 Кликай, чтобы повысить уровень!');
-                };
-            }
-            
-        } else if (skin.requirement?.type === 'ads' || skin.requirement?.type === 'video') {
-            const count = skin.requirement.count || skin.requirement.value || 1;
-            const current = State.skins.adsWatched || 0;
-            const percent = Math.min(100, (current / count) * 100);
-            
-            reqText.textContent = `🔓 Посмотри ${count} видео`;
-            progressText.textContent = `${current}/${count}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-            
-            if (current >= count) {
-                actionBtn.textContent = 'ПОЛУЧИТЬ';
-                actionBtn.setAttribute('data-type', 'video');
-                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
-            } else {
-                actionBtn.textContent = 'СМОТРЕТЬ ВИДЕО';
-                actionBtn.setAttribute('data-type', 'video');
-                actionBtn.onclick = () => watchAdForSkin(skin.id);
-            }
-            
-        } else if (skin.requirement?.type === 'friends') {
-            const count = skin.requirement.count || skin.requirement.value || 1;
-            const current = State.skins.friendsInvited || 0;
-            const percent = Math.min(100, (current / count) * 100);
-            
-            reqText.textContent = `🔓 Пригласи ${count} друзей`;
-            progressText.textContent = `${current}/${count}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-            
-            if (current >= count) {
-                actionBtn.textContent = 'ПОЛУЧИТЬ';
-                actionBtn.setAttribute('data-type', 'friends');
-                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
-            } else {
-                actionBtn.textContent = 'ПРИГЛАСИТЬ ДРУЗЕЙ';
-                actionBtn.setAttribute('data-type', 'friends');
-                actionBtn.onclick = () => {
-                    closeSkinDetail();
-                    switchTab('friends');
-                };
-            }
-            
-        } else if (skin.requirement?.type === 'cpa' || skin.requirement?.type === 'link') {
-            const url = skin.requirement.url || skin.requirement.value || '#';
-            
-            reqText.textContent = `🔓 Перейди по ссылке`;
-            reqProgress.style.display = 'none';
-            
-            actionBtn.textContent = 'ПЕРЕЙТИ';
-            actionBtn.setAttribute('data-type', 'link');
-            actionBtn.onclick = () => window.open(url, '_blank');
-            
-        } else if (skin.requirement?.type === 'free') {
-            reqText.textContent = `✨ Бесплатный скин`;
-            reqProgress.style.display = 'none';
-            
-            actionBtn.textContent = 'ПОЛУЧИТЬ';
-            actionBtn.setAttribute('data-type', 'free');
-            actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
-            
-        } else {
-            reqText.textContent = `🔓 Условие: особое`;
-            reqProgress.style.display = 'none';
-            actionBtn.textContent = 'НЕДОСТУПНО';
-        }
-    }
-    
-    // Показываем модалку
-    modal.classList.add('active');
-}
-
-// Закрыть детали скина
-function closeSkinDetail() {
-    const modal = document.getElementById('skin-detail-modal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-}
-
-// Выбрать скин из деталей
-async function selectSkinFromDetail(skinId) {
-    if (!userId) {
-        showToast('❌ Авторизуйтесь', true);
-        return;
-    }
-    
-    try {
-        await API.post('/api/select-skin', { 
-            user_id: userId, 
-            skin_id: skinId 
-        });
-        
-        State.skins.selected = skinId;
-        applySavedSkin();
-        showToast('✨ Скин выбран!');
-        closeSkinDetail();
-        renderSkins();
-        
-    } catch (err) {
-        console.error('Select skin error:', err);
-        showToast('❌ Ошибка выбора скина', true);
-    }
-}
-
-// Получить скин из деталей
-async function unlockSkinFromDetail(skinId) {
-    if (!userId) {
-        showToast('❌ Авторизуйтесь', true);
-        return;
-    }
-    
-    if (State.skins.owned.includes(skinId)) {
-        showToast('✅ Скин уже есть');
-        closeSkinDetail();
-        return;
-    }
-    
-    // Показываем загрузку
-    showToast('🔄 Отправляем запрос...');
-    
-    try {
-        const res = await API.post('/api/unlock-skin', { 
-            user_id: userId, 
-            skin_id: skinId,
-            method: 'free'
-        });
-        
-        if (res.success) {
-            // ✅ 1. Добавляем в локальный массив
-            State.skins.owned.push(skinId);
-            
-            // ✅ 2. Обновляем данные с сервера (важно!)
-            await refreshUserData();
-            
-            showToast('✅ Новый скин!');
-            
-            // Если это первый скин, выбираем его
-            if (State.skins.owned.length === 1) {
-                State.skins.selected = skinId;
-                applySavedSkin();
-            }
-            
-            closeSkinDetail();
-            renderSkins();
-            updateCollectionProgress();
-        } else {
-            // ✅ 3. Обработка ошибки от сервера
-            showToast(`❌ ${res.message || 'Не удалось получить скин'}`, true);
-        }
-        
-    } catch (err) {
-        console.error('Unlock skin error:', err);
-        showToast('❌ Ошибка получения скина', true);
-    }
-}
-
-// ✅ Добавьте эту функцию в game.js (если её нет)
-async function refreshUserData() {
-    try {
-        const data = await API.get(`/api/user/${userId}`);
-        
-        // Обновляем скины с сервера
-        State.skins.owned = data.owned_skins || State.skins.owned;
-        State.skins.selected = data.selected_skin || State.skins.selected;
-        State.skins.adsWatched = data.ads_watched || State.skins.adsWatched;
-        
-        console.log('🔄 Данные обновлены с сервера:', {
-            owned: State.skins.owned,
-            selected: State.skins.selected
-        });
-        
-    } catch (e) {
-        console.error('Ошибка обновления данных:', e);
-    }
-}
-
-// Смотреть рекламу для скина
-function watchAdForSkin(skinId) {
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
-    }
-    
-    showToast('📺 Загружаем рекламу...');
-    
-    window.show_10655027()
-        .then(() => {
-            State.skins.adsWatched = (State.skins.adsWatched || 0) + 1;
-            showToast('✅ +1 просмотр!');
-            
-            // Обновляем прогресс во всех скинах
-            State.skins.data.forEach(skin => {
-                if (skin.requirement?.type === 'ads' || skin.requirement?.type === 'video') {
-                    skin.requirement.current = State.skins.adsWatched;
-                }
-            });
-            
-            renderSkins();
-            
-            // Если модалка открыта - обновляем её
-            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
-                openSkinDetail(skinId);
-            }
-        })
-        .catch((error) => {
-            console.error('Ad error:', error);
-            showToast('❌ Ошибка при показе рекламы', true);
-        });
-}
-
-// Обновить прогресс коллекции
-function updateCollectionProgress() {
-    const collected = State.skins.owned.length;
-    const total = State.skins.data.length || 21;
-    const percent = (collected / total) * 100;
-    
-    const collectedSpan = document.getElementById('skins-collected');
-    const totalSpan = document.getElementById('skins-total');
-    const progressFill = document.getElementById('skins-progress-fill');
-    
-    if (collectedSpan) collectedSpan.textContent = collected;
-    if (totalSpan) totalSpan.textContent = total;
-    if (progressFill) progressFill.style.width = percent + '%';
-}
-
 // ==================== АЧИВКИ ====================
-
-// Открыть модалку с ачивками
 function openAchievements() {
     renderAchievements();
     openModal('achievements-screen');
 }
 
-// Отрендерить список ачивок
 function renderAchievements() {
     const list = document.getElementById('achievements-list');
     if (!list) return;
@@ -3305,11 +2056,7 @@ function renderAchievements() {
     list.innerHTML = ACHIEVEMENTS.map(achievement => {
         const completed = State.achievements.completed.includes(achievement.id);
         
-        // Получаем текущий прогресс для ачивки
-        let current = 0;
-        let total = 0;
-        let percent = 0;
-        
+        let current = 0, total = 0, percent = 0;
         if (achievement.id.includes('click')) {
             current = stats.clicks;
             total = parseInt(achievement.id.split('_')[1]);
@@ -3330,9 +2077,7 @@ function renderAchievements() {
         
         return `
             <div class="achievement-item ${completed ? 'completed' : ''}">
-                <div class="achievement-icon ${completed ? 'completed' : ''}">
-                    ${achievement.icon}
-                </div>
+                <div class="achievement-icon ${completed ? 'completed' : ''}">${achievement.icon}</div>
                 <div class="achievement-info">
                     <h3>${achievement.title}</h3>
                     <p>${achievement.description}</p>
@@ -3341,9 +2086,7 @@ function renderAchievements() {
                             <div class="achievement-progress-fill" style="width: ${percent}%"></div>
                         </div>
                         <div class="achievement-progress-text">${current}/${total}</div>
-                    ` : `
-                        <div class="achievement-reward">✅ Выполнено! +${achievement.reward}</div>
-                    `}
+                    ` : `<div class="achievement-reward">✅ +${achievement.reward}</div>`}
                 </div>
                 ${completed ? '<div class="achievement-check">✓</div>' : ''}
             </div>
@@ -3353,135 +2096,86 @@ function renderAchievements() {
     updateAchievementsProgress();
 }
 
-// Обновить прогресс ачивок
 function updateAchievementsProgress() {
     const completed = State.achievements.completed.length;
     const total = ACHIEVEMENTS.length;
     const percent = (completed / total) * 100;
     
-    const completedSpan = document.getElementById('achievements-completed');
-    const totalSpan = document.getElementById('achievements-total');
-    const progressFill = document.getElementById('achievements-progress-fill');
-    
-    if (completedSpan) completedSpan.textContent = completed;
-    if (totalSpan) totalSpan.textContent = total;
-    if (progressFill) progressFill.style.width = percent + '%';
+    document.getElementById('achievements-completed').textContent = completed;
+    document.getElementById('achievements-total').textContent = total;
+    document.getElementById('achievements-progress-fill').style.width = percent + '%';
 }
 
-// Получить прогресс для ачивки (если нужно)
-function getAchievementProgress(achievement, stats) {
-    // Можно добавить прогресс-бары для сложных ачивок
-    return 0;
+// ==================== ОБРАБОТЧИК КЛИКОВ ====================
+function setupGlobalClickHandler() {
+    document.removeEventListener('click', handleTap);
+    document.removeEventListener('touchstart', handleTap);
+    
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
+        handleTap(e);
+    });
+    
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
+        handleTap(e);
+    }, { passive: false });
 }
 
-// ОБНОВЛЕННАЯ функция показа уведомления
-function showAchievementNotification(achievement) {
-    // Показываем тост
-    const toast = document.createElement('div');
-    toast.className = 'achievement-toast';
-    toast.innerHTML = `
-        <div class="achievement-toast-icon">${achievement.icon}</div>
-        <div class="achievement-toast-info">
-            <div class="achievement-toast-title">🏆 Достижение получено!</div>
-            <div class="achievement-toast-name">${achievement.title}</div>
-            <div class="achievement-toast-reward">+${achievement.reward} монет</div>
-        </div>
-    `;
-    document.body.appendChild(toast);
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Spirit Clicker starting...');
     
-    setTimeout(() => toast.classList.add('show'), 100);
+    loadSettings();
     
-    // 🎆 ЗАПУСКАЕМ ФЕЙЕРВЕРК!
-    createAchievementConfetti();
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
-    
-    playAchievementSound();
-    
-    if (document.getElementById('achievements-screen')?.classList.contains('active')) {
-        renderAchievements();
+    if (userId) {
+        await loadUserData();
+        startPerfectEnergySystem();
+        await loadReferralData();
+        setInterval(sendClickBatch, 14000);
+    } else {
+        const saved = localStorage.getItem('ryohoGame');
+        if (saved) Object.assign(State.game, JSON.parse(saved));
+        updateUI();
     }
-}
+    
+    setupGlobalClickHandler();
+    setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
+    setInterval(checkOfflinePassiveIncome, CONFIG.PASSIVE_INCOME_INTERVAL);
+    applySavedSkin();
+    
+    console.log('✅ Spirit Clicker ready');
+});
 
-function createAchievementConfetti() {
-    // Цвета фейерверка (золотой, фиолетовый)
-    const colors = ['#FFD700', '#7F49B4', '#FF6B6B', '#4ECDC4'];
-    
-    for (let i = 0; i < 100; i++) {
-        setTimeout(() => {
-            const confetti = document.createElement('div');
-            confetti.style.cssText = `
-                position: fixed;
-                left: ${Math.random() * 100}vw;
-                top: -10px;
-                width: ${Math.random() * 8 + 4}px;
-                height: ${Math.random() * 8 + 4}px;
-                background: ${colors[Math.floor(Math.random() * colors.length)]};
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 20002;
-                animation: achievementConfetti ${Math.random() * 2 + 2}s linear forwards;
-                box-shadow: 0 0 10px currentColor;
-            `;
-            document.body.appendChild(confetti);
-            setTimeout(() => confetti.remove(), 3000);
-        }, i * 20);
-    }
-    
-    // Добавляем несколько взрывов
-    for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-            const explosion = document.createElement('div');
-            explosion.style.cssText = `
-                position: fixed;
-                left: ${20 + Math.random() * 60}vw;
-                top: ${30 + Math.random() * 40}vh;
-                width: 10px;
-                height: 10px;
-                background: gold;
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 20002;
-                animation: explosion 0.5s ease-out forwards;
-                box-shadow: 0 0 30px gold;
-            `;
-            document.body.appendChild(explosion);
-            setTimeout(() => explosion.remove(), 500);
-        }, i * 200);
-    }
-}
-const confettiStyles = document.createElement('style');
-confettiStyles.textContent = `
-    @keyframes achievementConfetti {
-        to {
-            transform: translateY(100vh) rotate(360deg);
+// ==================== ПАССИВНЫЙ ДОХОД ====================
+const checkOfflinePassiveIncome = async () => {
+    if (!userId) return;
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.income > 0) {
+                State.game.coins = data.coins;
+                updateUI();
+                showToast(data.message);
+            }
         }
+    } catch (e) {
+        console.error('Passive income error:', e);
     }
-    
-    @keyframes explosion {
-        0% {
-            transform: scale(0);
-            opacity: 1;
-        }
-        50% {
-            transform: scale(30);
-            opacity: 0.5;
-        }
-        100% {
-            transform: scale(50);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(confettiStyles);
+};
 
-// Убедитесь, что функция доступна глобально
-window.recoverEnergyWithAd = recoverEnergyWithAd;
-
-// ==================== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ====================
+// ==================== ЭКСПОРТ ====================
 window.handleTap = handleTap;
 window.upgradeBoost = upgradeBoost;
 window.upgradeAll = upgradeAll;
@@ -3503,7 +2197,6 @@ window.activateMegaBoost = activateMegaBoost;
 window.selectSkin = selectSkin;
 window.filterSkins = filterSkins;
 window.openSkins = openSkins;
-window.recoverEnergy = recoverEnergy;
 window.showToast = showToast;
 window.playCoinflip = playCoinflip;
 window.playSlots = playSlots;
@@ -3511,15 +2204,19 @@ window.playDice = playDice;
 window.playWheel = playWheel;
 window.State = State;
 window.state = State;
-window.recoverEnergy = recoverEnergy;
-window.startEnergyRecovery = startEnergyRecovery;
+window.startPerfectEnergySystem = startPerfectEnergySystem;
 window.forceSync = forceSync;
 window.sendClickBatch = sendClickBatch;
 window.syncEnergyWithServer = syncEnergyWithServer;
 window.fullSyncWithServer = fullSyncWithServer;
-window.startPerfectEnergySystem = startPerfectEnergySystem;
 window.recoverEnergyWithAd = recoverEnergyWithAd;
-// Проверка
-console.log('✅ handleTap определена:', typeof handleTap !== 'undefined');
-console.log('✅ upgradeBoost определена:', typeof upgradeBoost !== 'undefined');
-console.log('✅ openModal определена:', typeof openModal !== 'undefined');
+window.openAchievements = openAchievements;
+window.watchVideoForTask = watchVideoForTask;
+window.recoverEnergyWithAd = recoverEnergyWithAd;
+window.checkBoostStatus = checkBoostStatus;
+window.closeSkinDetail = closeSkinDetail;
+window.openSkinDetail = openSkinDetail;
+window.unlockSkinFromDetail = unlockSkinFromDetail;
+window.selectSkinFromDetail = selectSkinFromDetail;
+
+console.log('✅ Все функции определены');

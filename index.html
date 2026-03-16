@@ -234,47 +234,17 @@
         </div>
     </div>
 
-    <!-- ==================== МОДАЛКА ЗАДАНИЙ ==================== -->
+    <!-- TASKS MODAL -->
     <div class="modal-screen" id="tasks-screen">
-        <div class="tasks-modal">
-            <!-- Шапка -->
-            <div class="tasks-header">
-                <h2 class="tasks-title">📋 ЗАДАНИЯ</h2>
-                <button class="tasks-close" onclick="closeModal('tasks-screen')">✕</button>
+        <div class="glass">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal('tasks-screen')">✕</button>
+                <h2>Tasks</h2>
             </div>
-
-            <!-- Баланс и статистика -->
-            <div class="tasks-stats">
-                <div class="tasks-balance">
-                    <span class="balance-label">Мой баланс</span>
-                    <span class="balance-value" id="tasks-coins">0</span>
+            <div class="modal-content">
+                <div class="tasks-list" id="tasks-list">
+                    <div class="loading">Loading...</div>
                 </div>
-                <div class="tasks-completed">
-                    <span class="completed-label">Выполнено</span>
-                    <span class="completed-value" id="tasks-completed-count">0</span>
-                </div>
-            </div>
-
-            <!-- Категории заданий -->
-            <div class="tasks-categories">
-                <button class="category-btn active" onclick="filterTasks('all')">Все</button>
-                <button class="category-btn" onclick="filterTasks('daily')">Ежедневные</button>
-                <button class="category-btn" onclick="filterTasks('achievements')">Достижения</button>
-                <button class="category-btn" onclick="filterTasks('special')">Специальные</button>
-            </div>
-
-            <!-- Список заданий -->
-            <div class="tasks-list" id="tasks-list">
-                <!-- Сюда будут грузиться задания -->
-            </div>
-
-            <!-- Бонус за все задания -->
-            <div class="tasks-bonus">
-                <div class="bonus-info">
-                    <span class="bonus-icon">🎁</span>
-                    <span>Выполни все задания и получи</span>
-                </div>
-                <span class="bonus-value">+50 000</span>
             </div>
         </div>
     </div>
@@ -665,6 +635,14 @@
             <div class="achievements-header">
                 <h2 class="achievements-title">🎖️</h2>
                 <button class="achievements-close" onclick="closeModal('achievements-screen')">✕</button>
+            </div>
+
+            <!-- Прогресс -->
+            <div class="achievements-progress">
+                <span>📊 <span id="achievements-completed">0</span>/<span id="achievements-total">6</span></span>
+                <div class="progress-bar-mini">
+                    <div class="progress-fill" id="achievements-progress-fill" style="width: 0%"></div>
+                </div>
             </div>
 
             <!-- Список ачивок -->
