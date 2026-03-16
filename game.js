@@ -1745,6 +1745,29 @@ if (userId) {
     setInterval(checkOfflinePassiveIncome, 30 * 60 * 1000);
 }
 
+async function loadDailyTournamentData() {
+    try {
+        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/leaderboard`);
+        const leaderboardData = await leaderboardRes.json();
+        
+        const rankRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/player-rank/${userId}`);
+        const rankData = await rankRes.json();
+        
+        if (leaderboardData.success) {
+            renderDailyLeaderboard({
+                players: leaderboardData.players,
+                playerRank: rankData.rank,
+                playerScore: rankData.score,
+                timeLeft: leaderboardData.time_left,
+                prizes: leaderboardData.prizes
+            });
+            startDailyTournamentTimer(leaderboardData.time_left);
+        }
+    } catch (err) {
+        console.error('Daily tournament error:', err);
+    }
+}
+
 
 function playUpgradeSound() {
     if (!State.settings.sound) return;
