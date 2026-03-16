@@ -1871,6 +1871,8 @@ async function playCoinflip() {
                 coin.classList.add('win');
                 setTimeout(() => coin.classList.remove('win'), 1000);
                 resultEl.textContent = '🦅 Вы выиграли! +' + bet;
+                const modal = document.getElementById('game-coinflip');
+                createConfetti(modal);
                 playSound('win');
             } else {
                 State.game.coins -= bet;
@@ -1932,10 +1934,10 @@ async function playSlots() {
                     
                     if (data.message.includes('JACKPOT')) {
                         playSound('win');
-                        // Эффект конфетти
-                        createConfetti();
                     } else if (data.message.includes('won')) {
                         playSound('win');
+                        const modal = document.getElementById('game-slots');
+                        createConfetti(modal);
                     } else {
                         playSound('lose');
                     }
@@ -2027,8 +2029,9 @@ async function playDice() {
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('won')) {
+                        const modal = document.getElementById('game-dice');
+                        createConfetti(modal);
                         playSound('win');
-                        createConfetti();
                     } else {
                         playSound('lose');
                     }
@@ -2145,8 +2148,9 @@ async function playWheel() {
                         resultEl.textContent = data.message || '🎮 Сыграно!';
                         
                         if (data.message?.includes('won')) {
+                           const modal = document.getElementById('game-Wheel');
+                            createConfetti(modal);
                             playSound('win');
-                            createConfetti();
                         } else {
                             playSound('lose');
                         }
@@ -2202,20 +2206,29 @@ async function playWheel() {
 }
 
 // Конфетти для джекпота
-function createConfetti() {
+function createConfetti(container = document.body) {
+    // Если передан контейнер модалки, используем его, иначе всё окно
+    const targetContainer = container || document.body;
+    const rect = targetContainer.getBoundingClientRect();
+    
     for (let i = 0; i < 50; i++) {
         setTimeout(() => {
             const confetti = document.createElement('div');
+            
+            // Ограничиваем конфетти пределами контейнера
+            const left = rect.left + Math.random() * rect.width;
+            const top = rect.top - 10;
+            
             confetti.style.cssText = `
                 position: fixed;
-                left: ${Math.random() * 100}vw;
-                top: -10px;
+                left: ${left}px;
+                top: ${top}px;
                 width: 8px;
                 height: 8px;
                 background: hsl(${Math.random() * 360}, 100%, 50%);
                 border-radius: 50%;
                 pointer-events: none;
-                z-index: 9999;
+                z-index: 20000;  /* Выше модалок */
                 animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
             `;
             document.body.appendChild(confetti);
