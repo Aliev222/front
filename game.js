@@ -996,66 +996,129 @@ function playUpgradeSound() {
 // ==================== ВИДЕО-ЗАДАНИЯ ====================
 const VIDEO_TASKS = [
     {
-        id: 'video_1',
-        title: '📺 Бонусные монеты',
-        description: 'Посмотри видео и получи 1000 монет',
-        reward: 1000,
-        icon: '🎥',
+        id: 'energy_full',
+        title: '⚡ Полная энергия',
+        description: 'Посмотри видео и восстанови всю энергию до максимума',
+        reward: '⚡ MAX',
+        icon: '🔋',
+        type: 'energy_full',
+        cooldown: 10, // 10 минут
+        lastUsed: null,
+        category: 'energy',
+        completed: false,
+        available: true
+    },
+    
+    // ===== КОИНЫ (разные суммы) =====
+    {
+        id: 'coins_small',
+        title: '💰 Мелочь в карман',
+        description: 'Посмотри видео и получи 500 монет',
+        reward: 500,
+        icon: '🪙',
         type: 'coins',
+        cooldown: 5, // 5 минут
+        lastUsed: null,
+        category: 'coins',
         completed: false,
         available: true
     },
     {
-        id: 'video_2',
-        title: '⚡ Бонус энергии',
-        description: 'Посмотри видео и получи +50 энергии',
-        reward: 50,
-        icon: '⚡',
-        type: 'energy',
-        completed: false,
-        available: true
-    },
-    {
-        id: 'video_3',
-        title: '🔥 Удвоение монет',
-        description: 'Посмотри видео и удвой доход на 5 минут',
-        reward: 'x2',
-        icon: '🔥',
-        type: 'boost',
-        completed: false,
-        available: true
-    },
-    {
-        id: 'video_4',
-        title: '💎 Бонус за просмотр',
-        description: 'Посмотри видео и получи 2500 монет',
-        reward: 2500,
+        id: 'coins_medium',
+        title: '💎 Средний куш',
+        description: 'Посмотри видео и получи 2000 монет',
+        reward: 2000,
         icon: '💎',
         type: 'coins',
+        cooldown: 15, // 15 минут
+        lastUsed: null,
+        category: 'coins',
         completed: false,
         available: true
     },
     {
-        id: 'video_5',
-        title: '🔄 Сброс заданий',
-        description: 'Посмотри видео и обнови все задания',
-        reward: 'Обновить',
-        icon: '🔄',
-        type: 'refresh',
+        id: 'coins_large',
+        title: '👑 Джекпот',
+        description: 'Посмотри видео и получи 10000 монет',
+        reward: 10000,
+        icon: '👑',
+        type: 'coins',
+        cooldown: 60, // 60 минут (1 час)
+        lastUsed: null,
+        category: 'coins',
+        completed: false,
+        available: true
+    },
+    
+    // ===== БУСТЫ =====
+    {
+        id: 'boost_double',
+        title: '⚡ Удвоение',
+        description: 'Посмотри видео и получи x2 к доходу на 5 минут',
+        reward: 'x2 5мин',
+        icon: '⚡',
+        type: 'boost',
+        boost_multiplier: 2,
+        boost_minutes: 5,
+        cooldown: 20, // 20 минут
+        lastUsed: null,
+        category: 'boost',
         completed: false,
         available: true
     },
     {
-        id: 'video_6',
-        title: '🎁 Сундук с монетами',
-        description: 'Посмотри видео и открой сундук',
-        reward: '500-5000',
+        id: 'boost_triple',
+        title: '🔥 Утроение',
+        description: 'Посмотри видео и получи x3 к доходу на 3 минуты',
+        reward: 'x3 3мин',
+        icon: '🔥',
+        type: 'boost',
+        boost_multiplier: 3,
+        boost_minutes: 3,
+        cooldown: 45, // 45 минут
+        lastUsed: null,
+        category: 'boost',
+        completed: false,
+        available: true
+    },
+    
+    // ===== СЛУЧАЙНЫЙ БОНУС =====
+    {
+        id: 'random_box',
+        title: '🎁 Загадочная коробка',
+        description: 'Посмотри видео и получи случайный бонус',
+        reward: '???',
         icon: '🎁',
-        type: 'chest',
+        type: 'random',
+        cooldown: 30, // 30 минут
+        lastUsed: null,
+        category: 'random',
         completed: false,
         available: true
     }
 ];
+
+
+function checkTaskCooldown(task) {
+    if (!task.lastUsed) return true; // Никогда не использовалось
+    
+    const now = Date.now();
+    const cooldownMs = task.cooldown * 60 * 1000; // минуты в миллисекунды
+    const timePassed = now - task.lastUsed;
+    
+    return timePassed >= cooldownMs;
+}
+
+function getTaskTimeLeft(task) {
+    if (!task.lastUsed) return 0;
+    
+    const now = Date.now();
+    const cooldownMs = task.cooldown * 60 * 1000;
+    const timePassed = now - task.lastUsed;
+    const timeLeft = Math.max(0, cooldownMs - timePassed);
+    
+    return Math.ceil(timeLeft / 1000 / 60); // минуты
+}
 
 function loadVideoTasks() {
     const container = document.getElementById('tasks-list');
@@ -1079,35 +1142,159 @@ function renderVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
     
-    container.innerHTML = VIDEO_TASKS.map(task => `
-        <div class="task-card ${task.completed ? 'completed' : ''} ${!task.available && !task.completed ? 'disabled' : ''}">
-            <div class="task-icon" style="background: ${task.type === 'coins' ? 'rgba(255,215,0,0.2)' : 
-                task.type === 'energy' ? 'rgba(76,175,80,0.2)' : 
-                task.type === 'boost' ? 'rgba(255,107,107,0.2)' : 
-                'rgba(127,73,180,0.2)'}">
-                ${task.icon}
-            </div>
-            
-            <div class="task-info">
-                <div class="task-title">${task.title}</div>
-                <div class="task-desc">${task.description}</div>
-                <div class="task-reward" style="color: #FFD700;">
-                    🎁 ${typeof task.reward === 'number' ? task.reward + ' 🪙' : task.reward}
+    // Обновляем доступность заданий по кулдауну
+    VIDEO_TASKS.forEach(task => {
+        if (task.lastUsed) {
+            task.available = checkTaskCooldown(task);
+        }
+    });
+    
+    container.innerHTML = VIDEO_TASKS.map(task => {
+        const completed = task.completed;
+        const available = task.available;
+        const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
+        
+        // Определяем цвет иконки по типу
+        let iconColor = '';
+        switch(task.category) {
+            case 'energy': iconColor = 'linear-gradient(135deg, #4CAF50, #2E7D32)'; break;
+            case 'coins': iconColor = 'linear-gradient(135deg, #FFD700, #B8860B)'; break;
+            case 'skins': iconColor = 'linear-gradient(135deg, #7F49B4, #4A2C6D)'; break;
+            case 'boost': iconColor = 'linear-gradient(135deg, #FF6B6B, #C0392B)'; break;
+            default: iconColor = 'linear-gradient(135deg, #3498DB, #1F618D)';
+        }
+        
+        return `
+            <div class="task-card ${!available ? 'cooldown' : ''}" data-category="${task.category}">
+                <div class="task-icon" style="background: ${iconColor}">
+                    ${task.icon}
                 </div>
+                
+                <div class="task-info">
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-desc">${task.description}</div>
+                    
+                    <div class="task-reward">
+                        🎁 ${typeof task.reward === 'number' ? task.reward + ' 🪙' : task.reward}
+                    </div>
+                    
+                    ${!available && timeLeft > 0 ? `
+                        <div class="task-cooldown">
+                            ⏳ Доступно через ${timeLeft} мин
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <button class="task-action ${task.category}" 
+                        onclick="handleVideoTask('${task.id}')"
+                        ${!available ? 'disabled' : ''}>
+                    ${!available ? '⏳' : '📺 Смотреть'}
+                </button>
             </div>
-            
-            <button class="task-action" 
-                    onclick="watchVideoForTask('${task.id}')"
-                    style="background: ${task.completed ? '#4CAF50' : 
-                        task.type === 'coins' ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 
-                        task.type === 'energy' ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 
-                        task.type === 'boost' ? 'linear-gradient(135deg, #FF6B6B, #FF4757)' : 
-                        'linear-gradient(135deg, #7F49B4, #9B6BDF)'}"
-                    ${task.completed || !task.available ? 'disabled' : ''}>
-                ${task.completed ? '✅' : !task.available ? '⏳' : '📺 Смотреть'}
-            </button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+}
+async function handleVideoTask(taskId) {
+    const task = VIDEO_TASKS.find(t => t.id === taskId);
+    if (!task || !task.available) return;
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+    
+    showToast('📺 Загружаем видео...');
+    
+    try {
+        await window.show_10655027();
+        
+        // Начисляем награду
+        switch(task.type) {
+            case 'energy_full':
+                State.game.energy = State.game.maxEnergy;
+                showToast('⚡ Энергия полностью восстановлена!');
+                break;
+                
+            case 'coins':
+                State.game.coins += task.reward;
+                showToast(`💰 +${task.reward} монет!`);
+                break;
+                
+            case 'skin':
+                await unlockRandomSkin(task.skin_rarity);
+                break;
+                
+            case 'boost':
+                activateCustomBoost(task.boost_multiplier, task.boost_minutes);
+                break;
+                
+            case 'random':
+                giveRandomReward();
+                break;
+        }
+        
+        // Устанавливаем кулдаун
+        task.lastUsed = Date.now();
+        task.available = false;
+        
+        updateUI();
+        renderVideoTasks();
+        createConfetti();
+        
+    } catch (error) {
+        console.error('Video error:', error);
+        showToast('❌ Ошибка при просмотре видео', true);
+    }
+}
+
+function giveRandomReward() {
+    const rewards = [
+        { type: 'coins', value: 1000 },
+        { type: 'coins', value: 2000 },
+        { type: 'coins', value: 5000 },
+        { type: 'energy', value: 50 },
+        { type: 'boost', multiplier: 2, minutes: 5 },
+        { type: 'skin_chance', rarity: 'common' }
+    ];
+    
+    const random = rewards[Math.floor(Math.random() * rewards.length)];
+    
+    switch(random.type) {
+        case 'coins':
+            State.game.coins += random.value;
+            showToast(`🎁 +${random.value} монет!`);
+            break;
+        case 'energy':
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
+            showToast(`🎁 +${random.value} энергии!`);
+            break;
+        case 'boost':
+            activateCustomBoost(random.multiplier, random.minutes);
+            break;
+        case 'skin_chance':
+            unlockRandomSkin('common');
+            break;
+    }
+}
+function activateCustomBoost(multiplier, minutes) {
+    // Сохраняем оригинальный доход
+    if (!State.temp.originalProfit) {
+        State.temp.originalProfit = State.game.profitPerTap;
+    }
+    
+    // Увеличиваем доход
+    State.game.profitPerTap *= multiplier;
+    showToast(`🔥 x${multiplier} на ${minutes} минут!`);
+    
+    // Возвращаем обратно через N минут
+    setTimeout(() => {
+        State.game.profitPerTap = State.temp.originalProfit;
+        State.temp.originalProfit = null;
+        updateUI();
+        showToast('⏰ Буст закончился');
+    }, minutes * 60 * 1000);
+    
+    updateUI();
 }
 
 async function watchVideoForTask(taskId) {
