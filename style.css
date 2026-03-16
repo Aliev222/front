@@ -1752,6 +1752,7 @@ body:not(.night-mode) #stars-canvas {
 
 .filter-btn:active {
     transform: scale(0.95);
+    background: var(--accent);
 }
 
 .filter-btn.active {
@@ -2146,13 +2147,13 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .skin-detail-bonus {
-    background: var(--accent-dim);
+    background: #f5f5f5;
     border: 1px solid var(--accent);
     border-radius: 12px;
     padding: 12px;
     font-size: 15px;
     font-weight: bold;
-    color: #FFD700;
+    color: #1b1b1b;
     text-align: center;
 }
 
