@@ -1603,10 +1603,10 @@ let tournamentTimer = null;
 
 async function loadTournamentData() {
     try {
-        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/leaderboard`);
+        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/tournament/leaderboard`);
         const leaderboardData = await leaderboardRes.json();
         
-        const rankRes = await fetch(`${CONFIG.API_URL}/api/daily-tournament/player-rank/${userId}`);
+        const rankRes = await fetch(`${CONFIG.API_URL}/api/tournament/player-rank/${userId}`);
         const rankData = await rankRes.json();
         
         if (leaderboardData.success) {
