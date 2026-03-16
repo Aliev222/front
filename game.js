@@ -302,6 +302,7 @@ async function loadUserData() {
         await loadSkinsList();
         await loadReferralData();
         await checkBoostStatus();
+        await loadTasks();
         
         applySavedSkin();
         updateUI();
@@ -2361,6 +2362,33 @@ const checkOfflinePassiveIncome = async () => {
         console.error('Passive income error:', e);
     }
 };
+
+// ==================== ТЕСТ РЕФЕРАЛКИ ====================
+window.testReferral = async function() {
+    if (!userId) {
+        console.log('❌ Нет userId');
+        return;
+    }
+    
+    const testReferrerId = 123456789; // Чужой тестовый ID
+    console.log('🧪 Тест: отправляем регистрацию с referrer_id=', testReferrerId);
+    
+    try {
+        const res = await API.post('/api/register', {
+            user_id: userId,
+            username: username + '_test',
+            referrer_id: testReferrerId
+        });
+        console.log('✅ Результат теста:', res);
+        
+        // Проверяем, обновились ли данные реферера
+        const referrerData = await API.get(`/api/user/${testReferrerId}`);
+        console.log('📊 Данные тестового реферера:', referrerData);
+        
+    } catch (err) {
+        console.error('❌ Ошибка теста:', err);
+    }
+}
 
 // ==================== ЭКСПОРТ ====================
 window.handleTap = handleTap;
