@@ -1623,6 +1623,7 @@ async function loadTournamentData() {
     }
 }
 
+
 // Функция для обновления счета в турнире (вызывать при кликах)
 async function updateTournamentScore(score) {
     if (!userId) return;
@@ -1645,21 +1646,27 @@ async function updateTournamentScore(score) {
 
 function renderLeaderboard(data) {
     const list = document.getElementById('leaderboard-list');
-    const playerRankEl = document.getElementById('player-rank');  // Переименуй
+    const playerRankEl = document.getElementById('player-rank');
     const playerScoreEl = document.getElementById('player-score');
     
     if (list) {
         list.innerHTML = data.players.map(p => `
-            <div class="leaderboard-item ${p.isMe ? 'current-player' : ''}">
+            <div class="leaderboard-item">
                 <span class="player-rank">${p.rank}</span>
-                <span class="player-name">${p.name}</span>
+                <div class="player-avatar">
+                    <img src="${p.avatar || '/imgg/default_avatar.png'}" 
+                         alt="avatar"
+                         onerror="this.src='/imgg/default_avatar.png'"
+                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                </div>
+                <span class="player-name">${p.name || 'Player'}</span>
                 <span class="player-score">${formatNumber(p.score)}</span>
             </div>
         `).join('');
     }
     
-    if (playerRankEl) playerRankEl.textContent = `#${data.playerRank}`;
-    if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore);
+    if (playerRankEl) playerRankEl.textContent = `#${data.playerRank || 0}`;
+    if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore || 0);
 }
 function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
