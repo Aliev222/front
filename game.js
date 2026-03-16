@@ -3085,7 +3085,29 @@ function renderAchievements() {
     
     list.innerHTML = ACHIEVEMENTS.map(achievement => {
         const completed = State.achievements.completed.includes(achievement.id);
-        const progress = getAchievementProgress(achievement, stats);
+        
+        // Получаем текущий прогресс для ачивки
+        let current = 0;
+        let total = 0;
+        let percent = 0;
+        
+        if (achievement.id.includes('click')) {
+            current = stats.clicks;
+            total = parseInt(achievement.id.split('_')[1]);
+            percent = Math.min(100, (current / total) * 100);
+        } else if (achievement.id === 'upgrade_10') {
+            current = stats.upgrades;
+            total = 10;
+            percent = Math.min(100, (current / 10) * 100);
+        } else if (achievement.id === 'games_10') {
+            current = stats.games;
+            total = 10;
+            percent = Math.min(100, (current / 10) * 100);
+        } else if (achievement.id === 'referral_5') {
+            current = stats.referrals;
+            total = 5;
+            percent = Math.min(100, (current / 5) * 100);
+        }
         
         return `
             <div class="achievement-item ${completed ? 'completed' : ''}">
@@ -3095,7 +3117,14 @@ function renderAchievements() {
                 <div class="achievement-info">
                     <h3>${achievement.title}</h3>
                     <p>${achievement.description}</p>
-                    <div class="achievement-reward">🎁 +${achievement.reward} монет</div>
+                    ${!completed ? `
+                        <div class="achievement-progress-bar">
+                            <div class="achievement-progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                        <div class="achievement-progress-text">${current}/${total}</div>
+                    ` : `
+                        <div class="achievement-reward">✅ Выполнено! +${achievement.reward}</div>
+                    `}
                 </div>
                 ${completed ? '<div class="achievement-check">✓</div>' : ''}
             </div>
@@ -3141,24 +3170,94 @@ function showAchievementNotification(achievement) {
     `;
     document.body.appendChild(toast);
     
-    // Анимация появления
     setTimeout(() => toast.classList.add('show'), 100);
     
-    // Удаляем через 5 секунд
+    // 🎆 ЗАПУСКАЕМ ФЕЙЕРВЕРК!
+    createAchievementConfetti();
+    
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 5000);
     
-    // Звук уже есть в playAchievementSound()
     playAchievementSound();
     
-    // Обновляем список ачивок, если модалка открыта
     if (document.getElementById('achievements-screen')?.classList.contains('active')) {
         renderAchievements();
     }
 }
 
+function createAchievementConfetti() {
+    // Цвета фейерверка (золотой, фиолетовый)
+    const colors = ['#FFD700', '#7F49B4', '#FF6B6B', '#4ECDC4'];
+    
+    for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                width: ${Math.random() * 8 + 4}px;
+                height: ${Math.random() * 8 + 4}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 20002;
+                animation: achievementConfetti ${Math.random() * 2 + 2}s linear forwards;
+                box-shadow: 0 0 10px currentColor;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 20);
+    }
+    
+    // Добавляем несколько взрывов
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const explosion = document.createElement('div');
+            explosion.style.cssText = `
+                position: fixed;
+                left: ${20 + Math.random() * 60}vw;
+                top: ${30 + Math.random() * 40}vh;
+                width: 10px;
+                height: 10px;
+                background: gold;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 20002;
+                animation: explosion 0.5s ease-out forwards;
+                box-shadow: 0 0 30px gold;
+            `;
+            document.body.appendChild(explosion);
+            setTimeout(() => explosion.remove(), 500);
+        }, i * 200);
+    }
+}
+const confettiStyles = document.createElement('style');
+confettiStyles.textContent = `
+    @keyframes achievementConfetti {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+        }
+    }
+    
+    @keyframes explosion {
+        0% {
+            transform: scale(0);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(30);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(50);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(confettiStyles);
 
 // Убедитесь, что функция доступна глобально
 window.recoverEnergyWithAd = recoverEnergyWithAd;
