@@ -1670,8 +1670,13 @@ function renderLeaderboard(data) {
     
     if (list) {
         list.innerHTML = data.players.map(p => `
-            <div class="leaderboard-item ${p.isMe ? 'current-player' : ''}">
+            <div class="leaderboard-item">
                 <span class="player-rank">${p.rank}</span>
+                <div class="player-avatar">
+                    <img src="${p.avatar}" alt="avatar" 
+                         onerror="this.src='imgg/default_avatar.png'"
+                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                </div>
                 <span class="player-name">${p.name}</span>
                 <span class="player-score">${formatNumber(p.score)}</span>
             </div>
@@ -1681,7 +1686,6 @@ function renderLeaderboard(data) {
     if (playerRank) playerRank.textContent = `#${data.playerRank}`;
     if (playerScore) playerScore.textContent = formatNumber(data.playerScore);
 }
-
 function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
     
