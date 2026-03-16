@@ -2570,3 +2570,186 @@ body:not(.night-mode) #stars-canvas {
     color: var(--warning);
     text-align: right;
 }
+
+/* ==================== МОДАЛКА АЧИВОК ==================== */
+.achievements-modal {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.achievements-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.achievements-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--text-primary);
+    text-shadow: 0 0 10px var(--accent);
+    margin: 0;
+}
+
+.achievements-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.achievements-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.achievements-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.achievement-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s ease;
+    opacity: 1;
+}
+
+.achievement-item.completed {
+    opacity: 0.8;
+    border-color: var(--accent);
+    background: var(--accent-dim);
+}
+
+.achievement-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--accent-dim);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.achievement-icon.completed {
+    background: var(--accent);
+    color: white;
+}
+
+.achievement-info {
+    flex: 1;
+}
+
+.achievement-info h3 {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.achievement-info p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.achievement-reward {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    color: var(--warning);
+}
+
+.achievement-check {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--success);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+/* Временное уведомление */
+.achievement-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, var(--accent), #9b6bdf);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 20001;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid white;
+}
+
+.achievement-toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.achievement-toast-icon {
+    font-size: 32px;
+}
+
+.achievement-toast-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.achievement-toast-title {
+    font-size: 12px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.achievement-toast-name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.achievement-toast-reward {
+    font-size: 14px;
+    color: #FFD700;
+}

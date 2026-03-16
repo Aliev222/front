@@ -44,6 +44,10 @@
         <div class="nebula"></div>
 
         <!-- HEADER -->
+        <div class="nav-item" onclick="openAchievements()">
+            <span class="nav-icon">🎖️</span>
+            <span>Achievements</span>
+        </div>
         <div class="header glass">
             <div class="nav-item" onclick="switchTab('tournament', this)">
                 <span class="nav-icon">🏆</span>
@@ -625,5 +629,27 @@
         draw();
     })();
     </script>
+    <div class="modal-screen" id="achievements-screen">
+        <div class="achievements-modal">
+            <!-- Шапка -->
+            <div class="achievements-header">
+                <h2 class="achievements-title">🎖️</h2>
+                <button class="achievements-close" onclick="closeModal('achievements-screen')">✕</button>
+            </div>
+
+            <!-- Прогресс -->
+            <div class="achievements-progress">
+                <span>📊 <span id="achievements-completed">0</span>/<span id="achievements-total">6</span></span>
+                <div class="progress-bar-mini">
+                    <div class="progress-fill" id="achievements-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Список ачивок -->
+            <div class="achievements-list" id="achievements-list">
+                <!-- Сюда будут грузиться ачивки -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>

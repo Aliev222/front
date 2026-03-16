@@ -3062,6 +3062,104 @@ function updateCollectionProgress() {
     if (progressFill) progressFill.style.width = percent + '%';
 }
 
+// ==================== АЧИВКИ ====================
+
+// Открыть модалку с ачивками
+function openAchievements() {
+    renderAchievements();
+    openModal('achievements-screen');
+}
+
+// Отрендерить список ачивок
+function renderAchievements() {
+    const list = document.getElementById('achievements-list');
+    if (!list) return;
+    
+    const stats = {
+        clicks: State.achievements.clicks || 0,
+        upgrades: State.achievements.upgrades || 0,
+        games: State.achievements.games || 0,
+        referrals: State.skins.friendsInvited || 0,
+        adsWatched: State.skins.adsWatched || 0
+    };
+    
+    list.innerHTML = ACHIEVEMENTS.map(achievement => {
+        const completed = State.achievements.completed.includes(achievement.id);
+        const progress = getAchievementProgress(achievement, stats);
+        
+        return `
+            <div class="achievement-item ${completed ? 'completed' : ''}">
+                <div class="achievement-icon ${completed ? 'completed' : ''}">
+                    ${achievement.icon}
+                </div>
+                <div class="achievement-info">
+                    <h3>${achievement.title}</h3>
+                    <p>${achievement.description}</p>
+                    <div class="achievement-reward">🎁 +${achievement.reward} монет</div>
+                </div>
+                ${completed ? '<div class="achievement-check">✓</div>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    updateAchievementsProgress();
+}
+
+// Обновить прогресс ачивок
+function updateAchievementsProgress() {
+    const completed = State.achievements.completed.length;
+    const total = ACHIEVEMENTS.length;
+    const percent = (completed / total) * 100;
+    
+    const completedSpan = document.getElementById('achievements-completed');
+    const totalSpan = document.getElementById('achievements-total');
+    const progressFill = document.getElementById('achievements-progress-fill');
+    
+    if (completedSpan) completedSpan.textContent = completed;
+    if (totalSpan) totalSpan.textContent = total;
+    if (progressFill) progressFill.style.width = percent + '%';
+}
+
+// Получить прогресс для ачивки (если нужно)
+function getAchievementProgress(achievement, stats) {
+    // Можно добавить прогресс-бары для сложных ачивок
+    return 0;
+}
+
+// ОБНОВЛЕННАЯ функция показа уведомления
+function showAchievementNotification(achievement) {
+    // Показываем тост
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast';
+    toast.innerHTML = `
+        <div class="achievement-toast-icon">${achievement.icon}</div>
+        <div class="achievement-toast-info">
+            <div class="achievement-toast-title">🏆 Достижение получено!</div>
+            <div class="achievement-toast-name">${achievement.title}</div>
+            <div class="achievement-toast-reward">+${achievement.reward} монет</div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Анимация появления
+    setTimeout(() => toast.classList.add('show'), 100);
+    
+    // Удаляем через 5 секунд
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+    
+    // Звук уже есть в playAchievementSound()
+    playAchievementSound();
+    
+    // Обновляем список ачивок, если модалка открыта
+    if (document.getElementById('achievements-screen')?.classList.contains('active')) {
+        renderAchievements();
+    }
+}
+
+
 // Убедитесь, что функция доступна глобально
 window.recoverEnergyWithAd = recoverEnergyWithAd;
 
