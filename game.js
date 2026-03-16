@@ -2363,8 +2363,8 @@ const checkOfflinePassiveIncome = async () => {
     }
 };
 
-// ==================== ТЕСТ РЕФЕРАЛКИ ====================
-window.testReferral = async function() {
+
+async function testReferral() {
     if (!userId) {
         console.log('❌ Нет userId');
         return;
@@ -2389,6 +2389,9 @@ window.testReferral = async function() {
         console.error('❌ Ошибка теста:', err);
     }
 }
+
+// 👇 ВАЖНО: Делаем функцию глобальной
+window.testReferral = testReferral;
 
 // ==================== ЭКСПОРТ ====================
 window.handleTap = handleTap;
