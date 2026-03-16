@@ -1249,46 +1249,158 @@ async function upgradeAll() {
     checkAchievements();
     updateUI();
 }
+// ==================== ЗАДАНИЯ ====================
 
-function renderTasks(tasks) {
+// Массив заданий (как в топ-играх)
+const TASKS = [
+    // Ежедневные
+    {
+        id: 'daily_login',
+        title: '📅 Ежедневный вход',
+        description: 'Заходи в игру каждый день',
+        reward: 1000,
+        icon: '📅',
+        category: 'daily',
+        type: 'login',
+        progress: 0,
+        total: 1,
+        completed: false
+    },
+    {
+        id: 'daily_clicks',
+        title: '👆 100 кликов',
+        description: 'Сделай 100 кликов за день',
+        reward: 2000,
+        icon: '👆',
+        category: 'daily',
+        type: 'clicks',
+        progress: 0,
+        total: 100,
+        completed: false
+    },
+    {
+        id: 'daily_energy',
+        title: '⚡ Потрать энергию',
+        description: 'Потрать 500 энергии',
+        reward: 1500,
+        icon: '⚡',
+        category: 'daily',
+        type: 'energy',
+        progress: 0,
+        total: 500,
+        completed: false
+    },
+    
+    // Достижения
+    {
+        id: 'achieve_clicks_1000',
+        title: '🏆 1000 кликов',
+        description: 'Сделай 1000 кликов всего',
+        reward: 5000,
+        icon: '🏆',
+        category: 'achievements',
+        type: 'total_clicks',
+        progress: 0,
+        total: 1000,
+        completed: false
+    },
+    {
+        id: 'achieve_upgrades_10',
+        title: '⬆️ 10 улучшений',
+        description: 'Купи 10 улучшений',
+        reward: 3000,
+        icon: '⬆️',
+        category: 'achievements',
+        type: 'upgrades',
+        progress: 0,
+        total: 10,
+        completed: false
+    },
+    
+    // Специальные
+    {
+        id: 'special_referral',
+        title: '👥 Пригласи друга',
+        description: 'Пригласи 1 друга в игру',
+        reward: 10000,
+        icon: '👥',
+        category: 'special',
+        type: 'referral',
+        progress: 0,
+        total: 1,
+        completed: false,
+        link: 'https://t.me/Ryoho_bot?start=ref_'
+    },
+    {
+        id: 'special_skin',
+        title: '🎨 Получи скин',
+        description: 'Открой свой первый скин',
+        reward: 5000,
+        icon: '🎨',
+        category: 'special',
+        type: 'skin',
+        progress: 0,
+        total: 1,
+        completed: false
+    },
+    {
+        id: 'special_tournament',
+        title: '🏅 Топ 10 в турнире',
+        description: 'Попади в топ-10 турнира',
+        reward: 15000,
+        icon: '🏅',
+        category: 'special',
+        type: 'tournament',
+        progress: 0,
+        total: 10,
+        completed: false
+    }
+];
+
+
+function renderTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
     
-    if (!tasks || tasks.length === 0) {
-        container.innerHTML = `
-            <div class="tasks-empty">
-                <div class="tasks-empty-icon">📋</div>
-                <div class="tasks-empty-text">Нет доступных заданий</div>
-            </div>
-        `;
-        return;
+    let filtered = TASKS;
+    if (currentTaskFilter !== 'all') {
+        filtered = TASKS.filter(t => t.category === currentTaskFilter);
     }
     
-    container.innerHTML = tasks.map(task => `
-        <div class="task-card ${task.completed ? 'completed' : ''}">
-            <div class="task-icon">${task.icon || '📋'}</div>
-            <div class="task-info">
-                <div class="task-title">${task.title || 'Задание'}</div>
-                <div class="task-desc">${task.description || ''}</div>
-                <div class="task-reward">🎁 ${task.reward || '0'}</div>
-                ${task.progress !== undefined ? `
-                    <div class="task-progress">
-                        <div class="task-progress-bar">
-                            <div class="task-progress-fill" style="width: ${(task.progress / task.total) * 100}%"></div>
-                        </div>
-                        <span class="task-progress-text">${task.progress}/${task.total}</span>
+    container.innerHTML = filtered.map(task => {
+        const progressPercent = (task.progress / task.total) * 100;
+        
+        return `
+            <div class="task-card ${task.completed ? 'completed' : ''}" onclick="handleTaskClick('${task.id}')">
+                <div class="task-icon">${task.icon}</div>
+                <div class="task-info">
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-desc">${task.description}</div>
+                    <div class="task-reward">
+                        <span class="reward-icon">🎁</span>
+                        <span>+${task.reward}</span>
                     </div>
-                ` : ''}
+                    
+                    ${!task.completed ? `
+                        <div class="task-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <div class="progress-text">${task.progress}/${task.total}</div>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${task.completed ? `
+                    <button class="task-action completed" disabled>✅ Выполнено</button>
+                ` : task.progress >= task.total ? `
+                    <button class="task-action claim" onclick="claimTask('${task.id}', event)">🎁 Забрать</button>
+                ` : `
+                    <button class="task-action start" onclick="startTask('${task.id}', event)">▶ Начать</button>
+                `}
             </div>
-            ${!task.completed ? `
-                <button class="task-button" onclick="completeTask('${task.id}')">
-                    Выполнить
-                </button>
-            ` : `
-                <button class="task-button completed" disabled>✅ Выполнено</button>
-            `}
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function completeTask(taskId) {
@@ -1299,57 +1411,150 @@ function completeTask(taskId) {
 
 // Добавь функцию для загрузки задач (если ее нет)
 async function loadTasks() {
-    const container = document.getElementById('tasks-list');
-    if (!container) return;
-    
-    if (!userId) {
-        container.innerHTML = '<div class="loading">Авторизуйтесь</div>';
-        return;
-    }
+    if (!userId) return;
     
     try {
-        // Пытаемся загрузить с сервера
-        const data = await API.get(`/api/tasks/${userId}`).catch(() => null);
+        // Загружаем прогресс с сервера
+        const completedTasks = await API.get(`/api/tasks/${userId}`).catch(() => []);
         
-        if (data && data.length > 0) {
-            renderTasks(data);
-        } else {
-            // Если сервер не отвечает - показываем заглушку
-            const mockTasks = [
-                {
-                    id: 'daily_bonus',
-                    title: '📅 Ежедневный бонус',
-                    description: 'Заходи каждый день',
-                    reward: '10000 монет',
-                    icon: '📅',
-                    completed: false
-                },
-                {
-                    id: 'invite_friend',
-                    title: '👥 Пригласи друга',
-                    description: 'Пригласи 1 друга в игру',
-                    reward: '5000 монет',
-                    icon: '👥',
-                    completed: false
-                },
-                {
-                    id: 'watch_ad',
-                    title: '📺 Посмотри рекламу',
-                    description: 'Посмотри 3 рекламы',
-                    reward: '15000 монет',
-                    icon: '📺',
-                    completed: false,
-                    progress: 0,
-                    total: 3
-                }
-            ];
-            renderTasks(mockTasks);
-        }
+        // Обновляем прогресс в заданиях
+        TASKS.forEach(task => {
+            task.completed = completedTasks.includes(task.id);
+            
+            // Обновляем прогресс в зависимости от типа
+            if (task.type === 'total_clicks') {
+                task.progress = State.achievements.clicks || 0;
+            } else if (task.type === 'upgrades') {
+                task.progress = State.achievements.upgrades || 0;
+            } else if (task.type === 'referral') {
+                task.progress = State.skins.friendsInvited || 0;
+            } else if (task.type === 'skin') {
+                task.progress = State.skins.owned.length - 1; // минус default_SP
+            }
+        });
+        
+        renderTasks();
+        updateTasksStats();
+        
     } catch (err) {
         console.error('Tasks error:', err);
-        container.innerHTML = '<div class="loading">Ошибка загрузки</div>';
     }
 }
+function updateTasksStats() {
+    const completedCount = TASKS.filter(t => t.completed).length;
+    document.getElementById('tasks-completed-count').textContent = completedCount;
+    document.getElementById('tasks-coins').textContent = formatNumber(State.game.coins);
+}
+function filterTasks(category) {
+    currentTaskFilter = category;
+    
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase().includes(category) || 
+            (category === 'all' && btn.textContent === 'Все')) {
+            btn.classList.add('active');
+        }
+    });
+    
+    renderTasks();
+}
+function handleTaskClick(taskId) {
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task) return;
+    
+    if (task.completed) {
+        showToast('✅ Задание уже выполнено');
+    } else if (task.progress >= task.total) {
+        claimTask(taskId);
+    }
+}
+function startTask(taskId, event) {
+    event.stopPropagation();
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task) return;
+    
+    if (task.link) {
+        window.open(task.link + userId, '_blank');
+    } else {
+        // Переходим в нужный раздел
+        if (task.type === 'skin') {
+            switchTab('skins');
+        } else if (task.type === 'referral') {
+            switchTab('friends');
+        } else {
+            switchTab('main');
+        }
+    }
+}async function claimTask(taskId, event) {
+    if (event) event.stopPropagation();
+    
+    const task = TASKS.find(t => t.id === taskId);
+    if (!task || task.completed) return;
+    
+    try {
+        const res = await API.post('/api/complete-task', {
+            user_id: userId,
+            task_id: taskId
+        });
+        
+        if (res.success) {
+            task.completed = true;
+            State.game.coins += task.reward;
+            
+            showToast(`🎁 +${task.reward} монет!`);
+            createTaskConfetti();
+            
+            renderTasks();
+            updateTasksStats();
+            updateUI();
+        }
+    } catch (err) {
+        console.error('Claim task error:', err);
+        showToast('❌ Ошибка', true);
+    }
+}
+
+// Конфетти для заданий
+function createTaskConfetti() {
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                left: ${Math.random() * 100}vw;
+                top: -10px;
+                width: 8px;
+                height: 8px;
+                background: ${['#FFD700', '#7F49B4', '#4CAF50'][Math.floor(Math.random() * 3)]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 20000;
+                animation: taskConfetti ${Math.random() * 2 + 2}s linear forwards;
+                box-shadow: 0 0 10px currentColor;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 50);
+    }
+}
+
+// Добавить стили для конфетти заданий
+const taskConfettiStyle = document.createElement('style');
+taskConfettiStyle.textContent = `
+    @keyframes taskConfetti {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+        }
+    }
+`;
+document.head.appendChild(taskConfettiStyle);
+
+// Открыть модалку заданий
+function openTasks() {
+    loadTasks();
+    openModal('tasks-screen');
+}
+
 
 // Заглушка для выполнения задачи
 function completeTask(taskId) {
@@ -1513,6 +1718,7 @@ function switchTab(tab, el) {
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'tournament') loadTournamentData();
+    if (tab === 'tasks') openTasks();
 }
 
 function openSettings() {
