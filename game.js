@@ -331,7 +331,7 @@ async function loadUserData() {
         applyServerEnergySnapshot({
             energy: data.energy || 0,
             max_energy: data.max_energy || 500,
-            regen_seconds: 2
+            regen_seconds: data.regen_seconds || 2
         });
         State.game.profitPerTap = data.profit_per_tap || 1;
         State.game.profitPerHour = data.profit_per_hour || 100;
@@ -594,11 +594,6 @@ function handleTap(e) {
     const megaBoostActive =
         document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
 
-    if (!megaBoostActive && State.game.energy < 1) {
-        showEnergyRecoveryModal();
-        return;
-    }
-
     let previewGain = State.game.profitPerTap;
 
     const skin = State.skins.data.find(s => s.id === State.skins.selected);
@@ -612,11 +607,7 @@ function handleTap(e) {
 
     previewGain = Math.floor(previewGain) || 1;
 
-    // Мгновенный визуальный отклик
-    State.temp.clickBuffer += 1;
-
-    // Локальный optimistic UI только для ощущения скорости
-    State.game.coins += previewGain;
+    // СНАЧАЛА проверяем энергию
     if (!megaBoostActive) {
         const currentVisualEnergy = getVisualEnergy();
 
@@ -625,11 +616,14 @@ function handleTap(e) {
             return;
         }
 
-        // Мгновенный отклик
         State.temp.serverEnergyBase = Math.max(0, currentVisualEnergy - 1);
         State.temp.serverEnergySyncedAtMs = Date.now();
         State.game.energy = State.temp.serverEnergyBase;
     }
+
+    // И только потом считаем клик успешным
+    State.temp.clickBuffer += 1;
+    State.game.coins += previewGain;
 
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
     checkAchievements();
@@ -2389,23 +2383,23 @@ function setupGlobalClickHandler() {
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Spirit Clicker starting...');
-    
+
     loadSettings();
-    
+
     if (userId) {
-        await loadReferralData();
+        await loadUserData();
         setInterval(sendClickBatch, 14000);
     } else {
         const saved = localStorage.getItem('ryohoGame');
         if (saved) Object.assign(State.game, JSON.parse(saved));
         updateUI();
     }
-    
+
     setupGlobalClickHandler();
     setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
     setInterval(checkOfflinePassiveIncome, CONFIG.PASSIVE_INCOME_INTERVAL);
     applySavedSkin();
-    
+
     console.log('✅ Spirit Clicker ready');
 });
 
