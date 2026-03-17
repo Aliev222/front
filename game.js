@@ -959,19 +959,23 @@ async function upgradeAll() {
         return;
     }
 
-    upgradeInProgress = true;
-    
+    let upgraded = 0;
+
     for (const type of ['multitap', 'profit', 'energy']) {
         try {
             await upgradeBoost(type);
-        } catch (err) {}
+            upgraded++;
+        } catch (err) {
+            console.error(`Upgrade failed for ${type}:`, err);
+        }
     }
-    
-    upgradeInProgress = false;
-    showToast('✅ Все улучшения куплены!');
-    playUpgradeSound();
-    checkAchievements();
-    updateUI();
+
+    if (upgraded > 0) {
+        showToast('✅ Все улучшения куплены!');
+        playUpgradeSound();
+        checkAchievements();
+        updateUI();
+    }
 }
 
 function playUpgradeSound() {
