@@ -85,7 +85,8 @@ const State = {
         energyUiTimer: null,
         serverEnergyBase: 0,
         serverEnergySyncedAtMs: 0,
-        energyRegenMs: 5000
+        energyRegenMs: 5000,
+        lastTapAt: 0,
     },
     cache: new Map()
 };
@@ -214,6 +215,11 @@ function getVisualEnergy() {
 }
 
 function refreshEnergyUIOnly() {
+    // Пока игрок активно кликает, не рисуем реген поверх тапа
+    if (Date.now() - (State.temp.lastTapAt || 0) < 700) {
+        return;
+    }
+
     const visualEnergy = getVisualEnergy();
 
     if (visualEnergy !== State.game.energy) {
@@ -607,6 +613,8 @@ function handleTap(e) {
 
     previewGain = Math.floor(previewGain) || 1;
 
+    State.temp.lastTapAt = Date.now();
+
     // СНАЧАЛА проверяем энергию
     if (!megaBoostActive) {
         const currentVisualEnergy = getVisualEnergy();
@@ -620,6 +628,7 @@ function handleTap(e) {
         State.temp.serverEnergySyncedAtMs = Date.now();
         State.game.energy = State.temp.serverEnergyBase;
     }
+
 
     // И только потом считаем клик успешным
     State.temp.clickBuffer += 1;
@@ -2388,7 +2397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userId) {
         await loadUserData();
-        setInterval(sendClickBatch, 14000);
+        setInterval(sendClickBatch, 1500);
     } else {
         const saved = localStorage.getItem('ryohoGame');
         if (saved) Object.assign(State.game, JSON.parse(saved));
