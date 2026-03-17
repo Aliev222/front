@@ -1,52 +1,3 @@
-window.onerror = function (message, source, lineno, colno, error) {
-    let box = document.getElementById('debug-box');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-box';
-        box.style.position = 'fixed';
-        box.style.left = '10px';
-        box.style.right = '10px';
-        box.style.bottom = '10px';
-        box.style.zIndex = '99999';
-        box.style.background = 'rgba(0,0,0,0.9)';
-        box.style.color = '#fff';
-        box.style.padding = '10px';
-        box.style.fontSize = '12px';
-        box.style.borderRadius = '8px';
-        box.style.maxHeight = '40vh';
-        box.style.overflow = 'auto';
-        document.body.appendChild(box);
-    }
-
-    const line = document.createElement('div');
-    line.textContent = `JS ERROR: ${message} @ ${source}:${lineno}:${colno}`;
-    box.appendChild(line);
-};
-
-window.addEventListener('unhandledrejection', function (event) {
-    let box = document.getElementById('debug-box');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-box';
-        box.style.position = 'fixed';
-        box.style.left = '10px';
-        box.style.right = '10px';
-        box.style.bottom = '10px';
-        box.style.zIndex = '99999';
-        box.style.background = 'rgba(0,0,0,0.9)';
-        box.style.color = '#fff';
-        box.style.padding = '10px';
-        box.style.fontSize = '12px';
-        box.style.borderRadius = '8px';
-        box.style.maxHeight = '40vh';
-        box.style.overflow = 'auto';
-        document.body.appendChild(box);
-    }
-
-    const line = document.createElement('div');
-    line.textContent = `PROMISE ERROR: ${event.reason}`;
-    box.appendChild(line);
-});
 
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
@@ -231,6 +182,57 @@ const ACHIEVEMENTS = [
         reward: 10000
     }
 ];
+window.onerror = function (message, source, lineno, colno, error) {
+    let box = document.getElementById('debug-box');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-box';
+        box.style.position = 'fixed';
+        box.style.left = '10px';
+        box.style.right = '10px';
+        box.style.bottom = '10px';
+        box.style.zIndex = '99999';
+        box.style.background = 'rgba(0,0,0,0.9)';
+        box.style.color = '#fff';
+        box.style.padding = '10px';
+        box.style.fontSize = '12px';
+        box.style.borderRadius = '8px';
+        box.style.maxHeight = '40vh';
+        box.style.overflow = 'auto';
+        document.body.appendChild(box);
+    }
+
+    const line = document.createElement('div');
+    line.textContent = `JS ERROR: ${message} @ ${source}:${lineno}:${colno}`;
+    box.appendChild(line);
+};
+
+window.addEventListener('unhandledrejection', function (event) {
+    let box = document.getElementById('debug-box');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'debug-box';
+        box.style.position = 'fixed';
+        box.style.left = '10px';
+        box.style.right = '10px';
+        box.style.bottom = '10px';
+        box.style.zIndex = '99999';
+        box.style.background = 'rgba(0,0,0,0.9)';
+        box.style.color = '#fff';
+        box.style.padding = '10px';
+        box.style.fontSize = '12px';
+        box.style.borderRadius = '8px';
+        box.style.maxHeight = '40vh';
+        box.style.overflow = 'auto';
+        document.body.appendChild(box);
+    }
+
+    const line = document.createElement('div');
+    line.textContent = `PROMISE ERROR: ${event.reason}`;
+    box.appendChild(line);
+});
+
+
 function debugStep(text) {
     let box = document.getElementById('debug-box');
     if (!box) {
