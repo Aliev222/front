@@ -481,30 +481,38 @@ let lastBatchTime = 0;
 
 async function sendClickBatch() {
     const clicks = State.temp.clickBuffer;
-    const gain = State.temp.gainBuffer;
-    const megaBoost = document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
-    
-    if (clicks === 0) return;
-    
+
+    if (clicks === 0 || !userId) return;
+
     State.temp.clickBuffer = 0;
-    State.temp.gainBuffer = 0;
-    
-    if (!userId) return;
-    
+
     try {
-        await fetch(`${CONFIG.API_URL}/api/clicks`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: userId,
-                clicks: clicks,
-                gain: gain,
-                mega_boost: megaBoost
+                clicks: clicks
             })
         });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (data.success) {
+            State.game.coins = data.coins;
+            State.game.energy = data.energy;
+            State.game.maxEnergy = data.max_energy ?? State.game.maxEnergy;
+            State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
+            State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
+            updateUI();
+        }
     } catch (err) {
+        console.error('Click batch error:', err);
         State.temp.clickBuffer += clicks;
-        State.temp.gainBuffer += gain;
     }
 }
 
@@ -512,13 +520,15 @@ function handleTap(e) {
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
 
-    if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+    if (e.target.closest(
+        'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content'
+    )) return;
 
     let clientX, clientY;
-    if (e.touches) {
+    if (e.touches && e.touches[0]) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
     } else {
@@ -526,34 +536,40 @@ function handleTap(e) {
         clientY = e.clientY;
     }
 
-    const megaBoostActive = document.getElementById('mega-boost-btn')?.classList.contains('active');
-    
+    const megaBoostActive =
+        document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
+
     if (!megaBoostActive && State.game.energy < 1) {
         showEnergyRecoveryModal();
         return;
     }
 
-    let gain = State.game.profitPerTap;
-    
-    const skin = State.skins.data.find(s => s.id === State.skins.selected);
-    if (skin?.bonus?.type === 'multiplier') gain *= skin.bonus.value;
-    
-    if (megaBoostActive) gain *= 2;
-    gain = Math.floor(gain) || 1;
+    let previewGain = State.game.profitPerTap;
 
-    State.game.coins += gain;
-    if (!megaBoostActive) State.game.energy = Math.max(0, State.game.energy - 1);
-    
-    State.temp.clickBuffer++;
-    State.temp.gainBuffer += gain;
-    
+    const skin = State.skins.data.find(s => s.id === State.skins.selected);
+    if (skin?.bonus?.type === 'multiplier') {
+        previewGain *= skin.bonus.value;
+    }
+
+    if (megaBoostActive) {
+        previewGain *= 2;
+    }
+
+    previewGain = Math.floor(previewGain) || 1;
+
+    // Мгновенный визуальный отклик
+    State.temp.clickBuffer += 1;
+
+    // Локальный optimistic UI только для ощущения скорости
+    State.game.coins += previewGain;
+    if (!megaBoostActive) {
+        State.game.energy = Math.max(0, State.game.energy - 1);
+    }
+
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
     checkAchievements();
-    
-    State.temp.tournamentScore = State.game.coins;
     updateUI();
 
-    // Анимация
     const effect = document.createElement('div');
     effect.className = 'tap-effect-global';
     effect.style.cssText = `
@@ -570,17 +586,16 @@ function handleTap(e) {
         white-space: nowrap;
         transition: all 0.6s ease-out;
     `;
-    effect.textContent = megaBoostActive ? `+${gain} 🔥` : `+${gain}`;
+    effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
     document.body.appendChild(effect);
-    
+
     requestAnimationFrame(() => {
         effect.style.transform = 'translate(-50%, -150px)';
         effect.style.opacity = '0';
     });
-    
+
     setTimeout(() => effect.remove(), 600);
 
-    // Звук
     if (State.settings.sound) {
         try {
             if (!window.audioCtx) window.audioCtx = new AudioContext();
@@ -599,7 +614,6 @@ function handleTap(e) {
         } catch (err) {}
     }
 
-    // Вибро
     if (State.settings.vibration) {
         try {
             if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
