@@ -76,19 +76,16 @@ const State = {
             JSON.parse(localStorage.getItem('ryohoSettings')).vibration : true : true
     },
     temp: {
+        tapAnimation: null,
         clickBuffer: 0,
-        gainBuffer: 0,
-        batchTimer: null,
-        recoveryTimer: null,
-        lastClick: 0,
-        tournamentScore: 0,
-        energyBuffer: 0,
         animationTimer: null,
         syncTimer: null,
-        fullSyncTimer: null,
-        serverEnergy: 0,
-        serverEnergySyncedAt: 0,
-        energyVisualTimer: null
+
+        // энергосистема
+        energyUiTimer: null,
+        serverEnergyBase: 0,
+        serverEnergySyncedAtMs: 0,
+        energyRegenMs: 5000
     },
     cache: new Map()
 };
@@ -184,6 +181,46 @@ const ACHIEVEMENTS = [
         reward: 10000
     }
 ];
+
+function applyServerEnergySnapshot(payload) {
+    if (typeof payload.energy === 'number') {
+        State.temp.serverEnergyBase = payload.energy;
+        State.game.energy = payload.energy;
+    }
+
+    if (typeof payload.max_energy === 'number') {
+        State.game.maxEnergy = payload.max_energy;
+    }
+
+    if (typeof payload.regen_seconds === 'number') {
+        State.temp.energyRegenMs = payload.regen_seconds * 1000;
+    }
+
+    State.temp.serverEnergySyncedAtMs = Date.now();
+}
+
+function getVisualEnergy() {
+    if (!State.temp.serverEnergySyncedAtMs) {
+        return State.game.energy || 0;
+    }
+
+    const elapsed = Date.now() - State.temp.serverEnergySyncedAtMs;
+    const gained = Math.floor(elapsed / State.temp.energyRegenMs);
+
+    return Math.min(
+        State.game.maxEnergy,
+        State.temp.serverEnergyBase + gained
+    );
+}
+
+function refreshEnergyUIOnly() {
+    const visualEnergy = getVisualEnergy();
+
+    if (visualEnergy !== State.game.energy) {
+        State.game.energy = visualEnergy;
+        updateUI();
+    }
+}
 
 function checkAchievements() {
     const stats = {
@@ -291,6 +328,11 @@ async function loadUserData() {
         State.game.coins = data.coins || 0;
         State.game.energy = data.energy || 500;
         State.game.maxEnergy = data.max_energy || 500;
+        applyServerEnergySnapshot({
+            energy: data.energy || 0,
+            max_energy: data.max_energy || 500,
+            regen_seconds: 5
+        });
         State.game.profitPerTap = data.profit_per_tap || 1;
         State.game.profitPerHour = data.profit_per_hour || 100;
         State.game.levels.multitap = data.multitap_level || 0;
@@ -310,6 +352,7 @@ async function loadUserData() {
         applySavedSkin();
         updateUI();
         startPerfectEnergySystem();
+        
         
     } catch (err) {
         console.error('Failed to load user data:', err);
@@ -423,40 +466,24 @@ function updateUI() {
 
 // ==================== ЭНЕРГИЯ ====================
 function startPerfectEnergySystem() {
-    const ENERGY_REGEN_MS = 5000; // 1 энергия / 5 сек
-
     if (State.temp.syncTimer) {
         clearInterval(State.temp.syncTimer);
     }
 
-    if (State.temp.energyVisualTimer) {
-        clearInterval(State.temp.energyVisualTimer);
+    if (State.temp.energyUiTimer) {
+        clearInterval(State.temp.energyUiTimer);
     }
+
+    // Плавное обновление UI
+    State.temp.energyUiTimer = setInterval(() => {
+        refreshEnergyUIOnly();
+    }, 250);
 
     // Редкий sync с сервером
     State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
     }, 15000);
-
-    // Плавное визуальное обновление
-    State.temp.energyVisualTimer = setInterval(() => {
-        if (!State.temp.serverEnergySyncedAt) return;
-
-        const now = Date.now();
-        const elapsed = now - State.temp.serverEnergySyncedAt;
-        const gained = Math.floor(elapsed / ENERGY_REGEN_MS);
-
-        const visualEnergy = Math.min(
-            State.game.maxEnergy,
-            (State.temp.serverEnergy ?? State.game.energy) + gained
-        );
-
-        if (visualEnergy !== State.game.energy) {
-            State.game.energy = visualEnergy;
-            updateUI();
-        }
-    }, 1000);
 }
 
 async function syncEnergyWithServer() {
@@ -466,9 +493,7 @@ async function syncEnergyWithServer() {
         const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId
-            })
+            body: JSON.stringify({ user_id: userId })
         });
 
         if (!res.ok) {
@@ -477,16 +502,7 @@ async function syncEnergyWithServer() {
 
         const data = await res.json();
 
-        if (typeof data.energy === 'number') {
-            State.temp.serverEnergy = data.energy;
-            State.temp.serverEnergySyncedAt = Date.now();
-            State.game.energy = data.energy;
-        }
-
-        if (typeof data.max_energy === 'number') {
-            State.game.maxEnergy = data.max_energy;
-        }
-
+        applyServerEnergySnapshot(data);
         updateUI();
     } catch (e) {
         console.error('Energy sync error:', e);
@@ -498,15 +514,18 @@ async function fullSyncWithServer() {
 
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
-        if (res.ok) {
-            const data = await res.json();
-            State.game.coins = data.coins;
-            State.game.energy = data.energy;
-            State.game.maxEnergy = data.max_energy;
-            State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
-            State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
-            updateUI();
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
         }
+
+        const data = await res.json();
+
+        State.game.coins = data.coins;
+        State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
+        State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
+
+        applyServerEnergySnapshot(data);
+        updateUI();
     } catch (e) {
         console.error('Full sync error:', e);
     }
@@ -528,7 +547,7 @@ async function sendClickBatch() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: userId,
-                clicks: clicks
+                clicks
             })
         });
 
@@ -540,10 +559,10 @@ async function sendClickBatch() {
 
         if (data.success) {
             State.game.coins = data.coins;
-            State.game.energy = data.energy;
-            State.game.maxEnergy = data.max_energy ?? State.game.maxEnergy;
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
+
+            applyServerEnergySnapshot(data);
             updateUI();
         }
     } catch (err) {
@@ -599,9 +618,17 @@ function handleTap(e) {
     // Локальный optimistic UI только для ощущения скорости
     State.game.coins += previewGain;
     if (!megaBoostActive) {
-        State.game.energy = Math.max(0, State.game.energy - 1);
-        State.temp.serverEnergy = State.game.energy;
-        State.temp.serverEnergySyncedAt = Date.now();
+        const currentVisualEnergy = getVisualEnergy();
+
+        if (currentVisualEnergy < 1) {
+            showEnergyRecoveryModal();
+            return;
+        }
+
+        // Мгновенный отклик
+        State.temp.serverEnergyBase = Math.max(0, currentVisualEnergy - 1);
+        State.temp.serverEnergySyncedAtMs = Date.now();
+        State.game.energy = State.temp.serverEnergyBase;
     }
 
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
@@ -1671,9 +1698,8 @@ async function recoverEnergyWithAd() {
         return;
     }
 
-    showToast('📺 Загружаем рекламу...');
-
     try {
+        showToast('📺 Загружаем рекламу...');
         await window.show_10655027();
 
         const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
@@ -1688,13 +1714,7 @@ async function recoverEnergyWithAd() {
 
         const data = await res.json();
 
-        if (typeof data.energy === 'number') {
-            State.game.energy = data.energy;
-        }
-        if (typeof data.max_energy === 'number') {
-            State.game.maxEnergy = data.max_energy;
-        }
-
+        applyServerEnergySnapshot(data);
         updateUI();
         showToast('⚡ Энергия восстановлена!');
     } catch (err) {
