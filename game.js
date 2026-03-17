@@ -1636,7 +1636,46 @@ function showEnergyRecoveryModal() {
     document.body.appendChild(modal);
 }
 
-recoverEnergyWithAd
+async function recoverEnergyWithAd() {
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+
+    if (typeof window.show_10655027 !== 'function') {
+        showToast('❌ Реклама недоступна', true);
+        return;
+    }
+
+    showToast('📺 Загружаем рекламу...');
+
+    try {
+        await window.show_10655027();
+
+        const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (typeof data.energy === 'number') {
+            State.game.energy = data.energy;
+        }
+        if (typeof data.max_energy === 'number') {
+            State.game.maxEnergy = data.max_energy;
+        }
+
+        updateUI();
+        showToast('⚡ Энергия восстановлена!');
+    } catch (err) {
+        console.error('Energy recover error:', err);
+        showToast('❌ Ошибка восстановления энергии', true);
+    }
+}
 
 // ==================== MEGA BOOST ====================
 let boostEndTime = null;
