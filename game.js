@@ -306,6 +306,7 @@ async function loadUserData() {
         
         applySavedSkin();
         updateUI();
+        startPerfectEnergySystem();
         
     } catch (err) {
         console.error('Failed to load user data:', err);
@@ -419,41 +420,50 @@ function updateUI() {
 
 // ==================== ЭНЕРГИЯ ====================
 function startPerfectEnergySystem() {
-    if (State.temp.animationTimer) clearInterval(State.temp.animationTimer);
-    if (State.temp.syncTimer) clearInterval(State.temp.syncTimer);
-    
-    State.temp.energyBuffer = 0;
-    
-    State.temp.animationTimer = setInterval(() => {
-        if (document.getElementById('mega-boost-btn')?.classList.contains('active')) return;
-        
-        if (State.game.energy < State.game.maxEnergy) {
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 1);
-            updateUI();
-            State.temp.energyBuffer++;
-        }
-    }, 1000);
-    
+    console.log("ENERGY SYSTEM STARTED");
+    if (State.temp.animationTimer) {
+        clearInterval(State.temp.animationTimer);
+        State.temp.animationTimer = null;
+    }
+
+    if (State.temp.syncTimer) {
+        clearInterval(State.temp.syncTimer);
+    }
+
     State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
     }, 15000);
+
 }
 
 async function syncEnergyWithServer() {
     if (!userId) return;
-    
+
     try {
-        await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
+        const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_id: userId,
-                energy: State.game.energy,
-                gained: State.temp.energyBuffer || 0
+                user_id: userId
             })
         });
-        State.temp.energyBuffer = 0;
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (typeof data.energy === 'number') {
+            State.game.energy = data.energy;
+        }
+
+        if (typeof data.max_energy === 'number') {
+            State.game.maxEnergy = data.max_energy;
+        }
+
+        updateUI();
     } catch (e) {
         console.error('Energy sync error:', e);
     }
@@ -461,14 +471,16 @@ async function syncEnergyWithServer() {
 
 async function fullSyncWithServer() {
     if (!userId) return;
-    
+
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
         if (res.ok) {
             const data = await res.json();
             State.game.coins = data.coins;
-            State.game.energy = Math.max(State.game.energy, data.energy);
-            State.game.energy = Math.min(State.game.energy, data.max_energy);
+            State.game.energy = data.energy;
+            State.game.maxEnergy = data.max_energy;
+            State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
+            State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
             updateUI();
         }
     } catch (e) {
@@ -627,22 +639,11 @@ let syncTimer = null;
 const SYNC_INTERVAL = 15000;
 
 async function forceSync() {
-    if (State.temp.clickBuffer > 0) await sendClickBatch();
-    
-    if (userId) {
-        try {
-            const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
-            if (res.ok) {
-                const data = await res.json();
-                State.game.coins = data.coins;
-                State.game.energy = Math.max(State.game.energy, data.energy);
-                State.game.energy = Math.min(State.game.energy, data.max_energy);
-                updateUI();
-            }
-        } catch (e) {
-            console.error('Sync error:', e);
-        }
+    if (State.temp.clickBuffer > 0) {
+        await sendClickBatch();
     }
+
+    await fullSyncWithServer();
 }
 
 function startSync() {
@@ -1635,41 +1636,7 @@ function showEnergyRecoveryModal() {
     document.body.appendChild(modal);
 }
 
-function recoverEnergyWithAd() {
-    const modal = document.querySelector('.energy-recovery-modal');
-    if (modal) modal.remove();
-    
-    if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
-        return;
-    }
-    
-    showToast('📺 Загружаем рекламу...');
-    
-    window.show_10655027()
-        .then(() => {
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
-            updateUI();
-            
-            if (userId) {
-                fetch(`${CONFIG.API_URL}/api/update-energy`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, energy: State.game.energy })
-                }).catch(() => {});
-            }
-            
-            showToast(`⚡ +50 энергии!`);
-            
-            const energyBar = document.querySelector('.energy-bar-fill');
-            if (energyBar) {
-                energyBar.style.transition = 'all 0.3s ease';
-                energyBar.style.filter = 'brightness(1.5)';
-                setTimeout(() => energyBar.style.filter = 'none', 500);
-            }
-        })
-        .catch(() => showToast('❌ Ошибка при показе рекламы', true));
-}
+recoverEnergyWithAd
 
 // ==================== MEGA BOOST ====================
 let boostEndTime = null;
