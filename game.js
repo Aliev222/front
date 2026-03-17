@@ -85,7 +85,10 @@ const State = {
         energyBuffer: 0,
         animationTimer: null,
         syncTimer: null,
-        fullSyncTimer: null
+        fullSyncTimer: null,
+        serverEnergy: 0,
+        serverEnergySyncedAt: 0,
+        energyVisualTimer: null
     },
     cache: new Map()
 };
@@ -420,21 +423,40 @@ function updateUI() {
 
 // ==================== ЭНЕРГИЯ ====================
 function startPerfectEnergySystem() {
-    console.log("ENERGY SYSTEM STARTED");
-    if (State.temp.animationTimer) {
-        clearInterval(State.temp.animationTimer);
-        State.temp.animationTimer = null;
-    }
+    const ENERGY_REGEN_MS = 5000; // 1 энергия / 5 сек
 
     if (State.temp.syncTimer) {
         clearInterval(State.temp.syncTimer);
     }
 
+    if (State.temp.energyVisualTimer) {
+        clearInterval(State.temp.energyVisualTimer);
+    }
+
+    // Редкий sync с сервером
     State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
     }, 15000);
 
+    // Плавное визуальное обновление
+    State.temp.energyVisualTimer = setInterval(() => {
+        if (!State.temp.serverEnergySyncedAt) return;
+
+        const now = Date.now();
+        const elapsed = now - State.temp.serverEnergySyncedAt;
+        const gained = Math.floor(elapsed / ENERGY_REGEN_MS);
+
+        const visualEnergy = Math.min(
+            State.game.maxEnergy,
+            (State.temp.serverEnergy ?? State.game.energy) + gained
+        );
+
+        if (visualEnergy !== State.game.energy) {
+            State.game.energy = visualEnergy;
+            updateUI();
+        }
+    }, 1000);
 }
 
 async function syncEnergyWithServer() {
@@ -456,6 +478,8 @@ async function syncEnergyWithServer() {
         const data = await res.json();
 
         if (typeof data.energy === 'number') {
+            State.temp.serverEnergy = data.energy;
+            State.temp.serverEnergySyncedAt = Date.now();
             State.game.energy = data.energy;
         }
 
@@ -576,6 +600,8 @@ function handleTap(e) {
     State.game.coins += previewGain;
     if (!megaBoostActive) {
         State.game.energy = Math.max(0, State.game.energy - 1);
+        State.temp.serverEnergy = State.game.energy;
+        State.temp.serverEnergySyncedAt = Date.now();
     }
 
     State.achievements.clicks = (State.achievements.clicks || 0) + 1;
