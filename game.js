@@ -1,4 +1,3 @@
-
 // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
@@ -182,82 +181,6 @@ const ACHIEVEMENTS = [
         reward: 10000
     }
 ];
-window.onerror = function (message, source, lineno, colno, error) {
-    let box = document.getElementById('debug-box');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-box';
-        box.style.position = 'fixed';
-        box.style.left = '10px';
-        box.style.right = '10px';
-        box.style.bottom = '10px';
-        box.style.zIndex = '99999';
-        box.style.background = 'rgba(0,0,0,0.9)';
-        box.style.color = '#fff';
-        box.style.padding = '10px';
-        box.style.fontSize = '12px';
-        box.style.borderRadius = '8px';
-        box.style.maxHeight = '40vh';
-        box.style.overflow = 'auto';
-        document.body.appendChild(box);
-    }
-
-    const line = document.createElement('div');
-    line.textContent = `JS ERROR: ${message} @ ${source}:${lineno}:${colno}`;
-    box.appendChild(line);
-};
-
-window.addEventListener('unhandledrejection', function (event) {
-    let box = document.getElementById('debug-box');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-box';
-        box.style.position = 'fixed';
-        box.style.left = '10px';
-        box.style.right = '10px';
-        box.style.bottom = '10px';
-        box.style.zIndex = '99999';
-        box.style.background = 'rgba(0,0,0,0.9)';
-        box.style.color = '#fff';
-        box.style.padding = '10px';
-        box.style.fontSize = '12px';
-        box.style.borderRadius = '8px';
-        box.style.maxHeight = '40vh';
-        box.style.overflow = 'auto';
-        document.body.appendChild(box);
-    }
-
-    const line = document.createElement('div');
-    line.textContent = `PROMISE ERROR: ${event.reason}`;
-    box.appendChild(line);
-});
-
-
-function debugStep(text) {
-    let box = document.getElementById('debug-box');
-    if (!box) {
-        box = document.createElement('div');
-        box.id = 'debug-box';
-        box.style.position = 'fixed';
-        box.style.left = '10px';
-        box.style.right = '10px';
-        box.style.bottom = '10px';
-        box.style.zIndex = '99999';
-        box.style.background = 'rgba(0,0,0,0.9)';
-        box.style.color = '#fff';
-        box.style.padding = '10px';
-        box.style.fontSize = '12px';
-        box.style.borderRadius = '8px';
-        box.style.maxHeight = '40vh';
-        box.style.overflow = 'auto';
-        document.body.appendChild(box);
-    }
-
-    const line = document.createElement('div');
-    line.textContent = text;
-    box.appendChild(line);
-}
-
 
 function checkAchievements() {
     const stats = {
@@ -352,20 +275,16 @@ const API = {
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadUserData() {
     if (!userId) return;
-
+    
     try {
-        debugStep('loadUserData: start');
-
         await API.post('/api/register', {
             user_id: userId,
             username,
             referrer_id: referrerId
         });
-        debugStep('register: ok');
-
+        
         const data = await API.get(`/api/user/${userId}`);
-        debugStep('user: ok');
-
+        
         State.game.coins = data.coins || 0;
         State.game.energy = data.energy || 500;
         State.game.maxEnergy = data.max_energy || 500;
@@ -374,32 +293,22 @@ async function loadUserData() {
         State.game.levels.multitap = data.multitap_level || 0;
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
-
+        
         State.skins.owned = data.owned_skins || ['default_SP'];
         State.skins.selected = data.selected_skin || 'default_SP';
         State.skins.adsWatched = data.ads_watched || 0;
-
+        
         await loadPrices();
-        debugStep('prices: ok');
-
         await loadSkinsList();
-        debugStep('skins: ok');
-
         await loadReferralData();
-        debugStep('referral: ok');
-
         await checkBoostStatus();
-        debugStep('boost-status: ok');
 
+        
         applySavedSkin();
         updateUI();
-        debugStep('ui: ok');
-
         startPerfectEnergySystem();
-        debugStep('energy-system: ok');
-
+        
     } catch (err) {
-        debugStep(`loadUserData error: ${err?.message || err}`);
         console.error('Failed to load user data:', err);
         showToast('⚠️ Ошибка загрузки данных', true);
     }
