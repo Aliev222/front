@@ -331,7 +331,7 @@ async function loadUserData() {
         applyServerEnergySnapshot({
             energy: data.energy || 0,
             max_energy: data.max_energy || 500,
-            regen_seconds: 5
+            regen_seconds: 2
         });
         State.game.profitPerTap = data.profit_per_tap || 1;
         State.game.profitPerHour = data.profit_per_hour || 100;
@@ -2393,8 +2393,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSettings();
     
     if (userId) {
-        await loadUserData();
-        startPerfectEnergySystem();
         await loadReferralData();
         setInterval(sendClickBatch, 14000);
     } else {
