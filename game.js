@@ -946,24 +946,37 @@ async function unlockSkinFromDetail(skinId) {
     }
 }
 
-function watchAdForSkin(skinId) {
+async function watchAdForSkin(skinId) {
     if (typeof window.show_10655027 !== 'function') {
         showToast('❌ Реклама недоступна', true);
         return;
     }
-    
+
     showToast('📺 Загружаем рекламу...');
-    
-    window.show_10655027()
-        .then(() => {
-            State.skins.adsWatched++;
-            showToast('✅ +1 просмотр!');
-            renderSkins();
-            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
-                openSkinDetail(skinId);
-            }
-        })
-        .catch(() => showToast('❌ Ошибка', true));
+
+    try {
+        await window.show_10655027();
+
+        // ✅ уведомляем сервер
+        const res = await API.post('/api/ads/increment', {
+            user_id: userId
+        });
+
+        // ✅ берем значение с сервера (источник истины)
+        State.skins.adsWatched = res.ads_watched ?? (State.skins.adsWatched + 1);
+
+        showToast('✅ +1 просмотр!');
+        renderSkins();
+
+        const modal = document.getElementById('skin-detail-modal');
+        if (modal && modal.classList.contains('active')) {
+            openSkinDetail(skinId);
+        }
+
+    } catch (err) {
+        console.error('Ad error:', err);
+        showToast('❌ Ошибка', true);
+    }
 }
 
 function updateCollectionProgress() {
