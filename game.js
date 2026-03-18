@@ -548,12 +548,15 @@ async function sendClickBatch() {
     State.temp.clickBuffer = 0;
 
     try {
+        const batchId = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+
         const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: userId,
-                clicks
+                clicks,
+                batch_id: batchId
             })
         });
 
@@ -957,25 +960,24 @@ async function watchAdForSkin(skinId) {
     try {
         await window.show_10655027();
 
-        // ✅ уведомляем сервер
+        // ✅ ГОВОРИМ СЕРВЕРУ
         const res = await API.post('/api/ads/increment', {
             user_id: userId
         });
 
-        // ✅ берем значение с сервера (источник истины)
-        State.skins.adsWatched = res.ads_watched ?? (State.skins.adsWatched + 1);
+        if (res.success) {
+            State.skins.adsWatched = res.ads_watched;
 
-        showToast('✅ +1 просмотр!');
-        renderSkins();
+            showToast('✅ +1 просмотр!');
+            renderSkins();
 
-        const modal = document.getElementById('skin-detail-modal');
-        if (modal && modal.classList.contains('active')) {
-            openSkinDetail(skinId);
+            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
+                openSkinDetail(skinId);
+            }
         }
 
-    } catch (err) {
-        console.error('Ad error:', err);
-        showToast('❌ Ошибка', true);
+    } catch (e) {
+        showToast('❌ Ошибка рекламы', true);
     }
 }
 
