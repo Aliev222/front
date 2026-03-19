@@ -22,6 +22,7 @@ const tg = window.Telegram?.WebApp;
 let userId = null;
 let username = null;
 let referrerId = null;
+const telegramInitData = tg?.initData || '';
 
 if (tg) {
     tg.expand();
@@ -36,6 +37,26 @@ if (tg) {
         referrerId = parseInt(startParam.replace('ref_', '')) || null;
     }
 }
+
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => {
+    const requestUrl = typeof input === 'string' ? input : input?.url || '';
+    const isApiRequest =
+        requestUrl.startsWith(CONFIG.API_URL) ||
+        requestUrl.startsWith('/api/');
+
+    if (!isApiRequest || !telegramInitData) {
+        return originalFetch(input, init);
+    }
+
+    const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
+    headers.set('X-Telegram-Init-Data', telegramInitData);
+
+    return originalFetch(input, {
+        ...init,
+        headers
+    });
+};
 
 // ==================== СОСТОЯНИЕ ====================
 const State = {

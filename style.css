@@ -658,7 +658,9 @@ body:not(.night-mode) #stars-canvas {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: var(--bg-card);
+    background: var(--bg-overlay);
+    backdrop-filter: blur(12px);
+    padding: 12px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -666,22 +668,24 @@ body:not(.night-mode) #stars-canvas {
 .modal-screen.active {
     display: flex !important;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Стандартные модалки (tournament / friends / tasks / games) */
 .modal-screen > .glass {
     width: 100%;
-    max-width: 420px;
+    max-width: 520px;
     margin: 0 auto;
-    min-height: 100%;
-    border-radius: 0;
+    min-height: auto;
+    border-radius: 18px;
     border-left: none;
     border-right: none;
     display: flex;
     flex-direction: column;
     background: var(--bg-card);
     transition: background 0.3s ease;
+    box-shadow: var(--shadow-strong);
     flex-shrink: 0;
 }
 
@@ -700,7 +704,7 @@ body:not(.night-mode) #stars-canvas {
 
 .modal-header h2 {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 400;
     color: var(--text-primary);
     letter-spacing: 4px;
@@ -735,6 +739,7 @@ body:not(.night-mode) #stars-canvas {
     flex-direction: column;
     gap: 16px;
     flex: 1;
+    color: var(--text-primary);
 }
 
 /* ==================== TOURNAMENT ==================== */
@@ -841,20 +846,21 @@ body:not(.night-mode) #stars-canvas {
 
 /* ==================== TASKS ==================== */
 .tasks-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
 }
 
 .task-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--bg-card);
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px 12px;
+    background: linear-gradient(135deg, rgba(127,73,180,0.06), rgba(127,73,180,0.12));
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 14px;
+    padding: 16px 16px 14px;
     transition: all 0.15s ease;
+    box-shadow: var(--shadow);
 }
 
 .task-card:active {
@@ -881,10 +887,11 @@ body:not(.night-mode) #stars-canvas {
 .task-info {
     flex: 1;
     min-width: 0;
+    min-height: 72px;
 }
 
 .task-title {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 4px;
@@ -892,19 +899,20 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .task-desc {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    line-height: 1.35;
 }
 
 .task-reward {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--accent);
 }
 
 .task-progress {
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 .task-progress-bar {
@@ -922,13 +930,15 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .task-progress-text {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-dim);
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 .task-button {
-    padding: 10px 18px;
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 12px 18px;
     background: linear-gradient(135deg, var(--accent), #9b6bdf);
     border: none;
     border-radius: 20px;
@@ -1633,20 +1643,25 @@ body:not(.night-mode) #stars-canvas {
 
 /* ==================== СKINS MODAL ==================== */
 .modal-screen#skins-screen {
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--bg-overlay);
     backdrop-filter: blur(12px);
-    align-items: stretch;
-    justify-content: stretch;
+    padding: 12px;
+    align-items: center;
+    justify-content: center;
 }
 
 .skins-modal {
     width: 100%;
-    height: 100%;
+    max-width: 540px;
+    max-height: 90dvh;
     background: var(--skins-bg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: background 0.3s ease;
+    border-radius: 18px;
+    box-shadow: var(--shadow-strong);
+    border: 1px solid var(--skins-card-border);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Шапка */
@@ -1656,6 +1671,7 @@ body:not(.night-mode) #stars-canvas {
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid var(--skins-header-border);
+    background: var(--bg-card);
     flex-shrink: 0;
     transition: border-color 0.3s ease;
 }
@@ -1665,8 +1681,7 @@ body:not(.night-mode) #stars-canvas {
     font-size: 24px;
     font-weight: 400;
     color: var(--skins-text);
-    text-shadow: 0 0 10px var(--accent-glow);
-    letter-spacing: 4px;
+    letter-spacing: 3px;
     margin: 0;
     transition: color 0.3s ease;
 }
@@ -1676,9 +1691,9 @@ body:not(.night-mode) #stars-canvas {
     height: 40px;
     border-radius: 50%;
     background: var(--accent-dim);
-    border: 1px solid var(--skins-header-border);
-    color: var(--skins-text);
-    font-size: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1771,7 +1786,7 @@ body:not(.night-mode) #stars-canvas {
     overflow-x: hidden;
     padding: 16px;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 14px;
     width: 100%;
     box-sizing: border-box;
@@ -1902,7 +1917,7 @@ body:not(.night-mode) #stars-canvas {
 
 /* Описание скина */
 .skin-description {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--skins-sub);
     text-align: center;
     line-height: 1.4;
@@ -1956,7 +1971,7 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .skin-progress-text {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--skins-sub);
     text-align: right;
 }
@@ -2490,8 +2505,8 @@ body:not(.night-mode) #stars-canvas {
 @media (min-width: 768px) {
     .game-container { max-width: 450px; }
     .click-button   { width: 350px; height: 350px; }
-    .skins-grid     { grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
-    .skin-detail-content { max-width: 480px; }
+    .skins-grid     { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; padding: 20px; }
+    .skin-detail-content { max-width: 520px; }
 }
 
 .leaderboard-item {
@@ -2574,11 +2589,16 @@ body:not(.night-mode) #stars-canvas {
 /* ==================== МОДАЛКА АЧИВОК ==================== */
 .achievements-modal {
     width: 100%;
-    height: 100%;
-    background: var(--bg-secondary);
+    max-width: 520px;
+    max-height: 90dvh;
+    background: var(--bg-card);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border-radius: 18px;
+    box-shadow: var(--shadow-strong);
+    border: 1px solid var(--border);
+    margin: auto;
 }
 
 .achievements-header {
@@ -2586,7 +2606,8 @@ body:not(.night-mode) #stars-canvas {
     justify-content: space-between;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
     flex-shrink: 0;
 }
 
@@ -2602,14 +2623,22 @@ body:not(.night-mode) #stars-canvas {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    font-size: 20px;
+    background: var(--accent-dim);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.achievements-close:active {
+    transform: scale(0.9);
+    background: var(--accent);
+    color: white;
 }
 
 .achievements-progress {
