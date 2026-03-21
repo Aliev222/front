@@ -24,6 +24,31 @@ let username = null;
 let referrerId = null;
 const telegramInitData = tg?.initData || '';
 
+// Helper to surface initData when debugging inside Telegram
+function showInitDebug() {
+    if (!tg) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'init-debug';
+    wrap.innerHTML = `
+        <div class="init-debug-title">Init Data</div>
+        <div class="init-debug-row"><strong>User ID:</strong> <span id="init-user">${tg.initDataUnsafe?.user?.id || 'N/A'}</span></div>
+        <div class="init-debug-row"><strong>initData:</strong></div>
+        <textarea id="init-raw" readonly>${tg.initData || ''}</textarea>
+        <div class="init-debug-actions">
+            <button id="init-copy">Copy</button>
+            <button id="init-hide">Close</button>
+        </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('init-copy').onclick = () => {
+        navigator.clipboard?.writeText(tg.initData || '').catch(() => {});
+    };
+    document.getElementById('init-hide').onclick = () => wrap.remove();
+    if (tg.initData) {
+        try { localStorage.setItem('last_init_data', tg.initData); } catch (_) {}
+    }
+}
+
 if (tg) {
     tg.expand();
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
@@ -36,6 +61,9 @@ if (tg) {
     if (startParam?.startsWith('ref_')) {
         referrerId = parseInt(startParam.replace('ref_', '')) || null;
     }
+
+    // Expose init data overlay for quick copy when needed
+    showInitDebug();
 }
 
 const originalFetch = window.fetch.bind(window);
