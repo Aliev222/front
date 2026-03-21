@@ -2489,6 +2489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==================== ENERGY CHARM (GYRO) ====================
 function initEnergyCharm() {
     const charm = document.getElementById('energyCharm');
+    const chain = document.querySelector('.energy-chain');
     if (!charm) return;
 
     let idleTimer = null;
@@ -2602,6 +2603,10 @@ function initEnergyCharm() {
         motionState.vy *= 0.9;
         motionState.vr *= 0.9;
         charm.style.transform = `translate(${2 + motionState.tx}px, ${motionState.ty}px) rotate(${motionState.rot}deg)`;
+        if (chain) {
+            const stretch = 1 + Math.max(0, motionState.ty) / 35;
+            chain.style.transform = `scaleY(${stretch})`;
+        }
         requestAnimationFrame(animate);
     };
     animate();
