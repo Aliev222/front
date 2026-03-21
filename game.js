@@ -2570,9 +2570,12 @@ function initEnergyCharm() {
     };
     charm.addEventListener('pointerup', endDrag);
     charm.addEventListener('pointercancel', endDrag);
-    charm.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
-    charm.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); }, { passive: false });
-    charm.addEventListener('touchend', (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    ['click','touchstart','touchend','pointerup'].forEach(ev => {
+        charm.addEventListener(ev, (e) => {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+        }, true);
+    });
 
     // iOS permission
     if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
