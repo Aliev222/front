@@ -120,6 +120,7 @@ const State = {
         serverEnergySyncedAtMs: 0,
         energyRegenMs: 5000,
         lastTapAt: 0,
+
     },
     cache: new Map()
 };
@@ -633,7 +634,7 @@ function handleTap(e) {
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .energy-charm, .energy-charm-wrap, .energy-ghost-img'
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card'
     )) return;
 
     if (e.cancelable) e.preventDefault();
@@ -2476,8 +2477,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAchievementsFromStorage();
     loadSettings();
     initBgm();
-    initEnergyCharm();
     initAutoClicker();
+    initBadgePhysics();
 
     if (userId) {
         await loadUserData();
@@ -2507,11 +2508,17 @@ function initEnergyCharm() {
     let allowTilt = true;
     let dragging = false;
     let dragStart = { x: 0, y: 0 };
-    const motionState = {
-        tx: 0, ty: 0, rot: 0,
-        targetX: 0, targetY: 0, targetR: 0,
-        vx: 0, vy: 0, vr: 0
+
+    const tilt = { x: 0, y: 0, r: 0 };
+    const dragOffset = { x: 0, y: 0 };
+
+    const physics = {
+        pos: { x: 0, y: 0 },
+        vel: { x: 0, y: 0 },
+        baseLen: 60
     };
+    let renderRot = 0;
+    let lastTs = performance.now();
 
     const setIdle = () => {
         if (Date.now() - lastMotion > 2000) {
@@ -2524,9 +2531,9 @@ function initEnergyCharm() {
         lastMotion = Date.now();
         charm.classList.remove('idle');
         const clamp = (v, m) => Math.max(-m, Math.min(m, v));
-        motionState.targetR = clamp(ax * 5, 16);
-        motionState.targetY = clamp(-ay * 6, 18);
-        motionState.targetX = clamp(ax * 4, 16);
+        tilt.r = clamp(ax * 7, 18);
+        tilt.x = clamp(ax * 6, 24);
+        tilt.y = clamp(-ay * 8, 22);
         clearTimeout(idleTimer);
         idleTimer = setTimeout(setIdle, 1500);
     };
@@ -2558,40 +2565,38 @@ function initEnergyCharm() {
         e.stopPropagation();
         await requestMotionPermission();
         dragging = true;
+        State.temp.charmDragging = true;
         allowTilt = false;
         charm.classList.remove('idle');
         dragStart = { x: e.clientX, y: e.clientY };
-        motionState.vx = motionState.vy = motionState.vr = 0;
+        physics.vel.x = physics.vel.y = 0;
+        dragOffset.x = dragOffset.y = 0;
         charm.setPointerCapture(e.pointerId);
     });
     charm.addEventListener('pointermove', (e) => {
         if (e.cancelable) e.preventDefault();
         e.stopPropagation();
         if (!dragging) return;
-        const clamp = (v, m) => Math.max(-m, Math.min(m, v));
-        const dx = clamp(e.clientX - dragStart.x, 24);
-        const dy = clamp(e.clientY - dragStart.y, 36);
-        motionState.tx = dx;
-        motionState.ty = dy;
-        motionState.rot = dx / 2;
-        motionState.vx = dx - motionState.targetX;
-        motionState.vy = dy - motionState.targetY;
-        motionState.targetX = dx;
-        motionState.targetY = dy;
-        motionState.targetR = dx / 2;
+        let dx = e.clientX - dragStart.x;
+        let dy = e.clientY - dragStart.y;
+        const max = 140;
+        const len = Math.hypot(dx, dy);
+        if (len > max) {
+            dx = dx / len * max;
+            dy = dy / len * max;
+        }
+        dragOffset.x = clamp(dx, 48);
+        dragOffset.y = clamp(dy, 64);
+        tilt.r = clamp(dx * 0.4, 18);
     });
     const endDrag = () => {
         if (!dragging) return;
         dragging = false;
+        State.temp.charmDragging = false;
         allowTilt = true;
         charm.classList.add('idle');
-        // отпускаем с инерцией
-        motionState.vx = motionState.tx * 0.2;
-        motionState.vy = motionState.ty * 0.2;
-        motionState.vr = motionState.rot * 0.2;
-        motionState.targetX = 0;
-        motionState.targetY = 0;
-        motionState.targetR = 0;
+        dragOffset.x = dragOffset.y = 0;
+        tilt.r = 0;
     };
     charm.addEventListener('pointerup', endDrag);
     charm.addEventListener('pointercancel', endDrag);
@@ -2607,27 +2612,49 @@ function initEnergyCharm() {
     charm.classList.add('idle');
 
     // плавная анимация/инерция
-    const animate = () => {
-        const lerp = (a, b, t) => a + (b - a) * t;
-        // притяжение к целям
-        motionState.tx = lerp(motionState.tx, motionState.targetX, 0.15);
-        motionState.ty = lerp(motionState.ty, motionState.targetY, 0.15);
-        motionState.rot = lerp(motionState.rot, motionState.targetR, 0.18);
-        // инерция после дропа
-        motionState.tx += motionState.vx;
-        motionState.ty += motionState.vy;
-        motionState.rot += motionState.vr;
-        motionState.vx *= 0.9;
-        motionState.vy *= 0.9;
-        motionState.vr *= 0.9;
-        charm.style.transform = `translate(${2 + motionState.tx}px, ${motionState.ty}px) rotate(${motionState.rot}deg)`;
+    const animate = (ts) => {
+        const dt = Math.min(0.04, (ts - lastTs) / 1000 || 0.016);
+        lastTs = ts || performance.now();
+
+        const targetX = tilt.x + dragOffset.x;
+        const targetY = tilt.y + dragOffset.y + 6; // лёгкое провисание
+
+        const stiffness = 18;
+        const damping = 5.2;
+        const gravity = 18;
+
+        const ax = (targetX - physics.pos.x) * stiffness - physics.vel.x * damping;
+        const ay = (targetY - physics.pos.y) * stiffness - physics.vel.y * damping + gravity;
+
+        physics.vel.x += ax * dt;
+        physics.vel.y += ay * dt;
+        physics.pos.x += physics.vel.x * dt;
+        physics.pos.y += physics.vel.y * dt;
+
+        // ограничиваем растяжение, чтобы цепь не вылетала
+        const ropeX = physics.pos.x;
+        const ropeY = physics.baseLen + physics.pos.y;
+        const ropeLen = Math.max(30, Math.hypot(ropeX, ropeY));
+        const angleRad = Math.atan2(ropeX, ropeY);
+        const angleDeg = angleRad * 180 / Math.PI;
+
+        // визуальный поворот брелка
+        const targetRot = angleDeg * 0.6 + tilt.r * 0.4;
+        renderRot += (targetRot - renderRot) * 0.18;
+
+        // деформация: растягиваем по вертикали при натяжении, немного плющим при возврате
+        const stretchY = Math.max(0.7, Math.min(1.5, 1 + (ropeLen - physics.baseLen) / 160));
+        const stretchX = 1 / stretchY;
+        const tiltX = Math.max(-6, Math.min(6, physics.vel.y * -0.08));
+
+        charm.style.transform = `translate(calc(-50% + ${ropeX}px), ${ropeY}px) rotate(${renderRot}deg) rotateX(${tiltX}deg) scale(${stretchX}, ${stretchY})`;
         if (chain) {
-            const stretch = 1 + Math.max(0, motionState.ty) / 35;
-            chain.style.transform = `scaleY(${stretch})`;
+            const scaleY = ropeLen / physics.baseLen;
+            chain.style.transform = `rotate(${angleDeg}deg) scaleY(${scaleY})`;
         }
         requestAnimationFrame(animate);
     };
-    animate();
+    requestAnimationFrame(animate);
 }
 
 function setCharmImageFromSkin(skinId) {
@@ -2753,6 +2780,159 @@ function initAutoClicker() {
     document.addEventListener('pointermove', pointerMove);
     document.addEventListener('pointerup', pointerUp);
     document.addEventListener('pointercancel', pointerUp);
+}
+
+// ==================== ПОДВЕСКА БРЕЛКА ====================
+function initBadgePhysics() {
+    const card = document.getElementById('badgeCard');
+    const ropeCanvas = document.getElementById('badgeRope');
+    const anchorEl = document.querySelector('.badge-anchor');
+    if (!card || !ropeCanvas || !anchorEl) return;
+
+    const ctx = ropeCanvas.getContext('2d');
+
+    const params = {
+        ropeLength: 130,
+        maxStretch: 60,
+        stiffness: 35,
+        damping: 4.5,
+        gravity: 1400, // px/s^2
+        mass: 1.0,
+        angularDamping: 6.0,
+        dragFollow: 14,
+    };
+
+    const state = {
+        pos: { x: 0, y: params.ropeLength },
+        vel: { x: 0, y: 0 },
+        rot: 0,
+        rotVel: 0,
+        tiltX: 0,
+        tiltY: 0,
+        dragging: false,
+        dragTarget: { x: 0, y: 0 },
+        lastTs: performance.now(),
+        anchor: { x: 0, y: 0 }
+    };
+
+    const updateAnchor = () => {
+        const r = ropeCanvas.getBoundingClientRect();
+        state.anchor.x = r.width / 2;
+        state.anchor.y = 0;
+    };
+    updateAnchor();
+    window.addEventListener('resize', updateAnchor);
+
+    const pointerToLocal = (e) => {
+        const rect = ropeCanvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        return { x: x, y: y };
+    };
+
+    const startDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        state.dragging = true;
+        const p = pointerToLocal(e);
+        state.dragTarget = { x: p.x - state.anchor.x, y: p.y - state.anchor.y };
+    };
+    const moveDrag = (e) => {
+        if (!state.dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const p = pointerToLocal(e);
+        state.dragTarget = { x: p.x - state.anchor.x, y: p.y - state.anchor.y };
+    };
+    const endDrag = (e) => {
+        if (!state.dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        state.dragging = false;
+    };
+
+    ['pointerdown', 'touchstart'].forEach(ev => card.addEventListener(ev, startDrag, { passive: false }));
+    ['pointermove', 'touchmove'].forEach(ev => card.addEventListener(ev, moveDrag, { passive: false }));
+    ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(ev => window.addEventListener(ev, endDrag, { passive: false }));
+
+    const integrate = (dt) => {
+        // drag force towards target while dragging
+        if (state.dragging) {
+            const dx = state.dragTarget.x - state.pos.x;
+            const dy = state.dragTarget.y - state.pos.y;
+            state.vel.x += dx * params.dragFollow * dt;
+            state.vel.y += dy * params.dragFollow * dt;
+        } else {
+            // gravity
+            state.vel.y += params.gravity * dt;
+        }
+
+        // spring to limit rope length (soft constraint)
+        const len = Math.hypot(state.pos.x, state.pos.y);
+        const maxLen = params.ropeLength + params.maxStretch;
+        const over = len - params.ropeLength;
+        if (over > 0) {
+            const stretch = Math.min(over, params.maxStretch);
+            const k = params.stiffness / params.mass;
+            const nx = state.pos.x / (len || 1);
+            const ny = state.pos.y / (len || 1);
+            state.vel.x -= nx * k * stretch * dt;
+            state.vel.y -= ny * k * stretch * dt;
+        }
+
+        // damping
+        const damp = Math.exp(-params.damping * dt);
+        state.vel.x *= damp;
+        state.vel.y *= damp;
+
+        state.pos.x += state.vel.x * dt;
+        state.pos.y += state.vel.y * dt;
+
+        // rotation from velocity change
+        const targetRot = Math.atan2(state.pos.x, state.pos.y) * 0.6 + state.vel.x * 0.0008;
+        const rotDamp = Math.exp(-params.angularDamping * dt);
+        state.rotVel += (targetRot - state.rot) * 18 * dt;
+        state.rotVel *= rotDamp;
+        state.rot += state.rotVel * dt;
+
+        // slight 3D tilt from velocity
+        state.tiltX += ((-state.vel.y * 0.003) - state.tiltX) * 8 * dt;
+        state.tiltY += ((state.vel.x * 0.003) - state.tiltY) * 8 * dt;
+    };
+
+    const render = () => {
+        ctx.clearRect(0, 0, ropeCanvas.width, ropeCanvas.height);
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        const grad = ctx.createLinearGradient(state.anchor.x, state.anchor.y, state.anchor.x + state.pos.x, state.anchor.y + state.pos.y);
+        grad.addColorStop(0, '#d9cff8');
+        grad.addColorStop(1, '#6c5ce7');
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(state.anchor.x, state.anchor.y);
+        ctx.quadraticCurveTo(
+            state.anchor.x + state.pos.x * 0.25,
+            state.anchor.y + state.pos.y * 0.35,
+            state.anchor.x + state.pos.x,
+            state.anchor.y + state.pos.y
+        );
+        ctx.stroke();
+    };
+
+    const loop = (ts) => {
+        const dt = Math.min(0.033, (ts - state.lastTs) / 1000 || 0.016);
+        state.lastTs = ts || performance.now();
+        integrate(dt);
+        render();
+        const tx = state.anchor.x + state.pos.x - card.offsetWidth / 2;
+        const ty = state.anchor.y + state.pos.y - card.offsetHeight / 2;
+        const rz = state.rot;
+        const rx = state.tiltX;
+        const ry = state.tiltY;
+        card.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotateZ(${rz}rad) rotateX(${rx}rad) rotateY(${ry}rad)`;
+        requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================

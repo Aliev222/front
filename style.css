@@ -329,6 +329,97 @@ body:not(.night-mode) #stars-canvas {
     padding-right: 0;
 }
 
+.badge-wrap {
+    position: absolute;
+    right: 6px;
+    top: -6px;
+    width: 120px;
+    height: 220px;
+    pointer-events: none;
+    z-index: 14000;
+    perspective: 900px;
+}
+
+.badge-anchor {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(127,73,180,0.7));
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(127,73,180,0.5);
+}
+
+#badgeRope {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120px;
+    height: 220px;
+    pointer-events: none;
+}
+
+.badge-card {
+    position: absolute;
+    width: 80px;
+    height: 100px;
+    left: 0;
+    top: 0;
+    background: linear-gradient(145deg, #ffffff, #f3ebff);
+    border-radius: 14px;
+    border: 1.5px solid rgba(108, 92, 231, 0.35);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.22), 0 0 18px rgba(108,92,231,0.35);
+    overflow: hidden;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform;
+    cursor: grab;
+    pointer-events: auto;
+}
+
+.badge-card:active { cursor: grabbing; }
+
+.badge-card::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.05) 65%, rgba(0,0,0,0) 80%);
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.8),
+        inset 0 1px 2px rgba(0,0,0,0.35);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.badge-texture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.badge-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 45%),
+                radial-gradient(circle at 70% 80%, rgba(108,92,231,0.25), transparent 55%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+.night-mode .badge-card {
+    background: linear-gradient(145deg, #22222a, #15151c);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35), 0 0 18px rgba(108,92,231,0.4);
+}
+
 .energy-bar-bg {
     width: 100%;
     height: 14px;
@@ -356,95 +447,6 @@ body:not(.night-mode) #stars-canvas {
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     animation: shine 2s linear infinite;
-}
-
-@keyframes shine {
-    to { left: 200%; }
-}
-
-.energy-charm-wrap {
-    position: absolute;
-    right: 5px;
-    top: 8px;
-    width: 50px;
-    height: 116px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: auto;
-    z-index: 15000;
-}
-
-.energy-chain {
-    width: 6px;
-    height: 60px;
-    background:
-        linear-gradient(90deg, rgba(0,0,0,0.2), rgba(255,255,255,0.5), rgba(0,0,0,0.2)),
-        repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,0.9) 0px,
-            rgba(255,255,255,0.9) 5px,
-            rgba(127,73,180,0.15) 5px,
-            rgba(127,73,180,0.15) 10px
-        );
-    border-radius: 12px;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
-    position: relative;
-    pointer-events: none;
-    transform-origin: top center;
-}
-.energy-chain::before {
-    content: none;
-}
-.night-mode .energy-chain {
-    background:
-        linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.7), rgba(255,255,255,0.1)),
-        repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,0.95) 0px,
-            rgba(255,255,255,0.95) 5px,
-            rgba(127,73,180,0.2) 5px,
-            rgba(127,73,180,0.2) 10px
-        );
-}
-.night-mode .energy-chain::before {
-    content: none;
-}
-
-.energy-charm {
-    margin-top: 2px;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(26,26,26,0.6));
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(127,73,180,0.6);
-    box-shadow: 0 10px 22px rgba(0,0,0,0.25), 0 0 12px rgba(127,73,180,0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform-origin: center -18px;
-    transition: transform 0.15s ease;
-    cursor: grab;
-    touch-action: none;
-    pointer-events: auto;
-    z-index: 15001;
-}
-
-.energy-ghost-img {
-    width: 36px;
-    height: 36px;
-    display: block;
-    pointer-events: none;
-}
-
-.energy-charm.idle {
-    animation: charmFloat 2.6s ease-in-out infinite;
-}
-
-@keyframes charmFloat {
-    0%, 100% { transform: translate(1px, 0) rotate(-2deg); }
-    50%      { transform: translate(1px, -4px) rotate(2deg); }
 }
 
 .energy-preview {
