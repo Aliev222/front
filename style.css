@@ -410,10 +410,10 @@ body:not(.night-mode) #stars-canvas {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: rgba(26,26,26,0.55);
-    backdrop-filter: blur(6px);
-    border: 2px solid rgba(255,255,255,0.8);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), rgba(26,26,26,0.6));
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(127,73,180,0.6);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.25), 0 0 12px rgba(127,73,180,0.35);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -428,6 +428,7 @@ body:not(.night-mode) #stars-canvas {
     width: 36px;
     height: 36px;
     display: block;
+    pointer-events: none;
 }
 
 .energy-charm.idle {

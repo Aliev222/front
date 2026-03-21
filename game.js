@@ -633,7 +633,7 @@ function handleTap(e) {
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .energy-charm, .energy-charm-wrap'
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .energy-charm, .energy-charm-wrap, .energy-ghost-img'
     )) return;
 
     if (e.cancelable) e.preventDefault();
@@ -2529,6 +2529,8 @@ function initEnergyCharm() {
 
     const clamp = (v, m) => Math.max(-m, Math.min(m, v));
     charm.addEventListener('pointerdown', (e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
         dragging = true;
         allowTilt = false;
         charm.classList.remove('idle');
@@ -2537,6 +2539,8 @@ function initEnergyCharm() {
         charm.setPointerCapture(e.pointerId);
     });
     charm.addEventListener('pointermove', (e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
         if (!dragging) return;
         const clamp = (v, m) => Math.max(-m, Math.min(m, v));
         const dx = clamp(e.clientX - dragStart.x, 24);
