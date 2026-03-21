@@ -2799,7 +2799,7 @@ function initBadgePhysics() {
         gravity: 1400, // px/s^2
         mass: 1.0,
         angularDamping: 6.0,
-        dragFollow: 14,
+        dragFollow: 28,
     };
 
     const state = {

@@ -336,7 +336,7 @@ body:not(.night-mode) #stars-canvas {
     width: 120px;
     height: 220px;
     pointer-events: none;
-    z-index: 14000;
+    z-index: 2000;
     perspective: 900px;
 }
 
