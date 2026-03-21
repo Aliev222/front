@@ -1041,8 +1041,9 @@ function updateCollectionProgress() {
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
 
-async function upgradeBoost(type) {
-    if (upgradeInProgress || !userId) return;
+async function upgradeBoost(type, internal = false) {
+    if (upgradeInProgress && !internal) return;
+    if (!userId) return;
     
     const price = State.game.prices[type];
     if (!price || State.game.coins < price) {
@@ -1050,7 +1051,7 @@ async function upgradeBoost(type) {
         return;
     }
 
-    upgradeInProgress = true;
+    if (!internal) upgradeInProgress = true;
     
     try {
         const result = await API.post('/api/upgrade', {
@@ -1076,7 +1077,7 @@ async function upgradeBoost(type) {
     } catch (err) {
         showToast('❌ Ошибка сервера', true);
     } finally {
-        upgradeInProgress = false;
+        if (!internal) upgradeInProgress = false;
     }
 }
 
@@ -1087,7 +1088,7 @@ async function upgradeAll() {
     try {
         const sequence = ['multitap', 'profit', 'energy'];
         for (const type of sequence) {
-            await upgradeBoost(type);
+            await upgradeBoost(type, true);
         }
         State.game.energy = State.game.maxEnergy;
         updateUI();
