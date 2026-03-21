@@ -342,7 +342,11 @@ const API = {
                 signal: controller.signal
             });
             clearTimeout(timeout);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                const err = new Error(`HTTP ${res.status}`);
+                err.status = res.status;
+                throw err;
+            }
             return await res.json();
         } catch (err) {
             clearTimeout(timeout);
@@ -498,7 +502,10 @@ function updateUI() {
         }
 
         const globalLevelEl = document.getElementById('globalLevel');
-        if (globalLevelEl) globalLevelEl.textContent = State.game.levels.multitap;
+        if (globalLevelEl) {
+            const minLevel = Math.min(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
+            globalLevelEl.textContent = minLevel;
+        }
 
         const globalPriceEl = document.getElementById('globalPrice');
         if (globalPriceEl) {
@@ -621,9 +628,6 @@ async function sendClickBatch() {
 }
 
 function handleTap(e) {
-    if (e.cancelable) e.preventDefault();
-    if (e.stopPropagation) e.stopPropagation();
-
     const target = (e && e.target && e.target.closest) ? e.target : null;
     if (target && target.closest(
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
@@ -631,6 +635,9 @@ function handleTap(e) {
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
         '.modal-screen, .modal-content, .game-modal, .game-modal-content, .energy-charm, .energy-charm-wrap'
     )) return;
+
+    if (e.cancelable) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
 
     let clientX, clientY;
     if (e.touches && e.touches[0]) {
@@ -1041,7 +1048,7 @@ function updateCollectionProgress() {
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
 
-async function upgradeBoost(type, internal = false) {
+async function upgradeBoost(type, internal = false, attempt = 0) {
     if (upgradeInProgress && !internal) return;
     if (!userId) return;
     
@@ -1075,7 +1082,12 @@ async function upgradeBoost(type, internal = false) {
         checkAchievements();
     }
     } catch (err) {
-        showToast('❌ Ошибка сервера', true);
+        if (err.status === 429 && attempt < 2) {
+            showToast('⏳ Подожди 3 сек...', true);
+            await new Promise(r => setTimeout(r, 3200));
+            return upgradeBoost(type, internal, attempt + 1);
+        }
+        showToast(`❌ Ошибка сервера${err.status ? ' ' + err.status : ''}`, true);
     } finally {
         if (!internal) upgradeInProgress = false;
     }
@@ -1089,6 +1101,7 @@ async function upgradeAll() {
         const sequence = ['multitap', 'profit', 'energy'];
         for (const type of sequence) {
             await upgradeBoost(type, true);
+            await new Promise(r => setTimeout(r, 200)); // лёгкий зазор
         }
         State.game.energy = State.game.maxEnergy;
         updateUI();
