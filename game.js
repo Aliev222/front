@@ -622,11 +622,12 @@ async function sendClickBatch() {
 
 function handleTap(e) {
     if (e.cancelable) e.preventDefault();
-    e.stopPropagation();
+    if (e.stopPropagation) e.stopPropagation();
 
-    if (e.target.closest(
+    const target = (e && e.target && e.target.closest) ? e.target : null;
+    if (target && target.closest(
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
-        '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+        '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
         '.modal-screen, .modal-content, .game-modal, .game-modal-content'
     )) return;
@@ -2674,15 +2675,17 @@ function initAutoClicker() {
         if (!autoBtn) return;
         if (autoState.enabledUntil > Date.now()) return; // уже активен
 
+        const enable = () => { showToast('✅ Auto Tap 2 мин'); enableAuto(120000); };
+
         if (typeof window.show_10655027 !== 'function') {
-            showToast('❌ Реклама недоступна', true);
+            showToast('ℹ️ Реклама недоступна, авто на 30 сек');
+            enableAuto(30000);
             return;
         }
         showToast('📺 Загружаем рекламу...');
         try {
             await window.show_10655027();
-            showToast('✅ Auto Tap 2 мин');
-            enableAuto(120000);
+            enable();
         } catch (e) {
             showToast('❌ Не удалось включить авто', true);
         }
