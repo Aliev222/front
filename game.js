@@ -881,7 +881,9 @@ function openSkinDetail(skinId) {
     const isOwned = State.skins.owned.includes(skin.id);
     const isSelected = State.skins.selected === skin.id;
     
-    document.getElementById('skin-detail-img').src = skin.image || 'imgg/clickimg.png';
+    const detailImg = document.getElementById('skin-detail-img');
+    detailImg.src = skin.image || 'imgg/clickimg.png';
+    detailImg.dataset.skinId = skin.id;
     document.getElementById('skin-detail-name').textContent = skin.name || 'Скин';
     
     const rarityEl = document.getElementById('skin-detail-rarity');
@@ -2477,6 +2479,11 @@ function initEnergyCharm() {
     let allowTilt = true;
     let dragging = false;
     let dragStart = { x: 0, y: 0 };
+    const motionState = {
+        tx: 0, ty: 0, rot: 0,
+        targetX: 0, targetY: 0, targetR: 0,
+        vx: 0, vy: 0, vr: 0
+    };
 
     const setIdle = () => {
         if (Date.now() - lastMotion > 2000) {
@@ -2489,9 +2496,9 @@ function initEnergyCharm() {
         lastMotion = Date.now();
         charm.classList.remove('idle');
         const clamp = (v, m) => Math.max(-m, Math.min(m, v));
-        const tiltX = clamp(ax * 3, 14);
-        const tiltY = clamp(ay * 2, 10);
-        charm.style.transform = `translate(2px, ${-tiltY}px) rotate(${tiltX}deg)`;
+        motionState.targetR = clamp(ax * 5, 16);
+        motionState.targetY = clamp(-ay * 6, 18);
+        motionState.targetX = clamp(ax * 4, 16);
         clearTimeout(idleTimer);
         idleTimer = setTimeout(setIdle, 1500);
     };
@@ -2509,20 +2516,35 @@ function initEnergyCharm() {
         allowTilt = false;
         charm.classList.remove('idle');
         dragStart = { x: e.clientX, y: e.clientY };
+        motionState.vx = motionState.vy = motionState.vr = 0;
         charm.setPointerCapture(e.pointerId);
     });
     charm.addEventListener('pointermove', (e) => {
         if (!dragging) return;
+        const clamp = (v, m) => Math.max(-m, Math.min(m, v));
         const dx = clamp(e.clientX - dragStart.x, 24);
         const dy = clamp(e.clientY - dragStart.y, 36);
-        charm.style.transform = `translate(${1 + dx}px, ${dy}px) rotate(${dx / 3}deg)`;
+        motionState.tx = dx;
+        motionState.ty = dy;
+        motionState.rot = dx / 2;
+        motionState.vx = dx - motionState.targetX;
+        motionState.vy = dy - motionState.targetY;
+        motionState.targetX = dx;
+        motionState.targetY = dy;
+        motionState.targetR = dx / 2;
     });
     const endDrag = () => {
         if (!dragging) return;
         dragging = false;
         allowTilt = true;
         charm.classList.add('idle');
-        charm.style.transform = '';
+        // отпускаем с инерцией
+        motionState.vx = motionState.tx * 0.2;
+        motionState.vy = motionState.ty * 0.2;
+        motionState.vr = motionState.rot * 0.2;
+        motionState.targetX = 0;
+        motionState.targetY = 0;
+        motionState.targetR = 0;
     };
     charm.addEventListener('pointerup', endDrag);
     charm.addEventListener('pointercancel', endDrag);
@@ -2543,6 +2565,25 @@ function initEnergyCharm() {
         // fallback idle sway
         charm.classList.add('idle');
     }
+
+    // плавная анимация/инерция
+    const animate = () => {
+        const lerp = (a, b, t) => a + (b - a) * t;
+        // притяжение к целям
+        motionState.tx = lerp(motionState.tx, motionState.targetX, 0.15);
+        motionState.ty = lerp(motionState.ty, motionState.targetY, 0.15);
+        motionState.rot = lerp(motionState.rot, motionState.targetR, 0.18);
+        // инерция после дропа
+        motionState.tx += motionState.vx;
+        motionState.ty += motionState.vy;
+        motionState.rot += motionState.vr;
+        motionState.vx *= 0.9;
+        motionState.vy *= 0.9;
+        motionState.vr *= 0.9;
+        charm.style.transform = `translate(${2 + motionState.tx}px, ${motionState.ty}px) rotate(${motionState.rot}deg)`;
+        requestAnimationFrame(animate);
+    };
+    animate();
 }
 
 function setCharmImageFromSkin(skinId) {
@@ -2552,8 +2593,9 @@ function setCharmImageFromSkin(skinId) {
 }
 
 function setCharmFromDetail() {
-    if (!State.skins.selected) return;
-    setCharmImageFromSkin(State.skins.selected);
+    const currentId = document.getElementById('skin-detail-img')?.dataset.skinId || State.skins.selected;
+    if (!currentId) return;
+    setCharmImageFromSkin(currentId);
     showToast('✅ Брелок обновлен');
 }
 
