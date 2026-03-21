@@ -372,6 +372,7 @@ body:not(.night-mode) #stars-canvas {
     flex-direction: column;
     align-items: center;
     pointer-events: auto;
+    z-index: 15000;
 }
 
 .energy-chain {
@@ -427,6 +428,7 @@ body:not(.night-mode) #stars-canvas {
     cursor: grab;
     touch-action: none;
     pointer-events: auto;
+    z-index: 15001;
 }
 
 .energy-ghost-img {

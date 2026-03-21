@@ -1535,6 +1535,11 @@ function loadSettings() {
 
 function saveSettings() {
     localStorage.setItem('ryohoSettings', JSON.stringify(State.settings));
+    const bgm = State.temp.bgm.audio;
+    if (bgm) {
+        if (State.settings.sound) bgm.play().catch(() => {});
+        else bgm.pause();
+    }
 }
 
 function applyTheme() {
@@ -1553,6 +1558,11 @@ function toggleSound() {
     State.settings.sound = !State.settings.sound;
     saveSettings();
     updateSettingsUI();
+    const bgm = State.temp.bgm.audio;
+    if (bgm) {
+        if (State.settings.sound) bgm.play().catch(() => {});
+        else bgm.pause();
+    }
 }
 
 function toggleVibration() {
@@ -2521,17 +2531,32 @@ function initEnergyCharm() {
         idleTimer = setTimeout(setIdle, 1500);
     };
 
+    let motionAttached = false;
     const attachMotion = () => {
+        if (motionAttached) return;
         window.addEventListener('devicemotion', (e) => {
             const acc = e.accelerationIncludingGravity || e.acceleration || {};
             handleTilt(acc.x || 0, acc.y || 0);
         });
+        motionAttached = true;
+    };
+
+    const requestMotionPermission = async () => {
+        if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const p = await DeviceMotionEvent.requestPermission();
+                if (p === 'granted') attachMotion();
+            } catch (e) {}
+        } else if (window.DeviceMotionEvent) {
+            attachMotion();
+        }
     };
 
     const clamp = (v, m) => Math.max(-m, Math.min(m, v));
-    charm.addEventListener('pointerdown', (e) => {
+    charm.addEventListener('pointerdown', async (e) => {
         if (e.cancelable) e.preventDefault();
         e.stopPropagation();
+        await requestMotionPermission();
         dragging = true;
         allowTilt = false;
         charm.classList.remove('idle');
@@ -2577,22 +2602,9 @@ function initEnergyCharm() {
         }, true);
     });
 
-    // iOS permission
-    if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
-        charm.classList.add('idle');
-        charm.addEventListener('click', async () => {
-            try {
-                const p = await DeviceMotionEvent.requestPermission();
-                if (p === 'granted') attachMotion();
-            } catch (e) {}
-        }, { once: true });
-    } else if (window.DeviceMotionEvent) {
-        attachMotion();
-        charm.classList.add('idle');
-    } else {
-        // fallback idle sway
-        charm.classList.add('idle');
-    }
+    // start motion if available
+    requestMotionPermission();
+    charm.classList.add('idle');
 
     // плавная анимация/инерция
     const animate = () => {
