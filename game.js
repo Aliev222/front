@@ -629,7 +629,7 @@ function handleTap(e) {
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content'
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .energy-charm, .energy-charm-wrap'
     )) return;
 
     let clientX, clientY;
@@ -1084,9 +1084,11 @@ async function upgradeAll() {
     if (upgradeInProgress || !userId) return;
 
     upgradeInProgress = true;
-
     try {
-        await Promise.all([upgradeBoost('multitap'), upgradeBoost('profit'), upgradeBoost('energy')]);
+        const sequence = ['multitap', 'profit', 'energy'];
+        for (const type of sequence) {
+            await upgradeBoost(type);
+        }
         State.game.energy = State.game.maxEnergy;
         updateUI();
     } finally {
