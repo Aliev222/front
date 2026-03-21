@@ -81,11 +81,17 @@
             </div>
         </div>
         
-        <div class="energy-bar-container">
-            <div class="energy-bar-bg">
-                <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
+            <div class="energy-bar-container">
+                <div class="energy-bar-bg">
+                    <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
+                </div>
+                <div class="energy-charm-wrap">
+                    <div class="energy-chain"></div>
+                    <div class="energy-charm ghost" id="energyCharm" title="tilt to swing">
+                        <img src="imgg/skins/icon.png" class="energy-ghost-img" alt="ghost">
+                    </div>
+                </div>
             </div>
-        </div>
                     
         <!-- CLICKER AREA -->
         <div class="clicker-area">
@@ -108,6 +114,10 @@
                         <img src="imgg/rocket.png" style="width: 40px; height: 40px; vertical-align: middle;overflow: hidden;">
                     </span>
                     <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
+                </button>
+                <button class="auto-boost-button" onclick="toggleAutoClick()" id="auto-boost-btn">
+                    <span class="auto-icon">🤖</span>
+                    <span class="auto-timer" id="auto-boost-timer"></span>
                 </button>
             </div>
         </div>
@@ -224,10 +234,10 @@
                 <div class="referral-rules glass">
                     <h3>Bonuses</h3>
                     <ul>
-                        <li><span class="rule-icon">👤</span> Per friend — <span class="highlight">+1000 coins</span></li>
-                        <li><span class="rule-icon">💎</span> 5% of friend income — <span class="highlight">forever</span></li>
-                        <li><span class="rule-icon">🔥</span> 3 friends — <span class="highlight">+100 energy</span></li>
-                        <li><span class="rule-icon">💰</span> 10 friends — <span class="highlight">+5% luck</span></li>
+                        <li><span class="rule-icon">🤝</span> За друга — <span class="highlight">+1000 coins</span></li>
+                        <li><span class="rule-icon">💎</span> 5% дохода друга — <span class="highlight">навсегда</span></li>
+                        <li><span class="rule-icon">🔥</span> 3 друга — <span class="highlight">+100 energy</span></li>
+                        <li><span class="rule-icon">🎯</span> 10 друзей — <span class="highlight">+5% luck</span></li>
                     </ul>
                 </div>
             </div>
@@ -307,11 +317,13 @@
         <div class="game-modal-content glass">
             <button class="modal-close" onclick="closeGame('wheel')">✕</button>
             <h2>Roulette</h2>
-            <div style="text-align:center;margin-bottom:12px;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;">
-                Red ×2 | Black ×2 | Green ×35
-            </div>
-            <div style="display:flex;justify-content:center;margin:12px 0;">
-                <div id="wheel" style="width:84px;height:84px;border-radius:50%;background:#1a1a1a;border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:36px;font-weight:400;color:var(--purple);letter-spacing:2px;">0</div>
+            <div class="roulette-container">
+                <div class="roulette-plate" id="roulette-plate">
+                    <div class="roulette-ring"></div>
+                    <div class="roulette-ball" id="roulette-ball"></div>
+                </div>
+                <div class="roulette-center" id="wheel">0</div>
+                <div class="game-desc">Red ×2 | Black ×2 | Green ×35</div>
             </div>
             <div class="game-controls">
                 <input type="number" id="wheel-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
@@ -530,20 +542,24 @@
                     </div>
                 </div>
 
-                <!-- Кнопка действия -->
-                <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
-                    Получить
-                </button>
-            </div>
+            <!-- Кнопка действия -->
+            <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
+                Получить
+            </button>
+            <button class="skin-charm-btn" id="skin-charm-btn" onclick="setCharmFromDetail()">
+                Поставить на брелок
+            </button>
         </div>
+    </div>
     </div>
     <canvas id="stars-canvas"></canvas>
     <script>
     (function() {
         const canvas = document.getElementById('stars-canvas');
         const ctx = canvas.getContext('2d');
-        const STAR_COUNT = 160;
+        const STAR_COUNT = 260;
         const stars = [];
+        const shooting = [];
 
         function resize() {
             canvas.width  = window.innerWidth;
@@ -551,13 +567,15 @@
         }
 
         function randomStar() {
-            const isBig = Math.random() < 0.15; // 15% звёзд крупные
+            const isBig = Math.random() < 0.18; // 18% крупные
             return {
                 x:  Math.random() * canvas.width  - canvas.width  / 2,
                 y:  Math.random() * canvas.height - canvas.height / 2,
                 z:  Math.random() * canvas.width,
                 pz: 0,
-                big: isBig
+                big: isBig,
+                layer: Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1),
+                tw: Math.random() * Math.PI * 2
             };
         }
 
@@ -573,17 +591,19 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const cx = canvas.width  / 2;
             const cy = canvas.height / 2;
-            const speed = 4;
+            const baseSpeed = 4;
 
             for (let s of stars) {
                 s.pz = s.z;
-                s.z -= speed;
+                s.z -= baseSpeed * s.layer;
                 if (s.z <= 0) {
                     s.x   = Math.random() * canvas.width  - cx;
                     s.y   = Math.random() * canvas.height - cy;
                     s.z   = canvas.width;
                     s.pz  = s.z;
-                    s.big = Math.random() < 0.15;
+                    s.big = Math.random() < 0.18;
+                    s.layer = Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1);
+                    s.tw = Math.random() * Math.PI * 2;
                 }
 
                 const sx  = (s.x / s.z)  * canvas.width  + cx;
@@ -592,19 +612,23 @@
                 const spy = (s.y / s.pz) * canvas.height + cy;
 
                 const progress = 1 - s.z / canvas.width;
-                const opacity  = Math.min(1, progress * 1.5);
+                const twinkle  = 0.5 + 0.5 * Math.sin(s.tw += 0.035 + 0.02 * s.layer);
+                const opacity  = Math.min(1, (progress * 1.8) * twinkle + 0.35);
                 const size     = s.big
-                    ? Math.max(1, progress * 5)
-                    : Math.max(0.5, progress * 2.5);
+                    ? Math.max(1.2, progress * 5.5 * s.layer)
+                    : Math.max(0.9, progress * 3.2 * s.layer);
 
-                const r = isNight() ? '200,160,255' : '80,30,140';
+                const r = isNight()
+                    ? (s.layer < 0.7 ? '210,190,255' : '255,245,255')
+                    : (s.layer < 0.7 ? '140,110,255' : '170,140,255'); // day → фиолетовый оттенок
 
                 // Хвост
                 ctx.beginPath();
                 ctx.moveTo(spx, spy);
                 ctx.lineTo(sx, sy);
-                ctx.strokeStyle = `rgba(${r},${opacity * 0.8})`;
-                ctx.lineWidth = size * 0.6;
+                const longTail = progress > 0.2;
+                ctx.strokeStyle = `rgba(${r},${opacity * (longTail ? 0.95 : 0.8)})`;
+                ctx.lineWidth = longTail ? size * 1.2 : size * 0.7;
                 ctx.stroke();
 
                 // Точка на конце
@@ -614,15 +638,46 @@
                 ctx.fill();
 
                 // Свечение для крупных звёзд
-                if (s.big && progress > 0.4) {
+                if (progress > 0.2) {
                     ctx.beginPath();
                     ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
                     const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2.5);
-                    glow.addColorStop(0, `rgba(${r},${opacity * 0.4})`);
+                    glow.addColorStop(0, `rgba(${r},${opacity * 0.55})`);
                     glow.addColorStop(1, `rgba(${r},0)`);
                     ctx.fillStyle = glow;
                     ctx.fill();
                 }
+            }
+
+            // Падающие звёзды
+            if (Math.random() < 0.008 && shooting.length < 4) {
+                shooting.push({
+                    x: Math.random() * canvas.width * 0.7,
+                    y: Math.random() * canvas.height * 0.2,
+                    vx: 11 + Math.random() * 10,
+                    vy: 5 + Math.random() * 5,
+                    life: 0,
+                    maxLife: 56
+                });
+            }
+
+            for (let i = shooting.length - 1; i >= 0; i--) {
+                const sh = shooting[i];
+                sh.life++;
+                sh.x += sh.vx;
+                sh.y += sh.vy;
+                const fade = 1 - sh.life / sh.maxLife;
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255,255,255,${0.95 * fade})`;
+                ctx.lineWidth = 3;
+                ctx.moveTo(sh.x - sh.vx * 5, sh.y - sh.vy * 5);
+                ctx.lineTo(sh.x, sh.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(255,255,255,${0.9 * fade})`;
+                ctx.arc(sh.x, sh.y, 3.4, 0, Math.PI * 2);
+                ctx.fill();
+                if (sh.life >= sh.maxLife) shooting.splice(i, 1);
             }
             requestAnimationFrame(draw);
         }

@@ -101,6 +101,18 @@ const State = {
         clickBuffer: 0,
         animationTimer: null,
         syncTimer: null,
+        bgm: {
+            audio: null,
+            ready: false,
+            enabled: true
+        },
+        auto: {
+            enabledUntil: 0,
+            timer: null,
+            fingerDown: false,
+            point: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+            effect: null
+        },
 
         // энергосистема
         energyUiTimer: null,
@@ -153,56 +165,58 @@ const showToast = (msg, isError = false) => {
 };
 
 // ==================== ДОСТИЖЕНИЯ ====================
+const ACHIEVEMENTS_KEY = 'ryohoAchievements';
 const ACHIEVEMENTS = [
-    {
-        id: 'click_100',
-        title: 'Начинающий кликер',
-        description: 'Сделай 100 кликов',
-        icon: '👆',
-        condition: (stats) => stats.clicks >= 100,
-        reward: 1000
-    },
-    {
-        id: 'click_1000',
-        title: 'Опытный кликер',
-        description: 'Сделай 1000 кликов',
-        icon: '👆',
-        condition: (stats) => stats.clicks >= 1000,
-        reward: 5000
-    },
-    {
-        id: 'click_10000',
-        title: 'Мастер кликов',
-        description: 'Сделай 10000 кликов',
-        icon: '👑',
-        condition: (stats) => stats.clicks >= 10000,
-        reward: 20000
-    },
-    {
-        id: 'upgrade_10',
-        title: 'Улучшатель',
-        description: 'Купи 10 улучшений',
-        icon: '⬆️',
-        condition: (stats) => stats.upgrades >= 10,
-        reward: 5000
-    },
-    {
-        id: 'games_10',
-        title: 'Игрок',
-        description: 'Сыграй в мини-игры 10 раз',
-        icon: '🎮',
-        condition: (stats) => stats.games >= 10,
-        reward: 3000
-    },
-    {
-        id: 'referral_5',
-        title: 'Популярный',
-        description: 'Пригласи 5 друзей',
-        icon: '👥',
-        condition: (stats) => stats.referrals >= 5,
-        reward: 10000
-    }
+    { id: 'click_100',    title: 'Разогрев',           description: 'Сделай 100 кликов',     icon: '👆', condition: (s) => s.clicks >= 100,    reward: 1000 },
+    { id: 'click_500',    title: 'Ритм',               description: 'Сделай 500 кликов',     icon: '👆', condition: (s) => s.clicks >= 500,    reward: 2000 },
+    { id: 'click_1000',   title: 'Опытный кликер',     description: 'Сделай 1000 кликов',    icon: '👆', condition: (s) => s.clicks >= 1000,   reward: 5000 },
+    { id: 'click_5000',   title: 'Поток',              description: 'Сделай 5000 кликов',    icon: '🚀', condition: (s) => s.clicks >= 5000,   reward: 12000 },
+    { id: 'click_25000',  title: 'Мастер кликов',      description: 'Сделай 25000 кликов',   icon: '👑', condition: (s) => s.clicks >= 25000,  reward: 40000 },
+
+    { id: 'upgrade_5',    title: 'Инженер',            description: 'Купи 5 улучшений',      icon: '🛠️', condition: (s) => s.upgrades >= 5,   reward: 2000 },
+    { id: 'upgrade_15',   title: 'Архитектор',         description: 'Купи 15 улучшений',     icon: '🧰', condition: (s) => s.upgrades >= 15,  reward: 8000 },
+    { id: 'upgrade_30',   title: 'Системный',          description: 'Купи 30 улучшений',     icon: '⬆️', condition: (s) => s.upgrades >= 30,  reward: 20000 },
+
+    { id: 'games_10',     title: 'Игрок',              description: 'Сыграй 10 мини-игр',    icon: '🎮', condition: (s) => s.games >= 10,     reward: 3000 },
+    { id: 'games_30',     title: 'Стример',            description: 'Сыграй 30 мини-игр',    icon: '🎬', condition: (s) => s.games >= 30,     reward: 12000 },
+
+    { id: 'referral_1',   title: 'Первый друг',        description: 'Пригласи 1 друга',      icon: '🤝', condition: (s) => s.referrals >= 1,  reward: 2000 },
+    { id: 'referral_5',   title: 'Популярный',         description: 'Пригласи 5 друзей',     icon: '👥', condition: (s) => s.referrals >= 5,  reward: 10000 },
+    { id: 'referral_15',  title: 'Амбассадор',         description: 'Пригласи 15 друзей',    icon: '🌐', condition: (s) => s.referrals >= 15, reward: 25000 },
+
+    { id: 'ads_5',        title: 'Поддержал игру',     description: 'Посмотри 5 видео',      icon: '🎥', condition: (s) => s.adsWatched >= 5, reward: 5000 }
 ];
+
+function loadAchievementsFromStorage() {
+    try {
+        const saved = localStorage.getItem(ACHIEVEMENTS_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        State.achievements = {
+            ...State.achievements,
+            ...parsed,
+            completed: Array.from(new Set(parsed.completed || []))
+        };
+    } catch (e) {
+        console.warn('Achievements restore failed', e);
+    }
+}
+
+function saveAchievementsToStorage() {
+    try {
+        localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify({
+            ...State.achievements,
+            completed: Array.from(new Set(State.achievements.completed || []))
+        }));
+    } catch (e) {
+        console.warn('Achievements save failed', e);
+    }
+}
+
+function trackAchievementProgress(key, delta = 1) {
+    State.achievements[key] = (State.achievements[key] || 0) + delta;
+    saveAchievementsToStorage();
+}
 
 function applyServerEnergySnapshot(payload) {
     if (typeof payload.energy === 'number') {
@@ -258,6 +272,7 @@ function checkAchievements() {
         adsWatched: State.skins.adsWatched || 0
     };
     
+    let changed = false;
     ACHIEVEMENTS.forEach(achievement => {
         if (!State.achievements.completed.includes(achievement.id) && 
             achievement.condition(stats)) {
@@ -265,8 +280,11 @@ function checkAchievements() {
             State.game.coins += achievement.reward;
             showAchievementNotification(achievement);
             updateUI();
+            changed = true;
         }
     });
+
+    if (changed) saveAchievementsToStorage();
 }
 
 function showAchievementNotification(achievement) {
@@ -400,25 +418,27 @@ async function loadPrices() {
 // ==================== ЛОКАЛЬНЫЕ СКИНЫ ====================
 function getLocalSkins() {
     return [
-        { id: "skin_lvl_1", name: "���������� �������", image: "imgg/skins/default_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.1 }, requirement: { type: "level", value: 10 } },
-        { id: "skin_lvl_2", name: "������� �������", image: "imgg/skins/Coin_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 20 } },
-        { id: "skin_lvl_3", name: "������ �������", image: "imgg/skins/Galaxy_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "level", value: 40 } },
-        { id: "skin_lvl_4", name: "������� �������", image: "imgg/skins/King_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.4 }, requirement: { type: "level", value: 60 } },
-        { id: "skin_lvl_5", name: "����������� �������", image: "imgg/skins/Monster_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "level", value: 80 } },
-        { id: "skin_lvl_6", name: "���������� �������", image: "imgg/skins/Ninja_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.6 }, requirement: { type: "level", value: 100 } },
-        { id: "skin_lvl_7", name: "������������ �������", image: "imgg/skins/Shadow_SP.png", rarity: "common", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "level", value: 150 } },
-        { id: "skin_video_1", name: "�������� �������", image: "imgg/skins/Techno_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "ads", count: 1 } },
-        { id: "skin_video_2", name: "����������� �������", image: "imgg/skins/Water_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "ads", count: 5 } },
-        { id: "skin_video_3", name: "������������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.4 }, requirement: { type: "ads", count: 10 } },
-        { id: "skin_video_4", name: "�������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "ads", count: 20 } },
-        { id: "skin_video_5", name: "������������ �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "ads", count: 50 } },
-        { id: "skin_video_6", name: "���������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ads", count: 100 } },
-        { id: "skin_friend_1", name: "������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.1 }, requirement: { type: "friends", count: 1 } },
-        { id: "skin_friend_2", name: "���������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "friends", count: 3 } },
-        { id: "skin_friend_3", name: "��������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "friends", count: 5 } },
-        { id: "skin_friend_4", name: "�������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "friends", count: 10 } },
-        { id: "skin_friend_5", name: "����������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "friends", count: 20 } },
-        { id: "skin_friend_6", name: "��������� �������", image: "imgg/skins/King_SP.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "friends", count: 50 } },
+        { id: "skin_lvl_1",   name: "Starter Core",        image: "imgg/skins/default_SP.png", rarity: "common",    bonus: { type: "multiplier", value: 1.1 },  requirement: { type: "level", value: 10 } },
+        { id: "skin_lvl_2",   name: "Coin Pulse",          image: "imgg/skins/Coin_SP.png",    rarity: "common",    bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "level", value: 20 } },
+        { id: "skin_lvl_3",   name: "Galaxy Flow",         image: "imgg/skins/Galaxy_SP.png",  rarity: "common",    bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "level", value: 40 } },
+        { id: "skin_lvl_4",   name: "Royal Core",          image: "imgg/skins/King_SP.png",    rarity: "common",    bonus: { type: "multiplier", value: 1.4 },  requirement: { type: "level", value: 60 } },
+        { id: "skin_lvl_5",   name: "Monster Alloy",       image: "imgg/skins/Monster_SP.png", rarity: "common",    bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "level", value: 80 } },
+        { id: "skin_lvl_6",   name: "Ninja Carbon",        image: "imgg/skins/Ninja_SP.png",   rarity: "common",    bonus: { type: "multiplier", value: 1.6 },  requirement: { type: "level", value: 100 } },
+        { id: "skin_lvl_7",   name: "Shadow Alloy",        image: "imgg/skins/Shadow_SP.png",  rarity: "common",    bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "level", value: 150 } },
+
+        { id: "skin_video_1", name: "Pulse Neon",          image: "imgg/skins/Techno_SP.png",  rarity: "rare",      bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "ads", count: 1 } },
+        { id: "skin_video_2", name: "Wave Aqua",           image: "imgg/skins/Water_SP.png",   rarity: "rare",      bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "ads", count: 5 } },
+        { id: "skin_video_3", name: "Crown Flux",          image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.4 },  requirement: { type: "ads", count: 10 } },
+        { id: "skin_video_4", name: "Lumen Core",          image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "ads", count: 20 } },
+        { id: "skin_video_5", name: "Nova Crown",          image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "ads", count: 50 } },
+        { id: "skin_video_6", name: "Mythic Core",         image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "ads", count: 100 } },
+
+        { id: "skin_friend_1", name: "Friend Pass",        image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.1 },  requirement: { type: "friends", count: 1 } },
+        { id: "skin_friend_2", name: "Squad Core",         image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "friends", count: 3 } },
+        { id: "skin_friend_3", name: "Crew Alloy",         image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "friends", count: 5 } },
+        { id: "skin_friend_4", name: "Clan Crown",         image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "friends", count: 10 } },
+        { id: "skin_friend_5", name: "Alliance Core",      image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "friends", count: 20 } },
+        { id: "skin_friend_6", name: "Mythic Alliance",    image: "imgg/skins/King_SP.png",    rarity: "super",     bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "friends", count: 50 } },
     ];
 }
 
@@ -657,7 +677,7 @@ function handleTap(e) {
     State.temp.clickBuffer += 1;
     State.game.coins += previewGain;
 
-    State.achievements.clicks = (State.achievements.clicks || 0) + 1;
+    trackAchievementProgress('clicks', 1);
     checkAchievements();
     updateUI();
 
@@ -951,6 +971,7 @@ async function unlockSkinFromDetail(skinId) {
     if (!userId) return showToast('❌ Авторизуйтесь', true);
     if (State.skins.owned.includes(skinId)) {
         showToast('✅ Скин уже есть');
+        setCharmImageFromSkin(skinId);
         closeSkinDetail();
         return;
     }
@@ -960,6 +981,7 @@ async function unlockSkinFromDetail(skinId) {
         if (res.success) {
             State.skins.owned.push(skinId);
             showToast('✅ Новый скин!');
+            setCharmImageFromSkin(skinId);
             closeSkinDetail();
             renderSkins();
             updateCollectionProgress();
@@ -987,6 +1009,8 @@ async function watchAdForSkin(skinId) {
 
         if (res.success) {
             State.skins.adsWatched = res.ads_watched;
+            trackAchievementProgress('adsWatched', 1);
+            checkAchievements();
 
             showToast('✅ +1 просмотр!');
             renderSkins();
@@ -1035,20 +1059,17 @@ async function upgradeBoost(type) {
             State.game.coins = result.coins;
             State.game.levels[type] = result.new_level;
             State.game.prices[type] = result.next_cost || 0;
-            State.achievements.upgrades = (State.achievements.upgrades || 0) + 1;
+            trackAchievementProgress('upgrades', 1);
             
-            if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
-            if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
-            if (result.max_energy) {
-                State.game.maxEnergy = result.max_energy;
-                State.game.energy = result.max_energy;
-            }
-            
-            showToast(`✅ ${type} +${result.new_level}!`);
-            playUpgradeSound();
-            updateUI();
-            checkAchievements();
+        if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
+        if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
+        if (result.max_energy) {
+            State.game.maxEnergy = result.max_energy;
+            State.game.energy = result.max_energy;
         }
+        updateUI();
+        checkAchievements();
+    }
     } catch (err) {
         showToast('❌ Ошибка сервера', true);
     } finally {
@@ -1059,28 +1080,14 @@ async function upgradeBoost(type) {
 async function upgradeAll() {
     if (upgradeInProgress || !userId) return;
 
-    const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
-    if (State.game.coins < total) {
-        showToast(`❌ Нужно ${total} монет`, true);
-        return;
-    }
+    upgradeInProgress = true;
 
-    let upgraded = 0;
-
-    for (const type of ['multitap', 'profit', 'energy']) {
-        try {
-            await upgradeBoost(type);
-            upgraded++;
-        } catch (err) {
-            console.error(`Upgrade failed for ${type}:`, err);
-        }
-    }
-
-    if (upgraded > 0) {
-        showToast('✅ Все улучшения куплены!');
-        playUpgradeSound();
-        checkAchievements();
+    try {
+        await Promise.all([upgradeBoost('multitap'), upgradeBoost('profit'), upgradeBoost('energy')]);
+        State.game.energy = State.game.maxEnergy;
         updateUI();
+    } finally {
+        upgradeInProgress = false;
     }
 }
 
@@ -1108,83 +1115,83 @@ function playUpgradeSound() {
 const VIDEO_TASKS = [
     {
         id: 'energy_full',
-        title: '? ������ �������',
-        description: '���������� ����� ������� �� 100%',
-        reward: '? MAX',
-        icon: '?',
+        title: 'Полная энергия',
+        description: 'Восстанови запас энергии до 100%',
+        reward: '⚡ FULL',
+        icon: '⚡',
         type: 'energy_full',
         cooldown: 10,
         lastUsed: null,
         category: 'energy',
-        tag: '���������',
+        tag: 'энергия',
         completed: false,
         available: true
     },
     {
         id: 'coins_rush',
-        title: '������� ���',
-        description: '������ ����� � ������� +1 500 �����',
+        title: 'Монетный дождь',
+        description: 'Сразу получи +1 500 монет',
         reward: 1500,
-        icon: '??',
+        icon: '💰',
         type: 'coins',
         cooldown: 8,
         lastUsed: null,
         category: 'coins',
-        tag: '����',
+        tag: 'коины',
         completed: false,
         available: true
     },
     {
         id: 'coins_jackpot',
-        title: '������� ���',
-        description: '+8 000 ����� �� ��������, ��� � 45 �����',
+        title: 'Джекпот',
+        description: '+8 000 монет раз в 45 минут',
         reward: 8000,
-        icon: '??',
+        icon: '🏆',
         type: 'coins',
         cooldown: 45,
         lastUsed: null,
         category: 'coins',
-        tag: '��� � ���',
+        tag: 'джекпот',
         completed: false,
         available: true
     },
     {
         id: 'boost_combo',
-        title: '�����-����',
-        description: 'x2 ������� �� 7 ����� ����� �������',
-        reward: 'x2 � 7 ���',
-        icon: '??',
+        title: 'Комбо-ускорение',
+        description: 'x2 доход на 7 минут после просмотра',
+        reward: 'x2 • 7 мин',
+        icon: '🚀',
         type: 'boost',
         boost_multiplier: 2,
         boost_minutes: 7,
         cooldown: 30,
         lastUsed: null,
         category: 'boost',
-        tag: '����',
+        tag: 'баф',
         completed: false,
         available: true
     },
     {
         id: 'skin_drop',
-        title: '���� �����',
-        description: '������ ���� �� �������� (1 ��� � ���)',
-        reward: '?? Rare drop',
-        icon: '??',
+        title: 'Дроп скина',
+        description: 'Редкий скин за просмотр (1 раз в час)',
+        reward: '🎁 Rare drop',
+        icon: '🎁',
         type: 'skin',
         skin_rarity: 'rare',
         cooldown: 60,
         lastUsed: null,
         category: 'skins',
-        tag: '������',
+        tag: 'скин',
         completed: false,
         available: true
     },
     {
         id: 'reset_tasks',
-        title: '�������� �������',
-        description: '������� �������� �� ���� ������',
-        reward: '?? reset',
-        icon: '??',
+        title: 'Сброс заданий',
+        description: 'Обновляет кулдауны всех заданий',
+        reward: '♻ reset',
+        icon: '🔄',
         type: 'refresh',
         cooldown: 180,
         lastUsed: null,
@@ -1296,6 +1303,7 @@ async function handleVideoTask(taskId) {
     
     try {
         await window.show_10655027();
+        trackAchievementProgress('adsWatched', 1);
         
         // Начисляем награду
         switch(task.type) {
@@ -1474,6 +1482,7 @@ async function loadReferralData() {
         document.getElementById('referral-earnings').textContent = data.earnings || 0;
         
         State.skins.friendsInvited = data.count || 0;
+        checkAchievements();
     } catch (err) {
         console.error('Referral error:', err);
     }
@@ -1928,7 +1937,7 @@ async function playCoinflip() {
                 
                 resultEl.textContent = data.message || '🎮 Сыграно!';
                 State.game.coins = data.coins;
-                State.achievements.games = (State.achievements.games || 0) + 1;
+                trackAchievementProgress('games', 1);
                 checkAchievements();
                 updateUI();
                 
@@ -1974,6 +1983,7 @@ async function playSlots() {
     
     resultEl.textContent = '🎰 Крутим...';
     playSound('spin');
+    [slot1, slot2, slot3].forEach(el => el?.classList.add('spinning'));
     
     let spins = 0;
     const maxSpins = 15;
@@ -1997,6 +2007,7 @@ async function playSlots() {
                     slot1.textContent = data.slots[0];
                     slot2.textContent = data.slots[1];
                     slot3.textContent = data.slots[2];
+                    [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('JACKPOT') || data.message.includes('won')) {
@@ -2019,11 +2030,12 @@ async function playSlots() {
                 slot1.textContent = s1;
                 slot2.textContent = s2;
                 slot3.textContent = s3;
+                [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
                 
                 if (s1 === s2 && s2 === s3) {
                     const win = bet * 5;
                     State.game.coins += win;
-                    State.achievements.games = (State.achievements.games || 0) + 1;
+                    trackAchievementProgress('games', 1);
                     resultEl.textContent = '🎰 ДЖЕКПОТ! +' + win;
                     playSound('win');
                     createConfetti();
@@ -2059,6 +2071,8 @@ async function playDice() {
     
     resultEl.textContent = '🎲 Бросаем...';
     playSound('dice');
+    dice1?.classList.add('roll');
+    dice2?.classList.add('roll');
     
     let spins = 0;
     const maxSpins = 12;
@@ -2081,6 +2095,8 @@ async function playDice() {
                 .then(data => {
                     dice1.textContent = diceFaces[data.dice1 - 1];
                     dice2.textContent = diceFaces[data.dice2 - 1];
+                    dice1?.classList.remove('roll');
+                    dice2?.classList.remove('roll');
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('won')) {
@@ -2088,6 +2104,8 @@ async function playDice() {
                         playSound('win');
                     } else playSound('lose');
                     
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
                     State.game.coins = data.coins;
                     updateUI();
                 })
@@ -2102,6 +2120,8 @@ async function playDice() {
                 
                 dice1.textContent = diceFaces[d1 - 1];
                 dice2.textContent = diceFaces[d2 - 1];
+                dice1?.classList.remove('roll');
+                dice2?.classList.remove('roll');
                 
                 let win = false;
                 if (pred === '7' && sum === 7) win = true;
@@ -2113,6 +2133,8 @@ async function playDice() {
                     State.game.coins += bet * multiplier;
                     resultEl.textContent = `🎲 Вы выиграли! x${multiplier}`;
                     playSound('win');
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
                 } else {
                     State.game.coins -= bet;
                     resultEl.textContent = '🎲 Вы проиграли';
@@ -2138,6 +2160,8 @@ async function playWheel() {
 
         const resultEl = document.getElementById('wheel-result');
         const wheel = document.getElementById('wheel');
+        const plate = document.getElementById('roulette-plate');
+        const ball = document.getElementById('roulette-ball');
         
         if (!resultEl || !wheel) return showToast('❌ Ошибка интерфейса', true);
         
@@ -2150,9 +2174,11 @@ async function playWheel() {
         const spinInterval = setInterval(() => {
             wheel.textContent = Math.floor(Math.random() * 37);
             spins++;
+            plate?.classList.add('spinning');
             
             if (spins >= maxSpins) {
                 clearInterval(spinInterval);
+                plate?.classList.remove('spinning');
                 
                 if (userId) {
                     fetch(`${CONFIG.API_URL}/api/game/roulette`, {
@@ -2168,6 +2194,8 @@ async function playWheel() {
                     .then(res => res.json())
                     .then(data => {
                         wheel.textContent = data.result_number;
+                        const angle = 1440 + (data.result_number * (360 / 37));
+                        if (ball) ball.style.transform = `translate(-50%, -80px) rotate(${angle}deg)`;
                         
                         const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
                         if (data.result_number === 0) wheel.style.color = '#2ecc71';
@@ -2182,6 +2210,8 @@ async function playWheel() {
                         } else playSound('lose');
                         
                         State.game.coins = data.coins;
+                        trackAchievementProgress('games', 1);
+                        checkAchievements();
                         updateUI();
                     })
                     .catch(err => {
@@ -2192,6 +2222,8 @@ async function playWheel() {
                 } else {
                     const result = Math.floor(Math.random() * 37);
                     wheel.textContent = result;
+                    const angle = 1440 + (result * (360 / 37));
+                    if (ball) ball.style.transform = `translate(-50%, -80px) rotate(${angle}deg)`;
                     
                     const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
                     if (result === 0) wheel.style.color = '#2ecc71';
@@ -2209,6 +2241,8 @@ async function playWheel() {
                         State.game.coins += bet * multiplier;
                         resultEl.textContent = `🎡 Вы выиграли! x${multiplier}`;
                         playSound('win');
+                        trackAchievementProgress('games', 1);
+                        checkAchievements();
                     } else {
                         State.game.coins -= bet;
                         resultEl.textContent = '🎡 Вы проиграли';
@@ -2332,28 +2366,26 @@ function renderAchievements() {
         referrals: State.skins.friendsInvited || 0,
         adsWatched: State.skins.adsWatched || 0
     };
+
+    const targetFromId = (id) => {
+        if (id.includes('click')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('upgrade_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('games_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('referral_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('ads_')) return parseInt(id.split('_')[1]);
+        return 0;
+    };
     
     list.innerHTML = ACHIEVEMENTS.map(achievement => {
         const completed = State.achievements.completed.includes(achievement.id);
-        
-        let current = 0, total = 0, percent = 0;
-        if (achievement.id.includes('click')) {
-            current = stats.clicks;
-            total = parseInt(achievement.id.split('_')[1]);
-            percent = Math.min(100, (current / total) * 100);
-        } else if (achievement.id === 'upgrade_10') {
-            current = stats.upgrades;
-            total = 10;
-            percent = Math.min(100, (current / 10) * 100);
-        } else if (achievement.id === 'games_10') {
-            current = stats.games;
-            total = 10;
-            percent = Math.min(100, (current / 10) * 100);
-        } else if (achievement.id === 'referral_5') {
-            current = stats.referrals;
-            total = 5;
-            percent = Math.min(100, (current / 5) * 100);
-        }
+
+        const current = achievement.id.startsWith('click') ? stats.clicks :
+                        achievement.id.startsWith('upgrade') ? stats.upgrades :
+                        achievement.id.startsWith('games') ? stats.games :
+                        achievement.id.startsWith('referral') ? stats.referrals :
+                        achievement.id.startsWith('ads') ? stats.adsWatched : 0;
+        const total = achievement.target || targetFromId(achievement.id);
+        const percent = total ? Math.min(100, (current / total) * 100) : 100;
         
         return `
             <div class="achievement-item ${completed ? 'completed' : ''}">
@@ -2395,7 +2427,7 @@ function setupGlobalClickHandler() {
         if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
             '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
             '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
         handleTap(e);
     });
     
@@ -2403,7 +2435,7 @@ function setupGlobalClickHandler() {
         if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
             '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
             '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content')) return;
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
         handleTap(e);
     }, { passive: false });
 }
@@ -2412,7 +2444,11 @@ function setupGlobalClickHandler() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Spirit Clicker starting...');
 
+    loadAchievementsFromStorage();
     loadSettings();
+    initBgm();
+    initEnergyCharm();
+    initAutoClicker();
 
     if (userId) {
         await loadUserData();
@@ -2430,6 +2466,206 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('✅ Spirit Clicker ready');
 });
+
+// ==================== ENERGY CHARM (GYRO) ====================
+function initEnergyCharm() {
+    const charm = document.getElementById('energyCharm');
+    if (!charm) return;
+
+    let idleTimer = null;
+    let lastMotion = Date.now();
+    let allowTilt = true;
+    let dragging = false;
+    let dragStart = { x: 0, y: 0 };
+
+    const setIdle = () => {
+        if (Date.now() - lastMotion > 2000) {
+            charm.classList.add('idle');
+        }
+    };
+
+    const handleTilt = (ax = 0, ay = 0) => {
+        if (!allowTilt) return;
+        lastMotion = Date.now();
+        charm.classList.remove('idle');
+        const clamp = (v, m) => Math.max(-m, Math.min(m, v));
+        const tiltX = clamp(ax * 3, 14);
+        const tiltY = clamp(ay * 2, 10);
+        charm.style.transform = `translate(2px, ${-tiltY}px) rotate(${tiltX}deg)`;
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(setIdle, 1500);
+    };
+
+    const attachMotion = () => {
+        window.addEventListener('devicemotion', (e) => {
+            const acc = e.accelerationIncludingGravity || e.acceleration || {};
+            handleTilt(acc.x || 0, acc.y || 0);
+        });
+    };
+
+    const clamp = (v, m) => Math.max(-m, Math.min(m, v));
+    charm.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        allowTilt = false;
+        charm.classList.remove('idle');
+        dragStart = { x: e.clientX, y: e.clientY };
+        charm.setPointerCapture(e.pointerId);
+    });
+    charm.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = clamp(e.clientX - dragStart.x, 24);
+        const dy = clamp(e.clientY - dragStart.y, 36);
+        charm.style.transform = `translate(${1 + dx}px, ${dy}px) rotate(${dx / 3}deg)`;
+    });
+    const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        allowTilt = true;
+        charm.classList.add('idle');
+        charm.style.transform = '';
+    };
+    charm.addEventListener('pointerup', endDrag);
+    charm.addEventListener('pointercancel', endDrag);
+
+    // iOS permission
+    if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+        charm.classList.add('idle');
+        charm.addEventListener('click', async () => {
+            try {
+                const p = await DeviceMotionEvent.requestPermission();
+                if (p === 'granted') attachMotion();
+            } catch (e) {}
+        }, { once: true });
+    } else if (window.DeviceMotionEvent) {
+        attachMotion();
+        charm.classList.add('idle');
+    } else {
+        // fallback idle sway
+        charm.classList.add('idle');
+    }
+}
+
+function setCharmImageFromSkin(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    const img = document.querySelector('.energy-ghost-img');
+    if (skin?.image && img) img.src = skin.image;
+}
+
+function setCharmFromDetail() {
+    if (!State.skins.selected) return;
+    setCharmImageFromSkin(State.skins.selected);
+    showToast('✅ Брелок обновлен');
+}
+
+// ==================== BGM ====================
+function initBgm() {
+    const bgmState = State.temp.bgm;
+    if (bgmState.audio) return;
+    const audio = new Audio('audio/bgm.mp3');
+    audio.loop = true;
+    audio.volume = 0.12;
+    audio.preload = 'auto';
+    bgmState.audio = audio;
+
+    const playBgm = () => {
+        if (!bgmState.enabled || !bgmState.audio) return;
+        bgmState.audio.play().catch(() => {});
+    };
+
+    document.addEventListener('pointerdown', playBgm, { once: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') playBgm();
+        else bgmState.audio?.pause();
+    });
+}
+
+// ==================== AUTO CLICKER ====================
+function initAutoClicker() {
+    const autoBtn = document.getElementById('auto-boost-btn');
+    if (!autoBtn) return;
+
+    const autoState = State.temp.auto;
+
+    const ensureEffect = () => {
+        if (autoState.effect) return autoState.effect;
+        const el = document.createElement('div');
+        el.className = 'auto-pointer-effect';
+        document.body.appendChild(el);
+        autoState.effect = el;
+        return el;
+    };
+
+    const updateEffect = () => {
+        const el = ensureEffect();
+        el.style.left = autoState.point.x + 'px';
+        el.style.top = autoState.point.y + 'px';
+        el.style.display = autoState.fingerDown && autoState.enabledUntil > Date.now() ? 'block' : 'none';
+    };
+
+    const loop = () => {
+        if (autoState.timer) clearInterval(autoState.timer);
+        autoState.timer = setInterval(() => {
+            if (Date.now() > autoState.enabledUntil) {
+                autoBtn.classList.remove('active');
+                document.getElementById('auto-boost-timer').textContent = 'OFF';
+                autoState.enabledUntil = 0;
+                updateEffect();
+                return;
+            }
+            const remaining = Math.max(0, autoState.enabledUntil - Date.now());
+            const sec = Math.ceil(remaining / 1000);
+            document.getElementById('auto-boost-timer').textContent = sec + 's';
+            if (autoState.fingerDown) {
+                handleTap({ clientX: autoState.point.x, clientY: autoState.point.y, preventDefault: () => {} });
+                updateEffect();
+            }
+        }, 100);
+    };
+
+    const enableAuto = (ms) => {
+        autoState.enabledUntil = Date.now() + ms;
+        autoBtn.classList.add('active');
+        loop();
+    };
+
+    window.toggleAutoClick = async function toggleAutoClick() {
+        if (!autoBtn) return;
+        if (autoState.enabledUntil > Date.now()) return; // уже активен
+
+        if (typeof window.show_10655027 !== 'function') {
+            showToast('❌ Реклама недоступна', true);
+            return;
+        }
+        showToast('📺 Загружаем рекламу...');
+        try {
+            await window.show_10655027();
+            showToast('✅ Auto Tap 2 мин');
+            enableAuto(120000);
+        } catch (e) {
+            showToast('❌ Не удалось включить авто', true);
+        }
+    };
+
+    const pointerDown = (e) => {
+        autoState.fingerDown = true;
+        autoState.point = { x: e.clientX || e.touches?.[0]?.clientX || 0, y: e.clientY || e.touches?.[0]?.clientY || 0 };
+        updateEffect();
+    };
+    const pointerMove = (e) => {
+        if (!autoState.fingerDown) return;
+        autoState.point = { x: e.clientX || e.touches?.[0]?.clientX || autoState.point.x, y: e.clientY || e.touches?.[0]?.clientY || autoState.point.y };
+        updateEffect();
+    };
+    const pointerUp = () => {
+        autoState.fingerDown = false;
+        updateEffect();
+    };
+
+    document.addEventListener('pointerdown', pointerDown);
+    document.addEventListener('pointermove', pointerMove);
+    document.addEventListener('pointerup', pointerUp);
+    document.addEventListener('pointercancel', pointerUp);
+}
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
 const checkOfflinePassiveIncome = async () => {
