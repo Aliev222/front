@@ -852,15 +852,15 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .task-card {
-    display: grid;
-    grid-template-columns: 56px 1fr;
-    gap: 10px 12px;
-    background: linear-gradient(135deg, rgba(127,73,180,0.06), rgba(127,73,180,0.12));
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px 16px 14px;
-    transition: all 0.15s ease;
-    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: radial-gradient(120% 140% at 30% 30%, rgba(127,73,180,0.18), rgba(30,30,40,0.6));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 14px 14px 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .task-card:active {
@@ -870,6 +870,42 @@ body:not(.night-mode) #stars-canvas {
 
 .task-card.completed {
     opacity: 0.6;
+}
+
+.task-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.task-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.task-reward-pill {
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffd166, #ff8a00);
+    color: #2c1a00;
+    font-weight: 700;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(255, 193, 79, 0.35);
+}
+
+.task-body {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px 12px;
+    align-items: center;
 }
 
 .task-icon {
@@ -960,6 +996,31 @@ body:not(.night-mode) #stars-canvas {
     background: var(--success);
     opacity: 0.8;
     cursor: default;
+}
+
+.task-action {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, var(--accent), #9b6bdf);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.2px;
+}
+
+.task-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(0.2);
+}
+
+.task-action:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
 /* ==================== FRIENDS ==================== */
@@ -1996,7 +2057,6 @@ body:not(.night-mode) #stars-canvas {
 
 .skin-btn.video   { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
 .skin-btn.friends { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
-.skin-btn.cpa     { background: linear-gradient(135deg, #f39c12, #d35400); color: white; }
 .skin-btn.level   { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; }
 .skin-btn.free    { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
 .skin-btn.select  { background: linear-gradient(135deg, var(--accent), #9B6BDF); color: white; }

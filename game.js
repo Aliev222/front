@@ -1,4 +1,4 @@
-// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
 
@@ -400,26 +400,25 @@ async function loadPrices() {
 // ==================== ЛОКАЛЬНЫЕ СКИНЫ ====================
 function getLocalSkins() {
     return [
-        { id: 'skin_lvl_1', name: 'Начинающий спирикс', image: 'imgg/skins/default_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'level', value: 1 } },
-        { id: 'skin_lvl_2', name: 'Опытный спирикс', image: 'imgg/skins/Coin_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'level', value: 10 } },
-        { id: 'skin_lvl_3', name: 'Мастер спирикс', image: 'imgg/skins/Galaxy_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'level', value: 25 } },
-        { id: 'skin_lvl_4', name: 'Элитный спирикс', image: 'imgg/skins/King_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'level', value: 40 } },
-        { id: 'skin_lvl_5', name: 'Легендарный спирикс', image: 'imgg/skins/Monster_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'level', value: 60 } },
-        { id: 'skin_lvl_6', name: 'Мифический спирикс', image: 'imgg/skins/Ninja_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 1.6 }, requirement: { type: 'level', value: 80 } },
-        { id: 'skin_lvl_7', name: 'Божественный спирикс', image: 'imgg/skins/Shadow_SP.png', rarity: 'common', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'level', value: 100 } },
-        { id: 'skin_video_1', name: 'Звездный спирикс', image: 'imgg/skins/Techno_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'ads', count: 5 } },
-        { id: 'skin_video_2', name: 'Космический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'ads', count: 10 } },
-        { id: 'skin_video_3', name: 'Галактический спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.4 }, requirement: { type: 'ads', count: 20 } },
-        { id: 'skin_video_4', name: 'Небесный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'ads', count: 25 } },
-        { id: 'skin_video_5', name: 'Божественный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'ads', count: 35 } },
-        { id: 'skin_video_6', name: 'Всемогущий спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'ads', count: 50 } },
-        { id: 'skin_friend_1', name: 'Дружный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.1 }, requirement: { type: 'friends', count: 1 } },
-        { id: 'skin_friend_2', name: 'Популярный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.2 }, requirement: { type: 'friends', count: 3 } },
-        { id: 'skin_friend_3', name: 'Известный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'rare', bonus: { type: 'multiplier', value: 1.3 }, requirement: { type: 'friends', count: 5 } },
-        { id: 'skin_friend_4', name: 'Звездный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.5 }, requirement: { type: 'friends', count: 10 } },
-        { id: 'skin_friend_5', name: 'Легендарный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'legendary', bonus: { type: 'multiplier', value: 1.75 }, requirement: { type: 'friends', count: 20 } },
-        { id: 'skin_friend_6', name: 'Император спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.0 }, requirement: { type: 'friends', count: 50 } },
-        { id: 'skin_cpa_1', name: 'Тайный спирикс', image: 'imgg/skins/Water_SP.png', rarity: 'super', bonus: { type: 'multiplier', value: 2.5 }, requirement: { type: 'link', url: 'https://example.com' } }
+        { id: "skin_lvl_1", name: "���������� �������", image: "imgg/skins/default_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.1 }, requirement: { type: "level", value: 10 } },
+        { id: "skin_lvl_2", name: "������� �������", image: "imgg/skins/Coin_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 20 } },
+        { id: "skin_lvl_3", name: "������ �������", image: "imgg/skins/Galaxy_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "level", value: 40 } },
+        { id: "skin_lvl_4", name: "������� �������", image: "imgg/skins/King_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.4 }, requirement: { type: "level", value: 60 } },
+        { id: "skin_lvl_5", name: "����������� �������", image: "imgg/skins/Monster_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "level", value: 80 } },
+        { id: "skin_lvl_6", name: "���������� �������", image: "imgg/skins/Ninja_SP.png", rarity: "common", bonus: { type: "multiplier", value: 1.6 }, requirement: { type: "level", value: 100 } },
+        { id: "skin_lvl_7", name: "������������ �������", image: "imgg/skins/Shadow_SP.png", rarity: "common", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "level", value: 150 } },
+        { id: "skin_video_1", name: "�������� �������", image: "imgg/skins/Techno_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "ads", count: 1 } },
+        { id: "skin_video_2", name: "����������� �������", image: "imgg/skins/Water_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "ads", count: 5 } },
+        { id: "skin_video_3", name: "������������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.4 }, requirement: { type: "ads", count: 10 } },
+        { id: "skin_video_4", name: "�������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "ads", count: 20 } },
+        { id: "skin_video_5", name: "������������ �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "ads", count: 50 } },
+        { id: "skin_video_6", name: "���������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ads", count: 100 } },
+        { id: "skin_friend_1", name: "������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.1 }, requirement: { type: "friends", count: 1 } },
+        { id: "skin_friend_2", name: "���������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "friends", count: 3 } },
+        { id: "skin_friend_3", name: "��������� �������", image: "imgg/skins/King_SP.png", rarity: "rare", bonus: { type: "multiplier", value: 1.3 }, requirement: { type: "friends", count: 5 } },
+        { id: "skin_friend_4", name: "�������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "friends", count: 10 } },
+        { id: "skin_friend_5", name: "����������� �������", image: "imgg/skins/King_SP.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "friends", count: 20 } },
+        { id: "skin_friend_6", name: "��������� �������", image: "imgg/skins/King_SP.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "friends", count: 50 } },
     ];
 }
 
@@ -1109,102 +1108,88 @@ function playUpgradeSound() {
 const VIDEO_TASKS = [
     {
         id: 'energy_full',
-        title: '⚡ Полная энергия',
-        description: 'Посмотри видео и восстанови всю энергию до максимума',
-        reward: '⚡ MAX',
-        icon: '🔋',
+        title: '? ������ �������',
+        description: '���������� ����� ������� �� 100%',
+        reward: '? MAX',
+        icon: '?',
         type: 'energy_full',
-        cooldown: 10, // 10 минут
+        cooldown: 10,
         lastUsed: null,
         category: 'energy',
+        tag: '���������',
         completed: false,
         available: true
     },
-    
-    // ===== КОИНЫ (разные суммы) =====
     {
-        id: 'coins_small',
-        title: '💰 Мелочь в карман',
-        description: 'Посмотри видео и получи 500 монет',
-        reward: 500,
-        icon: '🪙',
+        id: 'coins_rush',
+        title: '������� ���',
+        description: '������ ����� � ������� +1 500 �����',
+        reward: 1500,
+        icon: '??',
         type: 'coins',
-        cooldown: 5, // 5 минут
+        cooldown: 8,
         lastUsed: null,
         category: 'coins',
+        tag: '����',
         completed: false,
         available: true
     },
     {
-        id: 'coins_medium',
-        title: '💎 Средний куш',
-        description: 'Посмотри видео и получи 2000 монет',
-        reward: 2000,
-        icon: '💎',
+        id: 'coins_jackpot',
+        title: '������� ���',
+        description: '+8 000 ����� �� ��������, ��� � 45 �����',
+        reward: 8000,
+        icon: '??',
         type: 'coins',
-        cooldown: 15, // 15 минут
+        cooldown: 45,
         lastUsed: null,
         category: 'coins',
+        tag: '��� � ���',
         completed: false,
         available: true
     },
     {
-        id: 'coins_large',
-        title: '👑 Джекпот',
-        description: 'Посмотри видео и получи 10000 монет',
-        reward: 10000,
-        icon: '👑',
-        type: 'coins',
-        cooldown: 60, // 60 минут (1 час)
-        lastUsed: null,
-        category: 'coins',
-        completed: false,
-        available: true
-    },
-    
-    // ===== БУСТЫ =====
-    {
-        id: 'boost_double',
-        title: '⚡ Удвоение',
-        description: 'Посмотри видео и получи x2 к доходу на 5 минут',
-        reward: 'x2 5мин',
-        icon: '⚡',
+        id: 'boost_combo',
+        title: '�����-����',
+        description: 'x2 ������� �� 7 ����� ����� �������',
+        reward: 'x2 � 7 ���',
+        icon: '??',
         type: 'boost',
         boost_multiplier: 2,
-        boost_minutes: 5,
-        cooldown: 20, // 20 минут
+        boost_minutes: 7,
+        cooldown: 30,
         lastUsed: null,
         category: 'boost',
+        tag: '����',
         completed: false,
         available: true
     },
     {
-        id: 'boost_triple',
-        title: '🔥 Утроение',
-        description: 'Посмотри видео и получи x3 к доходу на 3 минуты',
-        reward: 'x3 3мин',
-        icon: '🔥',
-        type: 'boost',
-        boost_multiplier: 3,
-        boost_minutes: 3,
-        cooldown: 45, // 45 минут
+        id: 'skin_drop',
+        title: '���� �����',
+        description: '������ ���� �� �������� (1 ��� � ���)',
+        reward: '?? Rare drop',
+        icon: '??',
+        type: 'skin',
+        skin_rarity: 'rare',
+        cooldown: 60,
         lastUsed: null,
-        category: 'boost',
+        category: 'skins',
+        tag: '������',
         completed: false,
         available: true
     },
-    
-    // ===== СЛУЧАЙНЫЙ БОНУС =====
     {
-        id: 'random_box',
-        title: '🎁 Загадочная коробка',
-        description: 'Посмотри видео и получи случайный бонус',
-        reward: '???',
-        icon: '🎁',
-        type: 'random',
-        cooldown: 30, // 30 минут
+        id: 'reset_tasks',
+        title: '�������� �������',
+        description: '������� �������� �� ���� ������',
+        reward: '?? reset',
+        icon: '??',
+        type: 'refresh',
+        cooldown: 180,
         lastUsed: null,
         category: 'random',
+        tag: 'utility',
         completed: false,
         available: true
     }
@@ -1253,54 +1238,46 @@ function loadVideoTasks() {
 function renderVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
-    
-    // Обновляем доступность заданий по кулдауну
+
+    // обновляем доступность заданий по кулдауну
     VIDEO_TASKS.forEach(task => {
         if (task.lastUsed) {
             task.available = checkTaskCooldown(task);
         }
     });
-    
+
     container.innerHTML = VIDEO_TASKS.map(task => {
-        const completed = task.completed;
         const available = task.available;
         const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
-        
-        // Определяем цвет иконки по типу
-        let iconColor = '';
-        switch(task.category) {
-            case 'energy': iconColor = 'linear-gradient(135deg, #4CAF50, #2E7D32)'; break;
-            case 'coins': iconColor = 'linear-gradient(135deg, #FFD700, #B8860B)'; break;
-            case 'skins': iconColor = 'linear-gradient(135deg, #7F49B4, #4A2C6D)'; break;
-            case 'boost': iconColor = 'linear-gradient(135deg, #FF6B6B, #C0392B)'; break;
-            default: iconColor = 'linear-gradient(135deg, #3498DB, #1F618D)';
-        }
-        
+
+        const iconColor = {
+            energy: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
+            coins: 'linear-gradient(135deg, #FFD700, #B8860B)',
+            skins: 'linear-gradient(135deg, #7F49B4, #4A2C6D)',
+            boost: 'linear-gradient(135deg, #FF6B6B, #C0392B)',
+            random: 'linear-gradient(135deg, #3498DB, #1F618D)',
+        }[task.category] || 'linear-gradient(135deg, #7f8c8d, #2c3e50)';
+
+        const rewardLabel = typeof task.reward === 'number'
+            ? `+${task.reward.toLocaleString('ru-RU')} монет`
+            : task.reward;
+
         return `
             <div class="task-card ${!available ? 'cooldown' : ''}" data-category="${task.category}">
-                <div class="task-icon" style="background: ${iconColor}">
-                    ${task.icon}
+                <div class="task-top">
+                    <span class="task-chip">${task.tag || 'бонус'}</span>
+                    <span class="task-reward-pill">${rewardLabel}</span>
                 </div>
-                
-                <div class="task-info">
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-desc">${task.description}</div>
-                    
-                    <div class="task-reward">
-                        🎁 ${typeof task.reward === 'number' ? task.reward + ' 🪙' : task.reward}
+                <div class="task-body">
+                    <div class="task-icon" style="background:${iconColor}">${task.icon}</div>
+                    <div class="task-info">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-desc">${task.description}</div>
+                        ${!available && timeLeft > 0 ? `<div class="task-cooldown">⏳ Через ${timeLeft} мин</div>` : ''}
                     </div>
-                    
-                    ${!available && timeLeft > 0 ? `
-                        <div class="task-cooldown">
-                            ⏳ Доступно через ${timeLeft} мин
-                        </div>
-                    ` : ''}
                 </div>
-                
-                <button class="task-action ${task.category}" 
-                        onclick="handleVideoTask('${task.id}')"
-                        ${!available ? 'disabled' : ''}>
-                    ${!available ? '⏳' : '📺 Смотреть'}
+                <button class="task-action ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
+                    ${available ? '▶ Смотреть' : '⏳ Жди'}
                 </button>
             </div>
         `;
@@ -1339,9 +1316,15 @@ async function handleVideoTask(taskId) {
             case 'boost':
                 activateCustomBoost(task.boost_multiplier, task.boost_minutes);
                 break;
-                
+
             case 'random':
                 giveRandomReward();
+                break;
+
+            case 'refresh':
+                VIDEO_TASKS.forEach(t => { t.completed = false; t.available = true; t.lastUsed = null; });
+                renderVideoTasks();
+                showToast('🔄 Кулдауны сброшены');
                 break;
         }
         
@@ -2545,3 +2528,7 @@ window.unlockSkinFromDetail = unlockSkinFromDetail;
 window.selectSkinFromDetail = selectSkinFromDetail;
 
 console.log('✅ Все функции определены');
+
+
+
+
