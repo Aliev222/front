@@ -62,8 +62,12 @@ if (tg) {
         referrerId = parseInt(startParam.replace('ref_', '')) || null;
     }
 
-    // Expose init data overlay for quick copy when needed
-    showInitDebug();
+    // Expose init data overlay for quick copy when DOM is ready
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+        showInitDebug();
+    } else {
+        window.addEventListener("DOMContentLoaded", showInitDebug, { once: true });
+    }
 }
 
 const originalFetch = window.fetch.bind(window);
