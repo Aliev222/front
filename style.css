@@ -336,7 +336,7 @@ body:not(.night-mode) #stars-canvas {
     width: 120px;
     height: 220px;
     pointer-events: none;
-    z-index: 14000; /* поверх главного UI */
+    z-index: 30000; /* поверх всего главного UI, ниже модалок */
     perspective: 900px;
 }
 
@@ -363,7 +363,7 @@ body.modal-open .badge-wrap {
     width: 120px;
     height: 220px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 30000;
 }
 
 .badge-card {
@@ -382,7 +382,7 @@ body.modal-open .badge-wrap {
     will-change: transform;
     cursor: grab;
     pointer-events: auto;
-    z-index: 2;
+    z-index: 30001;
 }
 
 .badge-card:active { cursor: grabbing; }
