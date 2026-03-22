@@ -344,18 +344,6 @@ body.modal-open .badge-wrap {
     z-index: 900; /* ниже модалок, но сохраняется на фоне */
 }
 
-.badge-anchor {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 10px;
-    height: 10px;
-    margin-left: -5px;
-    background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(127,73,180,0.7));
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(127,73,180,0.5);
-}
-
 #badgeRope {
     position: absolute;
     top: 0;

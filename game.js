@@ -2787,15 +2787,14 @@ function initBadgePhysics() {
     const card = document.getElementById('badgeCard');
     const ropeCanvas = document.getElementById('badgeRope');
     const wrap = document.querySelector('.badge-wrap');
-    const anchorEl = document.querySelector('.badge-anchor');
     const bar = document.querySelector('.energy-bar-container');
-    if (!card || !ropeCanvas || !anchorEl || !wrap || !bar) return;
+    if (!card || !ropeCanvas || !wrap || !bar) return;
 
     const ctx = ropeCanvas.getContext('2d');
 
     const params = {
-        ropeLength: 140,
-        maxStretch: 120,
+        ropeLength: 110,
+        maxStretch: 100,
         stiffness: 120,
         damping: 2.4,
         gravity: 2000, // px/s^2
