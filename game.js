@@ -2794,12 +2794,12 @@ function initBadgePhysics() {
     const params = {
         ropeLength: 60,
         maxStretch: 100,
-        stiffness: 80,
+        stiffness: 120,
         damping: 2,
-        gravity: 1600, // px/s^2
+        gravity: 2000, // px/s^2
         mass: 2.0,
         angularDamping: 6.0,
-        dragFollow: 50,
+        dragFollow: 60,
     };
 
     const state = {
