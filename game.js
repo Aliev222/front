@@ -2794,8 +2794,8 @@ function initBadgePhysics() {
     const ctx = ropeCanvas.getContext('2d');
 
     const params = {
-        ropeLength: 180,
-        maxStretch: 140,
+        ropeLength: 140,
+        maxStretch: 120,
         stiffness: 120,
         damping: 2.4,
         gravity: 2000, // px/s^2
@@ -2817,22 +2817,27 @@ function initBadgePhysics() {
         anchor: { x: 0, y: 0 }
     };
 
-    const updateAnchor = () => {
-        const r = ropeCanvas.getBoundingClientRect();
-        state.anchor.x = r.width / 2;
-        state.anchor.y = 0;
+    const resizeCanvas = () => {
+        const dpr = window.devicePixelRatio || 1;
+        ropeCanvas.width = Math.round(window.innerWidth * dpr);
+        ropeCanvas.height = Math.round(window.innerHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-    updateAnchor();
-    window.addEventListener('resize', updateAnchor);
-    const updateWrapPos = () => {
+
+    const updateAnchor = () => {
         const br = bar.getBoundingClientRect();
-        wrap.style.left = `${br.right - wrap.offsetWidth + 16}px`;
-        wrap.style.top = `${br.top - 12}px`;
+        state.anchor.x = br.right - 24;
+        state.anchor.y = br.top + 4;
+    };
+
+    const updateWrap = () => {
+        resizeCanvas();
         updateAnchor();
     };
-    updateWrapPos();
-    window.addEventListener('resize', updateWrapPos);
-    window.addEventListener('scroll', updateWrapPos, { passive: true });
+
+    updateWrap();
+    window.addEventListener('resize', updateWrap);
+    window.addEventListener('scroll', updateAnchor, { passive: true });
 
     const pointerToLocal = (e) => {
         const rect = ropeCanvas.getBoundingClientRect();
