@@ -330,11 +330,9 @@ body:not(.night-mode) #stars-canvas {
 }
 
 .badge-wrap {
-    position: absolute;
-    right: 6px;
-    top: -6px;
-    width: 120px;
-    height: 220px;
+    position: fixed;
+    width: 220px;
+    height: 420px;
     pointer-events: none;
     z-index: 30000; /* поверх всего главного UI, ниже модалок */
     perspective: 900px;
@@ -360,8 +358,8 @@ body.modal-open .badge-wrap {
     position: absolute;
     top: 0;
     left: 0;
-    width: 120px;
-    height: 220px;
+    width: 220px;
+    height: 420px;
     pointer-events: none;
     z-index: 30000;
 }

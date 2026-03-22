@@ -2786,16 +2786,18 @@ function initAutoClicker() {
 function initBadgePhysics() {
     const card = document.getElementById('badgeCard');
     const ropeCanvas = document.getElementById('badgeRope');
+    const wrap = document.querySelector('.badge-wrap');
     const anchorEl = document.querySelector('.badge-anchor');
-    if (!card || !ropeCanvas || !anchorEl) return;
+    const bar = document.querySelector('.energy-bar-container');
+    if (!card || !ropeCanvas || !anchorEl || !wrap || !bar) return;
 
     const ctx = ropeCanvas.getContext('2d');
 
     const params = {
-        ropeLength: 60,
-        maxStretch: 100,
+        ropeLength: 180,
+        maxStretch: 140,
         stiffness: 120,
-        damping: 2,
+        damping: 2.4,
         gravity: 2000, // px/s^2
         mass: 2.0,
         angularDamping: 6.0,
@@ -2822,6 +2824,15 @@ function initBadgePhysics() {
     };
     updateAnchor();
     window.addEventListener('resize', updateAnchor);
+    const updateWrapPos = () => {
+        const br = bar.getBoundingClientRect();
+        wrap.style.left = `${br.right - wrap.offsetWidth + 16}px`;
+        wrap.style.top = `${br.top - 12}px`;
+        updateAnchor();
+    };
+    updateWrapPos();
+    window.addEventListener('resize', updateWrapPos);
+    window.addEventListener('scroll', updateWrapPos, { passive: true });
 
     const pointerToLocal = (e) => {
         const rect = ropeCanvas.getBoundingClientRect();
