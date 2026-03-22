@@ -2792,14 +2792,14 @@ function initBadgePhysics() {
     const ctx = ropeCanvas.getContext('2d');
 
     const params = {
-        ropeLength: 130,
-        maxStretch: 60,
-        stiffness: 35,
-        damping: 4.5,
-        gravity: 1400, // px/s^2
-        mass: 1.0,
+        ropeLength: 60,
+        maxStretch: 100,
+        stiffness: 80,
+        damping: 2,
+        gravity: 1600, // px/s^2
+        mass: 2.0,
         angularDamping: 6.0,
-        dragFollow: 28,
+        dragFollow: 50,
     };
 
     const state = {
