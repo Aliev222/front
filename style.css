@@ -7,6 +7,7 @@
     --bg-primary:    #f5f5f5;
     --bg-secondary:  #ffffff;
     --bg-card:       #ffffff;
+    --clicker-bg:    #e7e4f3;
     --bg-overlay:    rgba(255, 255, 255, 0.97);
 
     --text-primary:  #2c3e50;
@@ -53,6 +54,7 @@ body.night-mode {
     --bg-primary:    #141414;
     --bg-secondary:  #1a1a1a;
     --bg-card:       #1e1e1e;
+    --clicker-bg:    #1b1b1f;
     --bg-overlay:    rgba(20, 20, 20, 0.97);
 
     --text-primary:  #CFCFCF;
@@ -500,14 +502,16 @@ body.modal-open .badge-wrap {
     width: min(72vmin, 450px);
     height: min(72vmin, 450px);
     border-radius: 50%;
-    background: var(--bg-card);
+    background: var(--clicker-bg);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     position: relative;
     border: 3px solid var(--accent);
-    box-shadow: 0 0 0 8px var(--accent-dim), 0 0 40px var(--accent-glow);
+    box-shadow:
+        0 0 0 8px var(--accent-dim),
+        0 10px 34px var(--accent-glow);
     transition: all 0.08s ease;
     -webkit-tap-highlight-color: transparent;
 }
@@ -519,15 +523,24 @@ body.modal-open .badge-wrap {
 }
 
 .click-image {
-    width: 70%;
-    height: 70%;
+    width: 115%;
+    height: 115%;
     object-fit: contain;
     pointer-events: none;
     transition: transform 0.08s ease;
+    transform: translateY(-10px) translateZ(0);
+    filter: drop-shadow(0 18px 22px rgba(0,0,0,0.35));
+    position: relative;
+    z-index: 2;
 }
 
 .click-button:active .click-image {
     transform: scale(0.85);
+}
+
+.click-button::before {
+    content: '';
+    display: none;
 }
 
 .click-ripple {
@@ -2169,8 +2182,8 @@ body.modal-open .badge-wrap {
 
 /* Изображение скина */
 .skin-image {
-    width: 65px;
-    height: 65px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     overflow: hidden;
     position: relative;
@@ -2827,7 +2840,7 @@ body.modal-open .badge-wrap {
     .stat-value     { font-size: 18px; }
     .click-button   { width: min(65vmin, 350px); height: min(65vmin, 350px); }
     .skins-grid     { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .skin-image     { width: 76px; height: 76px; }
+    .skin-image     { width: 114px; height: 114px; }
     .slot  { width: 60px; height: 80px; font-size: 32px; }
     .dice  { width: 60px; height: 60px; font-size: 36px; }
     .games-grid { grid-template-columns: 1fr; }

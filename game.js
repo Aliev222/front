@@ -80,11 +80,12 @@ const State = {
         levels: { multitap: 0, profit: 0, energy: 0 }
     },
     skins: {
-        owned: ['default_SP'],
-        selected: 'default_SP',
+        owned: ['default.pngSP'],
+        selected: 'default.pngSP',
         adsWatched: 0,
         friendsInvited: 0,
-        data: []
+        data: [],
+        videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}')
     },
     settings: {
         theme: localStorage.getItem('ryohoSettings') ? 
@@ -423,38 +424,56 @@ async function loadPrices() {
 // ==================== ЛОКАЛЬНЫЕ СКИНЫ ====================
 function getLocalSkins() {
     return [
-        { id: "skin_lvl_1",   name: "Starter Core",        image: "imgg/skins/default_SP.png", rarity: "common",    bonus: { type: "multiplier", value: 1.1 },  requirement: { type: "level", value: 10 } },
-        { id: "skin_lvl_2",   name: "Coin Pulse",          image: "imgg/skins/Coin_SP.png",    rarity: "common",    bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "level", value: 20 } },
-        { id: "skin_lvl_3",   name: "Galaxy Flow",         image: "imgg/skins/Galaxy_SP.png",  rarity: "common",    bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "level", value: 40 } },
-        { id: "skin_lvl_4",   name: "Royal Core",          image: "imgg/skins/King_SP.png",    rarity: "common",    bonus: { type: "multiplier", value: 1.4 },  requirement: { type: "level", value: 60 } },
-        { id: "skin_lvl_5",   name: "Monster Alloy",       image: "imgg/skins/Monster_SP.png", rarity: "common",    bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "level", value: 80 } },
-        { id: "skin_lvl_6",   name: "Ninja Carbon",        image: "imgg/skins/Ninja_SP.png",   rarity: "common",    bonus: { type: "multiplier", value: 1.6 },  requirement: { type: "level", value: 100 } },
-        { id: "skin_lvl_7",   name: "Shadow Alloy",        image: "imgg/skins/Shadow_SP.png",  rarity: "common",    bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "level", value: 150 } },
+        // Default
+        { id: "default.pngSP", name: "Default", image: "imgg/skins/default.png", rarity: "common", bonus: { type: "multiplier", value: 1.0 }, requirement: null },
 
-        { id: "skin_video_1", name: "Pulse Neon",          image: "imgg/skins/Techno_SP.png",  rarity: "rare",      bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "ads", count: 1 } },
-        { id: "skin_video_2", name: "Wave Aqua",           image: "imgg/skins/Water_SP.png",   rarity: "rare",      bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "ads", count: 5 } },
-        { id: "skin_video_3", name: "Crown Flux",          image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.4 },  requirement: { type: "ads", count: 10 } },
-        { id: "skin_video_4", name: "Lumen Core",          image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "ads", count: 20 } },
-        { id: "skin_video_5", name: "Nova Crown",          image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "ads", count: 50 } },
-        { id: "skin_video_6", name: "Mythic Core",         image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "ads", count: 100 } },
+        // Level skins (common, x1.2)
+        { id: "10lvl.pngSP", name: "Level 10", image: "imgg/skins/10lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 10 } },
+        { id: "25lvl.pngSP", name: "Level 25", image: "imgg/skins/25lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 25 } },
+        { id: "50lvl.pngSP", name: "Level 50", image: "imgg/skins/50lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 50 } },
+        { id: "75lvl.pngSP", name: "Level 75", image: "imgg/skins/75lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 75 } },
+        { id: "100lvl.pngSP", name: "Level 100", image: "imgg/skins/100lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 100 } },
 
-        { id: "skin_friend_1", name: "Friend Pass",        image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.1 },  requirement: { type: "friends", count: 1 } },
-        { id: "skin_friend_2", name: "Squad Core",         image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.2 },  requirement: { type: "friends", count: 3 } },
-        { id: "skin_friend_3", name: "Crew Alloy",         image: "imgg/skins/King_SP.png",    rarity: "rare",      bonus: { type: "multiplier", value: 1.3 },  requirement: { type: "friends", count: 5 } },
-        { id: "skin_friend_4", name: "Clan Crown",         image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.5 },  requirement: { type: "friends", count: 10 } },
-        { id: "skin_friend_5", name: "Alliance Core",      image: "imgg/skins/King_SP.png",    rarity: "legendary", bonus: { type: "multiplier", value: 1.75 }, requirement: { type: "friends", count: 20 } },
-        { id: "skin_friend_6", name: "Mythic Alliance",    image: "imgg/skins/King_SP.png",    rarity: "super",     bonus: { type: "multiplier", value: 2.0 },  requirement: { type: "friends", count: 50 } },
+        // Video skins (epic, x1.5) — per-skin 10 views
+        { id: "video.pngSP",  name: "Video 1", image: "imgg/skins/video.png",  rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video.pngSP" } },
+        { id: "video2.pngSP", name: "Video 2", image: "imgg/skins/video2.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video2.pngSP" } },
+        { id: "video3.pngSP", name: "Video 3", image: "imgg/skins/video3.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video3.pngSP" } },
+        { id: "video4.pngSP", name: "Video 4", image: "imgg/skins/video4.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video4.pngSP" } },
+        { id: "video5.pngSP", name: "Video 5", image: "imgg/skins/video5.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video5.pngSP" } },
+        { id: "video6.pngSP", name: "Video 6", image: "imgg/skins/video6.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video6.pngSP" } },
+        { id: "video7.pngSP", name: "Video 7", image: "imgg/skins/video7.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video7.pngSP" } },
+        { id: "video8.pngSP", name: "Video 8", image: "imgg/skins/video8.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video8.pngSP" } },
+
+        // Stars skins (legendary, x2). Prices: 3 at 149, 3 at 249, 2 at 500
+        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+
+        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+
+        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
     ];
 }
 
 async function loadSkinsList() {
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/skins/list`);
+        const localSkins = getLocalSkins();
+        let remoteSkins = [];
         if (res.ok) {
             const data = await res.json();
-            State.skins.data = data.skins || [];
+            remoteSkins = data.skins || [];
+        }
+        if (!remoteSkins.length) {
+            State.skins.data = localSkins;
         } else {
-            State.skins.data = getLocalSkins();
+            const byId = new Map();
+            remoteSkins.forEach(s => byId.set(s.id, s));
+            localSkins.forEach(s => { if (!byId.has(s.id)) byId.set(s.id, s); });
+            State.skins.data = Array.from(byId.values());
         }
     } catch (err) {
         State.skins.data = getLocalSkins();
@@ -463,8 +482,9 @@ async function loadSkinsList() {
     State.skins.data.forEach(skin => {
         if (skin.requirement?.type === 'level') {
             skin.requirement.current = State.game.levels.multitap || 0;
-        } else if (skin.requirement?.type === 'ads') {
-            skin.requirement.current = State.skins.adsWatched || 0;
+        } else if (skin.requirement?.type === 'videos') {
+            const key = skin.requirement.progressKey || skin.id;
+            skin.requirement.current = State.skins.videoViews[key] || 0;
         } else if (skin.requirement?.type === 'friends') {
             skin.requirement.current = State.skins.friendsInvited || 0;
         }
@@ -771,8 +791,8 @@ function applySavedSkin() {
     if (!img) return;
     
     const skin = getSkinById(State.skins.selected);
-    img.src = (skin?.image || 'imgg/skins/default_SP.png') + '?t=' + Date.now();
-    img.onerror = () => img.src = 'imgg/clickimg.png';
+    img.src = (skin?.image || 'imgg/skins/default.png') + '?t=' + Date.now();
+    img.onerror = () => img.src = 'imgg/skins/default.png';
 }
 
 function renderSkins() {
@@ -799,7 +819,7 @@ function renderSkins() {
                  data-id="${skin.id}" onclick="openSkinDetail('${skin.id}')">
                 <div class="skin-image">
                     <img src="${skin.image}" alt="${skin.name}" 
-                         onerror="this.src='imgg/clickimg.png'">
+                         onerror="this.src='imgg/skins/default.png'">
                 </div>
                 <div class="skin-name">${skin.name}</div>
                 <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
@@ -950,6 +970,24 @@ function openSkinDetail(skinId) {
             
             actionBtn.textContent = current >= count ? 'ПОЛУЧИТЬ' : 'СМОТРЕТЬ ВИДЕО';
             actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+        } else if (skin.requirement?.type === 'videos') {
+            const key = skin.requirement.progressKey || skin.id;
+            const current = State.skins.videoViews[key] || 0;
+            const count = skin.requirement.count || 10;
+            const percent = Math.min(100, (current / count) * 100);
+
+            reqText.textContent = `🔓 Посмотри ${count} видео для этого скина`;
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+
+            actionBtn.textContent = current >= count ? 'ПОЛУЧИТЬ' : 'СМОТРЕТЬ ВИДЕО';
+            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+        } else if (skin.requirement?.type === 'stars') {
+            reqText.textContent = `💫 Купить за ${skin.requirement.price} Stars`;
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = 'КУПИТЬ';
+            actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
         } else {
             reqText.textContent = `🔓 Условие: особое`;
             reqProgress.style.display = 'none';
@@ -1013,22 +1051,19 @@ async function watchAdForSkin(skinId) {
     try {
         await window.show_10655027();
 
-        // ✅ ГОВОРИМ СЕРВЕРУ
-        const res = await API.post('/api/ads/increment', {
-            user_id: userId
-        });
+        // локальный прогресс для конкретного скина
+        const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
+        State.skins.videoViews[key] = (State.skins.videoViews[key] || 0) + 1;
+        localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
 
-        if (res.success) {
-            State.skins.adsWatched = res.ads_watched;
-            trackAchievementProgress('adsWatched', 1);
-            checkAchievements();
+        trackAchievementProgress('adsWatched', 1);
+        checkAchievements();
 
-            showToast('✅ +1 просмотр!');
-            renderSkins();
+        showToast('✅ +1 просмотр для скина!');
+        renderSkins();
 
-            if (document.getElementById('skin-detail-modal').classList.contains('active')) {
-                openSkinDetail(skinId);
-            }
+        if (document.getElementById('skin-detail-modal').classList.contains('active')) {
+            openSkinDetail(skinId);
         }
 
     } catch (e) {
@@ -1222,6 +1257,7 @@ const VIDEO_TASKS = [
     }
 ];
 
+const TASKS_STORAGE_KEY = 'videoTasksState';
 
 function checkTaskCooldown(task) {
     if (!task.lastUsed) return true; // Никогда не использовалось
@@ -1250,16 +1286,35 @@ function loadVideoTasks() {
     
     const now = new Date();
     const lastReset = localStorage.getItem('videoTasksReset');
+    const saved = localStorage.getItem(TASKS_STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            VIDEO_TASKS.forEach(t => {
+                if (parsed[t.id]?.lastUsed) t.lastUsed = parsed[t.id].lastUsed;
+            });
+        } catch (e) {
+            console.warn('task state load failed', e);
+        }
+    }
     
     if (!lastReset || new Date(lastReset).getDate() !== now.getDate()) {
         VIDEO_TASKS.forEach(task => {
             task.completed = false;
             task.available = true;
+            task.lastUsed = null;
         });
         localStorage.setItem('videoTasksReset', now.toISOString());
+        localStorage.removeItem(TASKS_STORAGE_KEY);
     }
     
     renderVideoTasks();
+}
+
+function persistTasksState() {
+    const payload = {};
+    VIDEO_TASKS.forEach(t => payload[t.id] = { lastUsed: t.lastUsed || null });
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(payload));
 }
 
 function renderVideoTasks() {
@@ -1272,6 +1327,7 @@ function renderVideoTasks() {
             task.available = checkTaskCooldown(task);
         }
     });
+    persistTasksState();
 
     container.innerHTML = VIDEO_TASKS.map(task => {
         const available = task.available;
@@ -1351,18 +1407,23 @@ async function handleVideoTask(taskId) {
 
             case 'refresh':
                 VIDEO_TASKS.forEach(t => { t.completed = false; t.available = true; t.lastUsed = null; });
+                task.lastUsed = Date.now();
+                task.available = false;
                 renderVideoTasks();
                 showToast('🔄 Кулдауны сброшены');
                 break;
         }
         
         // Устанавливаем кулдаун
-        task.lastUsed = Date.now();
-        task.available = false;
+        if (task.type !== 'refresh') {
+            task.lastUsed = Date.now();
+            task.available = false;
+        }
         
         updateUI();
         renderVideoTasks();
         createConfetti();
+        persistTasksState();
         
     } catch (error) {
         console.error('Video error:', error);
