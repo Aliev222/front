@@ -710,31 +710,41 @@ function handleTap(e) {
     checkAchievements();
     updateUI();
 
-    const effect = document.createElement('div');
-    effect.className = 'tap-effect-global';
-    effect.style.cssText = `
-        position: fixed;
-        left: ${clientX}px;
-        top: ${clientY}px;
-        transform: translate(-50%, -50%);
-        color: ${megaBoostActive ? '#FFD700' : '#7F49B4'};
-        font-size: 28px;
-        font-weight: bold;
-        text-shadow: 0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'};
-        pointer-events: none;
-        z-index: 9999;
-        white-space: nowrap;
-        transition: all 0.6s ease-out;
-    `;
+    // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
+    if (!State.temp.tapPool) {
+        State.temp.tapPool = Array.from({ length: 12 }, () => {
+            const el = document.createElement('div');
+            el.className = 'tap-effect-global';
+            el.style.position = 'fixed';
+            el.style.pointerEvents = 'none';
+            el.style.zIndex = '9999';
+            el.style.whiteSpace = 'nowrap';
+            el.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            return el;
+        });
+        State.temp.tapPoolIdx = 0;
+    }
+    const pool = State.temp.tapPool;
+    const idx = State.temp.tapPoolIdx % pool.length;
+    State.temp.tapPoolIdx++;
+    const effect = pool[idx];
+    effect.style.left = `${clientX}px`;
+    effect.style.top = `${clientY}px`;
+    effect.style.transform = 'translate(-50%, -50%)';
+    effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
+    effect.style.fontSize = '28px';
+    effect.style.fontWeight = 'bold';
+    effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
     effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
-    document.body.appendChild(effect);
-
+    // force reflow before animating
+    void effect.offsetHeight;
+    effect.style.opacity = '1';
     requestAnimationFrame(() => {
         effect.style.transform = 'translate(-50%, -150px)';
         effect.style.opacity = '0';
     });
-
-    setTimeout(() => effect.remove(), 600);
 
     if (State.settings.sound) {
         try {
