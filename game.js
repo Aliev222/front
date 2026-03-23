@@ -434,27 +434,29 @@ function getLocalSkins() {
         { id: "75lvl.pngSP", name: "Level 75", image: "imgg/skins/75lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 75 } },
         { id: "100lvl.pngSP", name: "Level 100", image: "imgg/skins/100lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 100 } },
 
-        // Video skins (epic, x1.5) — per-skin 10 views
-        { id: "video.pngSP",  name: "Video 1", image: "imgg/skins/video.png",  rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video.pngSP" } },
-        { id: "video2.pngSP", name: "Video 2", image: "imgg/skins/video2.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video2.pngSP" } },
-        { id: "video3.pngSP", name: "Video 3", image: "imgg/skins/video3.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video3.pngSP" } },
-        { id: "video4.pngSP", name: "Video 4", image: "imgg/skins/video4.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video4.pngSP" } },
-        { id: "video5.pngSP", name: "Video 5", image: "imgg/skins/video5.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video5.pngSP" } },
-        { id: "video6.pngSP", name: "Video 6", image: "imgg/skins/video6.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video6.pngSP" } },
-        { id: "video7.pngSP", name: "Video 7", image: "imgg/skins/video7.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video7.pngSP" } },
-        { id: "video8.pngSP", name: "Video 8", image: "imgg/skins/video8.png", rarity: "epic", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video8.pngSP" } },
+        // Video skins (rare, x1.5) — per-skin 10 views
+        { id: "video.pngSP",  name: "Video 1", image: "imgg/skins/video.png",  rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video.pngSP" } },
+        { id: "video2.pngSP", name: "Video 2", image: "imgg/skins/video2.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video2.pngSP" } },
+        { id: "video3.pngSP", name: "Video 3", image: "imgg/skins/video3.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video3.pngSP" } },
+        { id: "video4.pngSP", name: "Video 4", image: "imgg/skins/video4.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video4.pngSP" } },
+        { id: "video5.pngSP", name: "Video 5", image: "imgg/skins/video5.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video5.pngSP" } },
+        { id: "video6.pngSP", name: "Video 6", image: "imgg/skins/video6.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video6.pngSP" } },
+        { id: "video7.pngSP", name: "Video 7", image: "imgg/skins/video7.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video7.pngSP" } },
+        { id: "video8.pngSP", name: "Video 8", image: "imgg/skins/video8.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video8.pngSP" } },
 
-        // Stars skins (legendary, x2). Prices: 3 at 149, 3 at 249, 2 at 500
-        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
-        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
-        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        // Legendary (achievements) – пусто, пока без скинов
 
-        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
-        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
-        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        // Stars skins (super, x2). Prices: 3 at 149, 3 at 249, 2 at 500
+        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
 
-        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
-        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "legendary", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+
+        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
     ];
 }
 
