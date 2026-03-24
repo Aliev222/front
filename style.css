@@ -159,7 +159,7 @@ body:not(.night-mode) #stars-canvas {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px calc(env(safe-area-inset-bottom, 0px) + 92px);
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px calc(env(safe-area-inset-bottom, 0px) + 128px);
     gap: 6px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -753,6 +753,7 @@ body.modal-open .badge-wrap {
     padding: 10px 12px;
     background: var(--bg-card);
     box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    margin-bottom: 18px;
 }
 
 .upgrade-panel:active {
