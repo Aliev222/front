@@ -3568,10 +3568,19 @@ body {
 
 .click-button {
     width: clamp(260px, 72vw, var(--clicker-max));
-    height: auto;
+    height: clamp(260px, 72vw, var(--clicker-max));
     max-width: 100%;
-    max-height: none;
+    max-height: min(72vw, var(--clicker-max));
+    min-width: 260px;
+    min-height: 260px;
     aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 12px var(--accent-dim),
+        0 18px 32px rgba(127, 73, 180, 0.22),
+        0 0 28px rgba(127, 73, 180, 0.18);
+    overflow: hidden;
 }
 
 .boost-corner {
