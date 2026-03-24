@@ -3295,16 +3295,17 @@ body {
     min-height: 100dvh;
     height: 100dvh;
     padding:
-        env(safe-area-inset-top, 0px)
+        0
         var(--layout-pad)
-        calc(env(safe-area-inset-bottom, 0px) + var(--nav-height));
+        calc(var(--nav-height) + 10px)
+        var(--layout-pad);
     gap: var(--layout-gap);
     transform: none;
 }
 
 .header {
-    margin-top: 0;
-    top: env(safe-area-inset-top, 0px);
+    margin-top: 5px;
+    top: 5px;
     margin-bottom: 0;
 }
 
@@ -3360,7 +3361,7 @@ body {
     width: min(var(--content-width), calc(100vw - (var(--layout-pad) * 2)));
     padding: 8px 10px;
     gap: 6px;
-    bottom: env(safe-area-inset-bottom, 0px);
+    bottom: 5px;
 }
 
 .nav-item {
@@ -3398,7 +3399,7 @@ body {
     }
 
     .game-container {
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height));
+        padding-bottom: calc(var(--nav-height) + 10px);
     }
 
     .header {
