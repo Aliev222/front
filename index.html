@@ -6,7 +6,7 @@
     <title>Spirit Clicker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <!-- Telegram WebApp -->
@@ -53,11 +53,17 @@
         <!-- HEADER -->
         <div class="header glass">
             <div class="nav-item" onclick="openAchievements()">
-                <span class="nav-icon">🎖️</span>
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-light">
+                </span>
                 <span>Achievements</span>
             </div>
             <div class="nav-item" onclick="switchTab('tournament', this)">
-                <span class="nav-icon">🏆</span>
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/achievements.webp" alt="Tournament" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/achievements.webp" alt="Tournament" class="nav-icon-img icon-light">
+                </span>
                 <span>Tournament</span>
             </div>
             
@@ -66,14 +72,20 @@
             </div>
             
             <div class="settings-container">
-                <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
+                <button class="settings-btn" onclick="openSettings()" title="Settings">
+                    <img src="imgg/dark icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-light">
+                </button>
             </div>
         </div>
 
         <!-- STATS ROW -->
         <div class="stats-row">
             <div class="stat-card glass">
-                <div class="stat-icon">⏱️</div>
+                <div class="stat-icon">
+                    <img src="imgg/dark icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-light">
+                </div>
                 <div>
                     <div class="stat-label">per hour</div>
                     <div class="stat-value" id="profitPerHour"><span class="loading-spinner"></span></div>
@@ -729,4 +741,8 @@
     </div>
 </body>
 </html>
+
+
+
+
 
