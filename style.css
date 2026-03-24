@@ -433,6 +433,7 @@ body.modal-open .badge-wrap {
     height: 100%;
     object-fit: cover;
     display: block;
+    
 }
 
 .badge-glow {
@@ -777,7 +778,7 @@ body.modal-open .badge-wrap {
     border-radius: var(--block-radius);
     min-height: var(--block-height);
     border: 1px solid var(--border);
-    padding: 10px 12px;
+    padding: 20px 20px;
     background: var(--bg-card);
     box-shadow: 0 8px 16px rgba(0,0,0,0.08);
     margin-bottom: 6px;
@@ -802,7 +803,7 @@ body.modal-open .badge-wrap {
 
 .upgrade-panel-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
+    font-size: 30px;
     font-weight: 600;
     color: var(--text-primary);
     letter-spacing: 1.5px;
@@ -810,7 +811,7 @@ body.modal-open .badge-wrap {
 }
 
 .upgrade-panel-bonuses {
-    font-size: 10px;
+    font-size: 20px;
     color: var(--text-dim);
     font-weight: 700;
     letter-spacing: 1px;
@@ -825,7 +826,7 @@ body.modal-open .badge-wrap {
 
 .upgrade-panel-level {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
+    font-size: 25px;
     font-weight: 600;
     color: var(--text-dim);
 }
@@ -834,15 +835,14 @@ body.modal-open .badge-wrap {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: linear-gradient(135deg, rgba(108,92,231,0.14), rgba(108,92,231,0.08));
-    border: 1px solid var(--accent-dim);
-    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0), rgba(108, 92, 231, 0));
+    border-radius: 20px;
     padding: 4px 10px;
 }
 
 .upgrade-panel-price span:last-child {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
+    font-size: 25px;
     font-weight: 600;
     color: var(--accent);
 }
@@ -899,7 +899,7 @@ body.modal-open .badge-wrap {
 .nav-item.active {
     color: var(--accent);
     background: var(--accent-dim);
-    border: 1px solid var(--border-strong);
+    border: 0px 1px solid var(--border-strong);
 }
 
 .nav-item.active .nav-icon {
@@ -3592,8 +3592,8 @@ body {
 .upgrade-panel {
     flex-shrink: 0;
     margin: 0;
-    min-height: 84px;
-    padding: 14px 18px;
+    min-height: 30px;
+    padding: 1px 18px;
     border-radius: 999px;
     background: linear-gradient(180deg, rgba(18, 18, 22, 0.96), rgba(12, 12, 16, 0.92));
     border: 1px solid rgba(255,255,255,0.06);
@@ -3629,7 +3629,7 @@ body {
     padding: 8px 4px 6px;
     gap: 3px;
     border-radius: 999px;
-    font-size: clamp(8px, 1.8vw, 10px);
+    font-size: clamp(10px, 2.2vw, 12px);
     color: rgba(255,255,255,0.38);
     position: relative;
     z-index: 1;
@@ -3642,8 +3642,11 @@ body {
 
 .nav-bar .nav-item.active {
     color: #ffffff;
-    background: transparent;
+    background: transparent !important;
     filter: none;
+    box-shadow: none !important;
+    border: 0 !important;
+    outline: none !important;
 }
 
 .nav-bar .nav-item:not(.active) {
@@ -3660,8 +3663,8 @@ body {
     position: absolute;
     top: -5px;
     left: 50%;
-    width: 48px;
-    height: 8px;
+    width: 40px;
+    height: 7px;
     border-radius: 999px;
     background: rgba(255,255,255,0);
     transform: translateX(-50%);
@@ -3674,8 +3677,8 @@ body {
     position: absolute;
     top: 0;
     left: 50%;
-    width: 76px;
-    height: 62px;
+    width: 64px;
+    height: 52px;
     transform: translateX(-50%);
     background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0));
     clip-path: polygon(24% 0, 76% 0, 100% 100%, 0 100%);
@@ -3691,22 +3694,25 @@ body {
     box-shadow: 0 0 10px rgba(255,255,255,0.7);
 }
 
-.nav-bar .nav-item.active::after {
-    opacity: 0.95;
-    background: linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0));
-}
-
 .nav-icon-img-wrap {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+.nav-bar .nav-item.active::after {
+    opacity: 0.95;
+    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
 }
 
 .nav-icon-img {
-    width: 26px;
-    height: 26px;
+    width: 50px;
+    height: 50px;
     object-fit: contain;
     display: block;
     opacity: 0.72;
@@ -3714,20 +3720,29 @@ body {
     transition: opacity 0.18s ease, filter 0.18s ease, transform 0.18s ease;
 }
 
+.nav-icon-img.icon-dark {
+    display: none;
+}
+
+body.night-mode .nav-icon-img.icon-dark {
+    display: block;
+}
+
+body.night-mode .nav-icon-img.icon-light {
+    display: none;
+}
+
 .nav-bar .nav-item.active .nav-icon-img {
     opacity: 1;
-    filter:
-        grayscale(0)
-        brightness(1.5)
-        contrast(1.08)
-        drop-shadow(0 0 8px rgba(255,255,255,0.26));
-    transform: translateY(-1px);
+    filter: grayscale(0) brightness(1.5) contrast(1.08);
+    transform: none;
 }
 
 .nav-bar .nav-item span:last-child {
-    font-weight: 700;
-    letter-spacing: 0.35px;
+    font-weight: 800;
+    letter-spacing: 0.55px;
     text-transform: uppercase;
+    line-height: 1;
 }
 
 .nav-bar .nav-item.active span:last-child {
@@ -3735,24 +3750,126 @@ body {
 }
 
 body:not(.night-mode) .nav-bar {
-    background: linear-gradient(180deg, rgba(28, 31, 39, 0.96), rgba(18, 20, 28, 0.92));
-    border-color: rgba(127, 73, 180, 0.12);
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(244, 241, 252, 0.88));
+    border-color: rgba(127, 73, 180, 0.16);
     box-shadow:
-        0 14px 28px rgba(26, 28, 39, 0.2),
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        inset 0 -1px 0 rgba(255,255,255,0.03);
+        0 14px 28px rgba(43, 49, 66, 0.12),
+        inset 0 1px 0 rgba(255,255,255,0.75),
+        inset 0 -1px 0 rgba(127, 73, 180, 0.06);
 }
 
 body:not(.night-mode) .nav-bar .nav-item {
-    color: rgba(255,255,255,0.42);
+    color: rgba(44, 62, 80, 0.68);
 }
 
 body:not(.night-mode) .nav-bar .nav-item.active::before {
-    box-shadow: 0 0 10px rgba(255,255,255,0.72);
+    background: rgba(34, 39, 51, 0.92);
+    box-shadow:
+        0 0 10px rgba(34, 39, 51, 0.22),
+        0 2px 8px rgba(34, 39, 51, 0.18);
 }
 
 body:not(.night-mode) .nav-bar .nav-item.active::after {
-    background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0));
+    opacity: 0.95;
+    background: linear-gradient(180deg, rgba(34, 39, 51, 0.22), rgba(34, 39, 51, 0));
+}
+
+body:not(.night-mode) .nav-bar .nav-item.active {
+    color: var(--text-primary);
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+body:not(.night-mode) .nav-bar .nav-item.active span:last-child {
+    color: var(--text-primary);
+}
+
+body.night-mode .header,
+body.night-mode .stats-row,
+body.night-mode .stat-card,
+body.night-mode .energy-bar-container,
+body.night-mode .energy-bar-bg,
+body.night-mode .energy-bar-fill {
+    box-shadow: none !important;
+}
+
+body.night-mode .header,
+body.night-mode .stat-card,
+body.night-mode .upgrade-panel,
+body.night-mode .nav-bar {
+    background: linear-gradient(180deg, rgba(32, 30, 47, 0.94), rgba(23, 21, 34, 0.92)) !important;
+}
+
+body:not(.night-mode) .upgrade-panel,
+body:not(.night-mode) .nav-bar {
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.1)) !important;
+}
+
+body:not(.night-mode) .header,
+body:not(.night-mode) .stat-card,
+body:not(.night-mode) .upgrade-panel,
+body:not(.night-mode) .nav-bar,
+body:not(.night-mode) .modal-screen > .glass,
+body:not(.night-mode) .skins-modal,
+body:not(.night-mode) .achievements-modal,
+body:not(.night-mode) .game-modal-content,
+body:not(.night-mode) .mini-boost-button,
+body:not(.night-mode) .auto-boost-button,
+body:not(.night-mode) .settings-btn {
+    background: linear-gradient(180deg, rgba(244, 245, 252, 0.96), rgba(232, 235, 246, 0.92)) !important;
+}
+
+body.night-mode .header,
+body.night-mode .stat-card,
+body.night-mode .upgrade-panel,
+body.night-mode .nav-bar,
+body.night-mode .modal-screen > .glass,
+body.night-mode .skins-modal,
+body.night-mode .achievements-modal,
+body.night-mode .game-modal-content,
+body.night-mode .mini-boost-button,
+body.night-mode .auto-boost-button,
+body.night-mode .settings-btn {
+    background: linear-gradient(180deg, rgba(32, 30, 47, 0.94), rgba(23, 21, 34, 0.92)) !important;
+}
+
+body:not(.night-mode) .header,
+body:not(.night-mode) .stat-card,
+body:not(.night-mode) .upgrade-panel,
+body:not(.night-mode) .nav-bar,
+body:not(.night-mode) .modal-screen > .glass,
+body:not(.night-mode) .skins-modal,
+body:not(.night-mode) .achievements-modal,
+body:not(.night-mode) .game-modal-content,
+body:not(.night-mode) .mini-boost-button,
+body:not(.night-mode) .auto-boost-button,
+body:not(.night-mode) .settings-btn {
+    border: 1px solid rgba(255, 255, 255, 0.24) !important;
+    box-shadow:
+        0 12px 24px rgba(43, 49, 66, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
+    backdrop-filter: blur(16px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.08) !important;
+}
+
+body.night-mode .header,
+body.night-mode .stat-card,
+body.night-mode .upgrade-panel,
+body.night-mode .nav-bar,
+body.night-mode .modal-screen > .glass,
+body.night-mode .skins-modal,
+body.night-mode .achievements-modal,
+body.night-mode .game-modal-content,
+body.night-mode .mini-boost-button,
+body.night-mode .auto-boost-button,
+body.night-mode .settings-btn {
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(16px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.08) !important;
 }
 
 .modal-screen {
