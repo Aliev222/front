@@ -8,12 +8,15 @@
     --layout-gap:    clamp(4px, 1.5vw, 10px);
     --radius-lg:     clamp(18px, 4vw, 26px);
     --radius-md:     clamp(14px, 3vw, 20px);
+    --block-radius:  20px;
+    --block-height:  68px;
     --nav-height:    clamp(76px, 14vw, 96px);
     --container-max: 520px;
 
     --bg-primary:    #f5f5f5;
     --bg-secondary:  #ffffff;
     --bg-card:       #ffffff;
+    --card-bg:       var(--bg-card);
     --clicker-bg:    #e7e4f3;
     --bg-overlay:    rgba(255, 255, 255, 0.97);
 
@@ -26,6 +29,7 @@
     --accent-glow:   rgba(127, 73, 180, 0.3);
 
     --border:        rgba(44, 62, 80, 0.1);
+    --border-color:  var(--border);
     --border-strong: rgba(127, 73, 180, 0.3);
 
     --success: #27ae60;
@@ -61,6 +65,7 @@ body.night-mode {
     --bg-primary:    #141414;
     --bg-secondary:  #1a1a1a;
     --bg-card:       #1e1e1e;
+    --card-bg:       var(--bg-card);
     --clicker-bg:    #1b1b1f;
     --bg-overlay:    rgba(20, 20, 20, 0.97);
 
@@ -73,6 +78,7 @@ body.night-mode {
     --accent-glow:   rgba(127, 73, 180, 0.4);
 
     --border:        rgba(207, 207, 207, 0.1);
+    --border-color:  var(--border);
     --border-strong: rgba(127, 73, 180, 0.4);
 
     --shadow:        0 10px 25px rgba(0, 0, 0, 0.45);
@@ -109,7 +115,7 @@ body.night-mode {
 }
 
 html, body {
-    height: 100dvh;
+    height: 100vh;
     overflow: hidden;
     position: fixed;
     width: 100%;
@@ -162,7 +168,7 @@ body:not(.night-mode) #stars-canvas {
 .game-container {
     width: 100%;
     max-width: var(--container-max);
-    height: 100dvh;
+    height: 100vh;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -172,6 +178,7 @@ body:not(.night-mode) #stars-canvas {
     overflow-x: hidden;
     position: relative;
     background: transparent;
+    transform: translateY(-10px);
 }
 
 /* ==================== GLASS CARD ==================== */
@@ -190,10 +197,12 @@ body:not(.night-mode) #stars-canvas {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    
     padding: 8px var(--layout-pad);
     background: var(--bg-card);
     border-bottom: 2px solid var(--accent);
-    border-radius: var(--radius-lg);
+    border-radius: var(--block-radius);
+    min-height: var(--block-height);
     margin-bottom: 5px;
     transition: background 0.3s ease;
     position: sticky;
@@ -296,6 +305,8 @@ body:not(.night-mode) #stars-canvas {
     gap: 12px;
     padding: clamp(10px, 3vw, 14px);
     border-bottom: 2px solid var(--accent);
+    border-radius: var(--block-radius);
+    min-height: var(--block-height);
 }
 
 .stat-icon {
@@ -763,7 +774,8 @@ body.modal-open .badge-wrap {
     justify-content: space-between;
     cursor: pointer;
     transition: all 0.14s ease;
-    border-radius: var(--radius-lg);
+    border-radius: var(--block-radius);
+    min-height: var(--block-height);
     border: 1px solid var(--border);
     padding: 10px 12px;
     background: var(--bg-card);
@@ -841,19 +853,21 @@ body.modal-open .badge-wrap {
     justify-content: space-around;
     align-items: center;
     background: var(--bg-card);
-    border-radius: var(--radius-lg);
+    border-radius: var(--block-radius);
+    min-height: var(--block-height);
     border: 1px solid var(--border);
     border-bottom: 2px solid var(--accent);
-    padding: clamp(4px, 2vw, 8px) clamp(6px, 2vw, 12px);
+    padding: 10px 12px;
     gap: clamp(4px, 1.2vw, 10px);
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
     margin-bottom: 0;
     transition: background 0.3s ease;
     position: fixed;
     left: 50%;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
     transform: translateX(-50%);
-    width: clamp(260px, 90vw, 520px);
+    width: calc(var(--container-max) - 2 * var(--layout-pad));
+    max-width: calc(100% - 2 * var(--layout-pad));
     z-index: 30;
 }
 
@@ -3252,3 +3266,144 @@ body.modal-open .badge-wrap {
 /* убраны расширения на очень широких экранах, чтобы размеры не разъезжались */
 
 
+
+/* ==================== UNIFIED DEVICE LAYOUT ==================== */
+:root {
+    --layout-pad: clamp(12px, 3.4vw, 18px);
+    --layout-gap: clamp(8px, 1.8vw, 12px);
+    --container-max: 430px;
+    --block-height: clamp(64px, 8.2dvh, 76px);
+    --nav-height: clamp(74px, 9.4dvh, 88px);
+    --content-width: min(calc(100vw - (var(--layout-pad) * 2)), var(--container-max));
+    --clicker-size: clamp(220px, calc(var(--content-width) - 34px), 332px);
+    --modal-max-width: min(calc(100vw - 24px), 540px);
+    --modal-max-height: min(90dvh, 820px);
+}
+
+html,
+body {
+    height: 100dvh;
+}
+
+body {
+    position: fixed;
+    inset: 0;
+}
+
+.game-container {
+    width: min(100%, var(--container-max));
+    min-height: 100dvh;
+    height: 100dvh;
+    padding:
+        calc(env(safe-area-inset-top, 0px) + 8px)
+        var(--layout-pad)
+        calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 14px);
+    gap: var(--layout-gap);
+    transform: none;
+}
+
+.header,
+.stat-card,
+.upgrade-panel,
+.nav-bar {
+    min-height: var(--block-height);
+}
+
+.stats-row {
+    gap: var(--layout-gap);
+}
+
+.clicker-area {
+    gap: clamp(12px, 2.4dvh, 22px);
+    min-height: 0;
+    padding-bottom: clamp(8px, 1.6dvh, 16px);
+}
+
+.clicker-container {
+    flex: 1;
+    min-height: 0;
+}
+
+.click-button-wrapper {
+    width: 100%;
+    max-width: var(--content-width);
+    margin: clamp(8px, 2dvh, 18px) auto;
+}
+
+.click-button {
+    width: var(--clicker-size);
+    height: var(--clicker-size);
+    max-width: 100%;
+    max-height: min(44dvh, 332px);
+    aspect-ratio: 1 / 1;
+}
+
+.boost-corner {
+    right: clamp(0px, 1vw, 8px);
+    bottom: clamp(6px, 1.6dvh, 18px);
+}
+
+.nav-bar {
+    width: min(var(--content-width), calc(100vw - (var(--layout-pad) * 2)));
+    padding: 8px 10px;
+    gap: 6px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+}
+
+.nav-item {
+    min-width: 0;
+    padding: 8px 2px;
+    font-size: clamp(9px, 2.2vw, 10px);
+}
+
+.nav-item .nav-icon {
+    font-size: clamp(18px, 5vw, 22px);
+}
+
+.balance-value {
+    font-size: clamp(24px, 6vw, 30px);
+}
+
+.modal-screen {
+    padding: 12px;
+}
+
+.modal-screen > .glass,
+.skins-modal,
+.achievements-modal,
+.game-modal-content {
+    width: var(--modal-max-width);
+    max-width: var(--modal-max-width);
+    max-height: var(--modal-max-height);
+}
+
+@media (max-height: 760px) {
+    :root {
+        --block-height: clamp(60px, 7.8dvh, 70px);
+        --nav-height: clamp(70px, 9dvh, 82px);
+        --clicker-size: clamp(188px, calc(var(--content-width) - 64px), 292px);
+    }
+
+    .game-container {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 10px);
+    }
+
+    .header {
+        padding: 6px 10px;
+    }
+
+    .glass {
+        padding: clamp(10px, 2.8vw, 14px);
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --container-max: 420px;
+        --clicker-size: 320px;
+    }
+
+    .game-container {
+        padding-top: 14px;
+    }
+}

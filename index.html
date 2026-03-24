@@ -10,16 +10,16 @@
     <link rel="stylesheet" href="style.css">
     
     <!-- Telegram WebApp -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>      
-    <script src='//libtl.com/sdk.js' data-zone='10655027' data-sdk='show_10655027'></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="https://libtl.com/sdk.js" data-zone="10655027" data-sdk="show_10655027" defer></script>
 
     <!-- Основной скрипт -->
-    <script src="game.js"></script>
+    <script src="game.js" defer></script>
     
     <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+        import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
         const firebaseConfig = {
             apiKey: "AIzaSyABiy3f1mXpYHCW7GRPXijXbgK1PT_u-x4",
             authDomain: "ryoho-b11f4.firebaseapp.com",
@@ -30,7 +30,14 @@
             measurementId: "G-KLMRXPTEQG"
         };
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+
+        try {
+            if (await isSupported()) {
+                getAnalytics(app);
+            }
+        } catch (err) {
+            console.warn('Firebase analytics disabled:', err);
+        }
     </script>
 </head>
 <body>
@@ -103,7 +110,7 @@
             <div class="clicker-container">
                 <div class="click-button-wrapper">
                     <div class="click-button" id="ryoho">
-                        <img src="imgg/skins/default_SP.png" alt="Spirit" class="click-image">
+                        <img src="imgg/skins/default.png" alt="Spirit" class="click-image" onerror="this.src='imgg/skins/default.png'">
                         <div class="click-ripple"></div>
                     </div>
                 </div>
