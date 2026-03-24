@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
     <script src="https://libtl.com/sdk.js" data-zone="10655027" data-sdk="show_10655027" defer></script>
 
-    <!-- Основной скрипт -->
+    <!-- РћСЃРЅРѕРІРЅРѕР№ СЃРєСЂРёРїС‚ -->
     <script src="game.js" defer></script>
     
     <!-- Firebase -->
@@ -204,33 +204,38 @@
     <div class="modal-screen" id="tournament-screen">
         <div class="glass">
             <div class="modal-header">
-                <button class="modal-close" onclick="closeModal('tournament-screen')">✕</button>
-                <h2>🏆 ТУРНИР</h2>
+                <button class="modal-close" onclick="closeModal('tournament-screen')">×</button>
+                <h2>Tournament</h2>
             </div>
             <div class="modal-content">
                 <div class="tournament-header">
                     <div class="tournament-timer" id="tournament-timer">23:59:59</div>
-                    <div class="tournament-prize">🎁 100 000 монет</div>
+                    <div class="tournament-prize">Prize Pool: 100,000 coins</div>
+                    <div class="tournament-online-indicator" id="tournament-online-indicator">
+                        <span class="online-dot"></span>
+                        <span class="online-count-label">Online</span>
+                        <span class="online-count-value" id="tournament-online-count">0</span>
+                    </div>
                 </div>
                 
                 <div class="leaderboard">
                     <div class="leaderboard-header">
                         <span>#</span>
-                        <span>Игрок</span>
-                        <span>Счет</span>
+                        <span>Player</span>
+                        <span>Score</span>
                     </div>
                     <div id="leaderboard-list">
-                        <div class="loading">Загрузка...</div>
+                        <div class="loading">Loading...</div>
                     </div>
                 </div>
                 
                 <div class="player-rank glass">
                     <div class="rank-info">
-                        <span class="rank-label">Ваш ранг:</span>
+                        <span class="rank-label">Your rank:</span>
                         <span class="rank-value" id="player-rank">#42</span>
                     </div>
                     <div class="rank-info">
-                        <span class="rank-label">Ваш счет:</span>
+                        <span class="rank-label">Your score:</span>
                         <span class="rank-value" id="player-score">0</span>
                     </div>
                 </div>
@@ -242,7 +247,7 @@
     <div class="modal-screen" id="friends-screen">
         <div class="glass">
             <div class="modal-header">
-                <button class="modal-close" onclick="closeModal('friends-screen')">✕</button>
+                <button class="modal-close" onclick="closeModal('friends-screen')">×</button>
                 <h2>Friends</h2>
             </div>
             <div class="modal-content">
@@ -267,10 +272,10 @@
                 <div class="referral-rules glass">
                     <h3>Bonuses</h3>
                     <ul>
-                        <li><span class="rule-icon">🤝</span> За друга — <span class="highlight">+1000 coins</span></li>
-                        <li><span class="rule-icon">💎</span> 5% дохода друга — <span class="highlight">навсегда</span></li>
-                        <li><span class="rule-icon">🔥</span> 3 друга — <span class="highlight">+100 energy</span></li>
-                        <li><span class="rule-icon">🎯</span> 10 друзей — <span class="highlight">+5% luck</span></li>
+                        <li><span class="rule-icon">🤝</span> Invite 1 friend — <span class="highlight">+1000 coins</span></li>
+                        <li><span class="rule-icon">💎</span> 5% of your friend income — <span class="highlight">forever</span></li>
+                        <li><span class="rule-icon">🔥</span> Invite 3 friends — <span class="highlight">+100 energy</span></li>
+                        <li><span class="rule-icon">🎯</span> Invite 10 friends — <span class="highlight">+5% luck</span></li>
                     </ul>
                 </div>
             </div>
@@ -280,7 +285,7 @@
     <div class="modal-screen" id="tasks-screen">
         <div class="glass tasks-modal-shell">
             <div class="modal-header modal-header-premium">
-                <button class="modal-close" onclick="closeModal('tasks-screen')">✕</button>
+                <button class="modal-close" onclick="closeModal('tasks-screen')">×</button>
                 <div class="modal-header-copy">
                     <span class="modal-kicker">Daily Boosts</span>
                     <h2>Tasks</h2>
@@ -308,7 +313,7 @@
     <div class="modal-screen" id="games-screen">
         <div class="glass games-modal-shell">
             <div class="modal-header modal-header-premium">
-                <button class="modal-close" onclick="closeModal('games-screen')">✕</button>
+                <button class="modal-close" onclick="closeModal('games-screen')">×</button>
                 <div class="modal-header-copy">
                     <span class="modal-kicker">Neon Casino</span>
                     <h2>Mini-Games</h2>
@@ -429,7 +434,7 @@
     <!-- COINFLIP GAME MODAL -->
     <div class="game-modal" id="game-coinflip">
         <div class="game-modal-content glass">
-            <button class="modal-close" onclick="closeGame('coinflip')">✕</button>
+            <button class="modal-close" onclick="closeGame('coinflip')">×</button>
             <h2>Coinflip</h2>
             <div class="game-play-area">
                 <div class="coin-3d" id="coin">
@@ -454,7 +459,7 @@
     <!-- ROULETTE GAME MODAL -->
     <div class="game-modal" id="game-wheel">
         <div class="game-modal-content glass">
-            <button class="modal-close" onclick="closeGame('wheel')">✕</button>
+            <button class="modal-close" onclick="closeGame('wheel')">×</button>
             <h2>Roulette</h2>
             <div class="roulette-container">
                 <div class="roulette-plate" id="roulette-plate">
@@ -472,7 +477,7 @@
                     <option value="green">Green (×35)</option>
                     <option value="number">Number (×35)</option>
                 </select>
-                <input type="number" id="wheel-number" min="0" max="36" value="0" class="game-input" placeholder="Number 0–36" style="display:none;">
+                <input type="number" id="wheel-number" min="0" max="36" value="0" class="game-input" placeholder="Number 0-36" style="display:none;">
                 <button class="btn-primary" onclick="playWheel()">Spin</button>
             </div>
             <div class="game-result" id="wheel-result"></div>
@@ -482,7 +487,7 @@
     <!-- SLOTS GAME MODAL -->
     <div class="game-modal" id="game-slots">
         <div class="game-modal-content glass">
-            <button class="modal-close" onclick="closeGame('slots')">✕</button>
+            <button class="modal-close" onclick="closeGame('slots')">×</button>
             <h2>Slots</h2>
             <div class="game-play-area">
                 <div class="slots-container">
@@ -502,7 +507,7 @@
     <!-- DICE GAME MODAL -->
     <div class="game-modal" id="game-dice">
         <div class="game-modal-content glass">
-            <button class="modal-close" onclick="closeGame('dice')">✕</button>
+            <button class="modal-close" onclick="closeGame('dice')">×</button>
             <h2>Dice</h2>
             <div class="game-play-area">
                 <div class="dice-container">
@@ -611,7 +616,7 @@
         <div class="settings-modal glass" id="settings-modal-box">
             <div class="settings-header">
                 <h2>Settings</h2>
-                <button class="modal-close" onclick="closeSettings()">✕</button>
+                <button class="modal-close" onclick="closeSettings()">×</button>
             </div>
 
             <div class="settings-section">
@@ -646,6 +651,21 @@
 
             <div class="settings-section">
                 <div class="settings-label">
+                    <span class="settings-icon" id="musicIcon">🎵</span>
+                    <div>
+                        <div class="settings-title">Music</div>
+                        <div class="settings-sub" id="musicLabel">On</div>
+                    </div>
+                </div>
+                <div class="toggle-wrap" onclick="toggleMusic()">
+                    <div class="toggle-track active" id="musicTrack">
+                        <div class="toggle-thumb" id="musicThumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
                     <span class="settings-icon" id="vibIcon">📳</span>
                     <div>
                         <div class="settings-title">Vibration</div>
@@ -659,7 +679,7 @@
                 </div>
             </div>
 
-            <div class="settings-footer">Spirix Clicker ✦ v2.0</div>
+            <div class="settings-footer">Spirix Clicker • v2.0</div>
         </div>
     </div>
 
@@ -667,46 +687,45 @@
     <div class="confirm-modal" id="confirm-modal" style="display: none;">
         <div class="confirm-modal-overlay" onclick="closeConfirmModal?.()"></div>
         <div class="confirm-modal-content glass">
-            <button class="confirm-modal-close" onclick="closeConfirmModal?.()">✕</button>
+            <button class="confirm-modal-close" onclick="closeConfirmModal?.()">×</button>
             <div class="confirm-modal-icon" id="confirm-modal-icon">🎨</div>
-            <h3 class="confirm-modal-title" id="confirm-modal-title">Выберите действие</h3>
+            <h3 class="confirm-modal-title" id="confirm-modal-title">Choose an action</h3>
             <div class="skin-preview-mini" id="confirm-skin-preview">
                 <img src="" alt="" id="confirm-skin-img" class="confirm-skin-img" loading="lazy">
             </div>
-            <p class="confirm-skin-name" id="confirm-skin-name">Название скина</p>
-            <p class="confirm-skin-desc" id="confirm-skin-desc">Описание скина</p>
+            <p class="confirm-skin-name" id="confirm-skin-name">Skin name</p>
+            <p class="confirm-skin-desc" id="confirm-skin-desc">Skin description</p>
             <div class="skin-requirements-mini" id="confirm-skin-requirements">
-                <span class="requirement-badge">✨ Бесплатно</span>
+                <span class="requirement-badge">✨ Free</span>
             </div>
             <div class="skin-bonus-mini" id="confirm-skin-bonus">
-                <span class="bonus-badge">⚡ +50% к доходу</span>
+                <span class="bonus-badge">⚡ +50% income</span>
             </div>
             <div class="confirm-modal-buttons">
                 <button class="btn-secondary modal-btn" onclick="closeConfirmModal?.()">
-                    <span class="btn-icon">✕</span>
-                    <span class="btn-text">Отмена</span>
+                    <span class="btn-icon">×</span>
+                    <span class="btn-text">Cancel</span>
                 </button>
                 <button class="btn-primary modal-btn" id="confirm-action-btn" onclick="executeSkinAction?.()">
                     <span class="btn-icon">✓</span>
-                    <span class="btn-text" id="confirm-action-text">Выбрать</span>
+                    <span class="btn-text" id="confirm-action-text">Select</span>
                 </button>
             </div>
             <div class="modal-tip">
-                👆 Нажмите вне окна для закрытия
+                Tap outside the window to close
             </div>
         </div>
     </div>
 
-    <!-- ==================== НОВАЯ МОДАЛКА СПИСКА СКИНОВ ==================== -->
+    <!-- ==================== РќРћР’РђРЇ РњРћР”РђР›РљРђ РЎРџРРЎРљРђ РЎРљРРќРћР’ ==================== -->
     <div class="modal-screen" id="skins-screen">
         <div class="skins-modal">
-            <!-- Шапка -->
             <div class="skins-header">
                 <h2 class="skins-title">Skin</h2>
-                <button class="skins-close" onclick="closeModal('skins-screen')">✕</button>
+                <button class="skins-close" onclick="closeModal('skins-screen')">×</button>
             </div>
 
-            <!-- Прогресс коллекции -->
+            <!-- РџСЂРѕРіСЂРµСЃСЃ РєРѕР»Р»РµРєС†РёРё -->
             <div class="collection-progress">
                 <img src="imgg/skins/icon.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 4px;">
                 <span id="skins-collected">0</span>/<span id="skins-total">21</span>
@@ -715,7 +734,7 @@
                 </div>
             </div>
 
-            <!-- Фильтры -->
+            <!-- Р¤РёР»СЊС‚СЂС‹ -->
             <div class="skins-filters">
                 <button class="filter-btn active" onclick="filterSkins('all')">All</button>
                 <button class="filter-btn" onclick="filterSkins('common')">Common</button>
@@ -724,36 +743,34 @@
                 <button class="filter-btn" onclick="filterSkins('super')">Super</button>
             </div>
 
-            <!-- Сетка скинов (2 в ряд) -->
+            <!-- РЎРµС‚РєР° СЃРєРёРЅРѕРІ (2 РІ СЂСЏРґ) -->
             <div class="skins-grid" id="skins-grid">
-                <!-- Сюда будут грузиться скины из game.js -->
+                <!-- РЎСЋРґР° Р±СѓРґСѓС‚ РіСЂСѓР·РёС‚СЊСЃСЏ СЃРєРёРЅС‹ РёР· game.js -->
             </div>
         </div>
     </div>
 
-    <!-- ==================== МОДАЛКА ДЕТАЛЕЙ СКИНА ==================== -->
+    <!-- ==================== РњРћР”РђР›РљРђ Р”Р•РўРђР›Р•Р™ РЎРљРРќРђ ==================== -->
     <div class="skin-detail-modal" id="skin-detail-modal">
         <div class="skin-detail-content">
-            <!-- Крупное фото -->
             <div class="skin-detail-image">
                 <img src="" alt="" id="skin-detail-img">
-                <button class="detail-close" onclick="closeSkinDetail()">✕</button>
+                <button class="detail-close" onclick="closeSkinDetail()">×</button>
             </div>
 
-            <!-- Информация -->
             <div class="skin-detail-info">
                 <div class="skin-detail-header">
-                    <h3 id="skin-detail-name">Название скина</h3>
-                    <span class="skin-rarity-badge" id="skin-detail-rarity">редкость</span>
+                    <h3 id="skin-detail-name">Skin name</h3>
+                    <span class="skin-rarity-badge" id="skin-detail-rarity">rarity</span>
                 </div>
 
-                <p class="skin-detail-description" id="skin-detail-description">Описание скина</p>
+                <p class="skin-detail-description" id="skin-detail-description">Skin description</p>
 
                 <div class="skin-detail-bonus" id="skin-detail-bonus">
-                    ⚡ Бонус: +50% к доходу
+                    ⚡ Bonus: +50% income
                 </div>
 
-                <!-- Условие получения -->
+                <!-- РЈСЃР»РѕРІРёРµ РїРѕР»СѓС‡РµРЅРёСЏ -->
                 <div class="skin-requirement" id="skin-requirement-block">
                     <div class="requirement-text" id="skin-requirement-text"></div>
                     <div class="requirement-progress" id="skin-requirement-progress">
@@ -764,12 +781,11 @@
                     </div>
                 </div>
 
-            <!-- Кнопка действия -->
             <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
-                Получить
+                Claim
             </button>
             <button class="skin-charm-btn" id="skin-charm-btn" onclick="setCharmFromDetail()">
-                Поставить на брелок
+                Equip
             </button>
         </div>
     </div>
@@ -789,7 +805,7 @@
         }
 
         function randomStar() {
-            const isBig = Math.random() < 0.18; // 18% крупные
+            const isBig = Math.random() < 0.18; // 18% РєСЂСѓРїРЅС‹Рµ
             return {
                 x:  Math.random() * canvas.width  - canvas.width  / 2,
                 y:  Math.random() * canvas.height - canvas.height / 2,
@@ -842,9 +858,9 @@
 
                 const r = isNight()
                     ? (s.layer < 0.7 ? '210,190,255' : '255,245,255')
-                    : (s.layer < 0.7 ? '140,110,255' : '170,140,255'); // day → фиолетовый оттенок
+                    : (s.layer < 0.7 ? '140,110,255' : '170,140,255'); // day в†’ С„РёРѕР»РµС‚РѕРІС‹Р№ РѕС‚С‚РµРЅРѕРє
 
-                // Хвост
+                // РҐРІРѕСЃС‚
                 ctx.beginPath();
                 ctx.moveTo(spx, spy);
                 ctx.lineTo(sx, sy);
@@ -853,13 +869,13 @@
                 ctx.lineWidth = longTail ? size * 1.2 : size * 0.7;
                 ctx.stroke();
 
-                // Точка на конце
+                // РўРѕС‡РєР° РЅР° РєРѕРЅС†Рµ
                 ctx.beginPath();
                 ctx.arc(sx, sy, size * 0.8, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(${r},${opacity})`;
                 ctx.fill();
 
-                // Свечение для крупных звёзд
+                // РЎРІРµС‡РµРЅРёРµ РґР»СЏ РєСЂСѓРїРЅС‹С… Р·РІС‘Р·Рґ
                 if (progress > 0.2) {
                     ctx.beginPath();
                     ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
@@ -871,7 +887,7 @@
                 }
             }
 
-            // Падающие звёзды
+            // РџР°РґР°СЋС‰РёРµ Р·РІС‘Р·РґС‹
             if (Math.random() < 0.008 && shooting.length < 4) {
                 shooting.push({
                     x: Math.random() * canvas.width * 0.7,
@@ -908,13 +924,11 @@
     </script>
     <div class="modal-screen" id="achievements-screen">
         <div class="achievements-modal">
-            <!-- Шапка -->
             <div class="achievements-header">
-                <h2 class="achievements-title">🎖️</h2>
-                <button class="achievements-close" onclick="closeModal('achievements-screen')">✕</button>
+                <h2 class="achievements-title">🏅</h2>
+                <button class="achievements-close" onclick="closeModal('achievements-screen')">×</button>
             </div>
 
-            <!-- Прогресс -->
             <div class="achievements-progress">
                 <span>📊 <span id="achievements-completed">0</span>/<span id="achievements-total">6</span></span>
                 <div class="progress-bar-mini">
@@ -922,14 +936,13 @@
                 </div>
             </div>
 
-            <!-- Список ачивок -->
             <div class="achievements-list" id="achievements-list">
-                <!-- Сюда будут грузиться ачивки -->
             </div>
         </div>
     </div>
 </body>
 </html>
+
 
 
 

@@ -23,6 +23,404 @@ let userId = null;
 let username = null;
 let referrerId = null;
 const telegramInitData = tg?.initData || '';
+const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
+const UI_LANG = telegramLanguage.startsWith('ru') ? 'ru' : 'en';
+
+const I18N = {
+    en: {
+        common: {
+            loading: 'Loading...',
+            on: 'On',
+            off: 'Off',
+            day: 'Day',
+            night: 'Night',
+            player: 'Player',
+            score: 'Score',
+            online: 'Online',
+            claim: 'Claim',
+            equip: 'Equip',
+            cancel: 'Cancel',
+            select: 'Select',
+            closeHint: 'Tap outside the window to close',
+            claimFree: 'Free',
+            bonusIncome: 'Bonus: +50% income'
+        },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Games', skins: 'Skins', tournament: 'Tournament', achievements: 'Achievements' },
+        main: { upgrade: 'Upgrade' },
+        tournament: {
+            title: 'Tournament',
+            prizePool: 'Prize Pool: 100,000 coins',
+            rank: 'Your rank:',
+            score: 'Your score:',
+            finished: 'Tournament finished'
+        },
+        friends: {
+            title: 'Friends',
+            invited: 'Invited',
+            earned: 'Earned',
+            referralLink: 'Your referral link',
+            copyLink: 'Copy link',
+            share: 'Share',
+            bonuses: 'Bonuses',
+            bonus1: 'Invite 1 friend — +1000 coins',
+            bonus2: '5% of your friend income — forever',
+            bonus3: 'Invite 3 friends — +100 energy',
+            bonus4: 'Invite 10 friends — +5% luck'
+        },
+        tasks: {
+            title: 'Tasks',
+            kicker: 'Daily Boosts',
+            heroTitle: 'Ad rewards with premium drops',
+            heroSubtitle: 'Fast tasks, glowing payouts, instant dopamine.',
+            heroLabel: 'Ghost Pass',
+            heroValue: 'Hot Loot',
+            readyNow: 'Ready now',
+            cooldown: 'Cooldown',
+            instantReward: 'Instant reward after watch',
+            refreshIn: 'Refresh in {time} min',
+            watch: 'Watch',
+            locked: 'Locked',
+            launchReward: 'Launch ad reward',
+            rechargeRunning: 'Recharge running',
+            liveReward: 'Live reward',
+            coinsSuffix: 'coins'
+        },
+        games: {
+            title: 'Mini-Games',
+            kicker: 'Neon Casino',
+            heroTitle: 'One tap in. All risk. Pure premium chaos.',
+            heroSubtitle: 'Pick a table, chase the glow, spike your coin balance.',
+            potential: 'Potential',
+            tapToPlay: 'Tap to play',
+            pullReels: 'Pull the reels',
+            rollIt: 'Roll it',
+            spinNow: 'Spin now',
+            openBox: 'Open a box',
+            chaseMultiplier: 'Chase multiplier'
+        },
+        gameModals: {
+            betAmount: 'Bet amount',
+            numberRange: 'Number 0-36',
+            flip: 'Flip',
+            spin: 'Spin',
+            roll: 'Roll',
+            chooseAction: 'Choose an action',
+            settings: 'Settings',
+            theme: 'Theme',
+            sound: 'Sound',
+            music: 'Music',
+            vibration: 'Vibration'
+        },
+        skins: { title: 'Skin', name: 'Skin name', description: 'Skin description', rarity: 'rarity' },
+        achievements: { title: 'Achievements' }
+        ,
+        toasts: {
+            loadDataError: '⚠️ Data loading error',
+            authRequired: '❌ Please sign in',
+            adUnavailable: '❌ Ad unavailable',
+            adUnavailableTemp: '❌ Ad temporarily unavailable',
+            adLoading: '📺 Loading ad...',
+            videoLoading: '📺 Loading video...',
+            serverError: '❌ Server error',
+            copyError: '❌ Copy failed',
+            linkNotLoaded: '❌ Link not loaded',
+            linkCopied: '✅ Link copied!',
+            rewardReceived: '✅ Reward received!',
+            watchError: '❌ Video error',
+            notEnoughCoins: '❌ Need {amount} coins',
+            minBet: '❌ Minimum bet is 10',
+            betRequired: '❌ Enter a bet',
+            maxLevel: '⚠️ Max level reached',
+            upgradeBusy: '⏳ Upgrade is already processing',
+            fullUpgradeNoCoins: '❌ Not enough coins for full upgrade',
+            fullUpgradeMax: '⚠️ One upgrade is already at max',
+            upgradeApplyError: '❌ Failed to apply upgrades',
+            uiError: '❌ Interface error',
+            rouletteNumber: '❌ Enter a number from 0 to 36',
+            skinLocked: '❌ Skin "{name}" is not unlocked yet!',
+            skinSelected: '✨ Skin selected!',
+            skinNew: '✅ New skin!',
+            skinUnlockError: '❌ Skin unlock error',
+            skinSelectError: '❌ Skin selection error',
+            skinAlreadyOwned: '✅ You already own this skin',
+            skinClaimError: '❌ Claim error',
+            skinAdProgress: '✅ +1 video view for skin!',
+            starsUnavailable: '❌ Stars payments are not available in this client',
+            starsInvoiceError: '❌ Failed to create payment invoice',
+            starsPending: '⏳ Waiting for payment confirmation',
+            starsCancelled: 'ℹ️ Payment cancelled',
+            starsFailed: '❌ Payment failed',
+            starsSuccess: '✅ Payment successful',
+            boostActive: '⚡ Boost is already active!',
+            boostFinished: '⏰ Boost finished',
+            megaBoostActivated: '🔥 BOOST ACTIVATED FOR 3 MINUTES!',
+            autoTapEnabled: '✅ Auto Tap 2 min',
+            autoTapFallback: 'ℹ️ Ad unavailable, auto for 30 sec',
+            autoTapError: '❌ Failed to enable auto',
+            charmUpdated: '✅ Charm updated',
+            energyRecovered: '⚡ Energy restored!',
+            energyFull: '⚡ Energy fully restored!',
+            cooldownsReset: '🔄 Cooldowns reset'
+        },
+        skinsDyn: {
+            noSkins: 'No skins',
+            noDescription: 'No description',
+            selected: '✓ SELECTED',
+            select: 'SELECT',
+            claim: 'CLAIM',
+            upgrade: 'UPGRADE',
+            watchVideo: 'WATCH VIDEO',
+            buy: 'BUY',
+            unavailable: 'UNAVAILABLE',
+            reqLevel: '🔓 Level {value} required',
+            reqWatch: '🔓 Watch {count} videos',
+            reqWatchSkin: '🔓 Watch {count} videos for this skin',
+            reqStars: '💫 Buy for {price} Stars',
+            reqSpecial: '🔓 Special condition',
+            noBonus: '⚡ No bonus',
+            incomeBonus: '⚡ x{value} income'
+        },
+        tasksList: {
+            energy_full: { title: 'Full energy', description: 'Restore energy to 100%', tag: 'energy', reward: '⚡ FULL' },
+            coins_rush: { title: 'Coin rush', description: 'Get +1,500 coins instantly', tag: 'coins' },
+            coins_jackpot: { title: 'Jackpot', description: '+8,000 coins every 45 minutes', tag: 'jackpot' },
+            boost_combo: { title: 'Combo boost', description: 'x2 income for 7 minutes after watching', tag: 'buff', reward: 'x2 • 7 min' },
+            skin_drop: { title: 'Skin drop', description: 'Rare skin for watching (once per hour)', tag: 'skin', reward: '🎁 Rare drop' },
+            reset_tasks: { title: 'Task reset', description: 'Refreshes cooldowns for all tasks', tag: 'utility', reward: '♻ reset' }
+        },
+        minigames: {
+            coinflipSpinning: '🪙 Flipping...',
+            coinflipPlayed: '🎮 Played!',
+            coinflipWin: '🦅 You won! +{bet}',
+            coinflipLose: '💀 You lost',
+            slotsSpinning: '🎰 Spinning...',
+            slotsJackpot: '🎰 JACKPOT! +{win}',
+            slotsLose: '🎰 Better luck next time',
+            diceRolling: '🎲 Rolling...',
+            diceWin: '🎲 You won! x{multiplier}',
+            diceLose: '🎲 You lost',
+            rouletteSpinning: '🎡 Spinning...',
+            rouletteWin: '🎡 Landed on {number}. You won x{multiplier}',
+            rouletteLose: '🎡 Landed on {number}. You lost',
+            luckyPick: 'Pick your box.',
+            luckyOpening: 'Opening boxes...',
+            luckyBust: 'Bust',
+            luckySave: 'Save',
+            luckyHit: 'Lucky hit! x{multiplier} +{profit}',
+            luckySoft: 'Soft save. You kept {payout} coins.',
+            luckyLost: 'Bust. You lost {bet} coins.',
+            crashStart: 'Start the round and cash out before the ghost crashes.',
+            crashHint: 'Catch the multiplier before it bursts.',
+            crashRunning: 'Ghost is running... cash out before the crash.',
+            crashStake: 'Crash target hidden. Stake: {bet}',
+            crashCashout: 'Cashed out at {multiplier}x',
+            crashCashoutResult: 'Ghost paid {payout} coins. Profit: +{profit}',
+            crashAt: 'Crash at {multiplier}x',
+            crashLost: 'Ghost crashed. You lost {bet} coins.'
+        }
+    },
+    ru: {
+        common: {
+            loading: 'Загрузка...',
+            on: 'Вкл',
+            off: 'Выкл',
+            day: 'День',
+            night: 'Ночь',
+            player: 'Игрок',
+            score: 'Счёт',
+            online: 'Онлайн',
+            claim: 'Получить',
+            equip: 'Надеть',
+            cancel: 'Отмена',
+            select: 'Выбрать',
+            closeHint: 'Нажмите вне окна, чтобы закрыть',
+            claimFree: 'Бесплатно',
+            bonusIncome: 'Бонус: +50% к доходу'
+        },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Игры', skins: 'Скины', tournament: 'Турнир', achievements: 'Ачивки' },
+        main: { upgrade: 'Прокачка' },
+        tournament: {
+            title: 'Турнир',
+            prizePool: 'Призовой фонд: 100 000 монет',
+            rank: 'Ваш ранг:',
+            score: 'Ваш счёт:',
+            finished: 'Турнир завершён'
+        },
+        friends: {
+            title: 'Друзья',
+            invited: 'Приглашено',
+            earned: 'Заработано',
+            referralLink: 'Ваша реферальная ссылка',
+            copyLink: 'Копировать',
+            share: 'Поделиться',
+            bonuses: 'Бонусы',
+            bonus1: 'Пригласи 1 друга — +1000 монет',
+            bonus2: '5% от дохода друга — навсегда',
+            bonus3: 'Пригласи 3 друзей — +100 энергии',
+            bonus4: 'Пригласи 10 друзей — +5% удачи'
+        },
+        tasks: {
+            title: 'Задания',
+            kicker: 'Ежедневные бусты',
+            heroTitle: 'Награды за рекламу с премиум-дропами',
+            heroSubtitle: 'Быстрые задания, сочные награды и моментальный дофамин.',
+            heroLabel: 'Ghost Pass',
+            heroValue: 'Горячий лут',
+            readyNow: 'Готово',
+            cooldown: 'Кулдаун',
+            instantReward: 'Мгновенная награда после просмотра',
+            refreshIn: 'Обновление через {time} мин',
+            watch: 'Смотреть',
+            locked: 'Закрыто',
+            launchReward: 'Запустить награду',
+            rechargeRunning: 'Идёт перезарядка',
+            liveReward: 'Живая награда',
+            coinsSuffix: 'монет'
+        },
+        games: {
+            title: 'Мини-игры',
+            kicker: 'Неон Казино',
+            heroTitle: 'Один тап. Весь риск. Чистый премиум-хаос.',
+            heroSubtitle: 'Выбирай стол, лови сияние и поднимай баланс.',
+            potential: 'Потенциал',
+            tapToPlay: 'Играть',
+            pullReels: 'Крутить слоты',
+            rollIt: 'Бросить',
+            spinNow: 'Крутить',
+            openBox: 'Открыть бокс',
+            chaseMultiplier: 'Ловить множитель'
+        },
+        gameModals: {
+            betAmount: 'Ставка',
+            numberRange: 'Число 0-36',
+            flip: 'Подбросить',
+            spin: 'Крутить',
+            roll: 'Бросить',
+            chooseAction: 'Выберите действие',
+            settings: 'Настройки',
+            theme: 'Тема',
+            sound: 'Звуки',
+            music: 'Музыка',
+            vibration: 'Вибрация'
+        },
+        skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
+        achievements: { title: 'Ачивки' },
+        toasts: {
+            loadDataError: '⚠️ Ошибка загрузки данных',
+            authRequired: '❌ Авторизуйтесь',
+            adUnavailable: '❌ Реклама недоступна',
+            adUnavailableTemp: '❌ Реклама временно недоступна',
+            adLoading: '📺 Загружаем рекламу...',
+            videoLoading: '📺 Загружаем видео...',
+            serverError: '❌ Ошибка сервера',
+            copyError: '❌ Ошибка копирования',
+            linkNotLoaded: '❌ Ссылка не загружена',
+            linkCopied: '✅ Ссылка скопирована!',
+            rewardReceived: '✅ Награда получена!',
+            watchError: '❌ Ошибка при просмотре видео',
+            notEnoughCoins: '❌ Нужно {amount} монет',
+            minBet: '❌ Минимальная ставка 10',
+            betRequired: '❌ Введите ставку',
+            maxLevel: '⚠️ Максимальный уровень достигнут',
+            upgradeBusy: '⏳ Улучшение уже обрабатывается',
+            fullUpgradeNoCoins: '❌ Недостаточно монет для полного апгрейда',
+            fullUpgradeMax: '⚠️ Один из апгрейдов уже на максимуме',
+            upgradeApplyError: '❌ Не удалось применить улучшения',
+            uiError: '❌ Ошибка интерфейса',
+            rouletteNumber: '❌ Введите число от 0 до 36',
+            skinLocked: '❌ Скин "{name}" ещё не открыт!',
+            skinSelected: '✨ Скин выбран!',
+            skinNew: '✅ Новый скин!',
+            skinUnlockError: '❌ Ошибка разблокировки',
+            skinSelectError: '❌ Ошибка выбора скина',
+            skinAlreadyOwned: '✅ Скин уже есть',
+            skinClaimError: '❌ Ошибка получения',
+            skinAdProgress: '✅ +1 просмотр для скина!',
+            starsUnavailable: '❌ Оплата Stars недоступна в этом клиенте',
+            starsInvoiceError: '❌ Не удалось создать счёт на оплату',
+            starsPending: '⏳ Ожидаем подтверждение оплаты',
+            starsCancelled: 'ℹ️ Оплата отменена',
+            starsFailed: '❌ Ошибка оплаты',
+            starsSuccess: '✅ Оплата прошла успешно',
+            boostActive: '⚡ Буст уже активен!',
+            boostFinished: '⏰ Буст закончился',
+            megaBoostActivated: '🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!',
+            autoTapEnabled: '✅ Auto Tap 2 мин',
+            autoTapFallback: 'ℹ️ Реклама недоступна, авто на 30 сек',
+            autoTapError: '❌ Не удалось включить авто',
+            charmUpdated: '✅ Брелок обновлен',
+            energyRecovered: '⚡ Энергия восстановлена!',
+            energyFull: '⚡ Энергия полностью восстановлена!',
+            cooldownsReset: '🔄 Кулдауны сброшены'
+        },
+        skinsDyn: {
+            noSkins: 'Нет скинов',
+            noDescription: 'Нет описания',
+            selected: '✓ ВЫБРАН',
+            select: 'ВЫБРАТЬ',
+            claim: 'ПОЛУЧИТЬ',
+            upgrade: 'ПРОКАЧАТЬ',
+            watchVideo: 'СМОТРЕТЬ ВИДЕО',
+            buy: 'КУПИТЬ',
+            unavailable: 'НЕДОСТУПНО',
+            reqLevel: '🔓 Требуется уровень {value}',
+            reqWatch: '🔓 Посмотри {count} видео',
+            reqWatchSkin: '🔓 Посмотри {count} видео для этого скина',
+            reqStars: '💫 Купить за {price} Stars',
+            reqSpecial: '🔓 Условие: особое',
+            noBonus: '⚡ Бонус: нет',
+            incomeBonus: '⚡ x{value} к доходу'
+        },
+        tasksList: {
+            energy_full: { title: 'Полная энергия', description: 'Восстанови запас энергии до 100%', tag: 'энергия', reward: '⚡ FULL' },
+            coins_rush: { title: 'Монетный дождь', description: 'Сразу получи +1 500 монет', tag: 'коины' },
+            coins_jackpot: { title: 'Джекпот', description: '+8 000 монет раз в 45 минут', tag: 'джекпот' },
+            boost_combo: { title: 'Комбо-ускорение', description: 'x2 доход на 7 минут после просмотра', tag: 'баф', reward: 'x2 • 7 мин' },
+            skin_drop: { title: 'Дроп скина', description: 'Редкий скин за просмотр (1 раз в час)', tag: 'скин', reward: '🎁 Rare drop' },
+            reset_tasks: { title: 'Сброс заданий', description: 'Обновляет кулдауны всех заданий', tag: 'utility', reward: '♻ reset' }
+        },
+        minigames: {
+            coinflipSpinning: '🪙 Подбрасываем...',
+            coinflipPlayed: '🎮 Сыграно!',
+            coinflipWin: '🦅 Вы выиграли! +{bet}',
+            coinflipLose: '💀 Вы проиграли',
+            slotsSpinning: '🎰 Крутим...',
+            slotsJackpot: '🎰 ДЖЕКПОТ! +{win}',
+            slotsLose: '🎰 Повезет в следующий раз',
+            diceRolling: '🎲 Бросаем...',
+            diceWin: '🎲 Вы выиграли! x{multiplier}',
+            diceLose: '🎲 Вы проиграли',
+            rouletteSpinning: '🎡 Крутим...',
+            rouletteWin: '🎡 Выпало {number}. Вы выиграли x{multiplier}',
+            rouletteLose: '🎡 Выпало {number}. Вы проиграли',
+            luckyPick: 'Выбери свой бокс.',
+            luckyOpening: 'Открываем боксы...',
+            luckyBust: 'Пусто',
+            luckySave: 'Сейв',
+            luckyHit: 'Удача! x{multiplier} +{profit}',
+            luckySoft: 'Мягкий сейв. Ты сохранил {payout} монет.',
+            luckyLost: 'Пусто. Ты потерял {bet} монет.',
+            crashStart: 'Запусти раунд и успей забрать выигрыш до краша.',
+            crashHint: 'Поймай множитель до взрыва.',
+            crashRunning: 'Призрак бежит... успей вывести до краша.',
+            crashStake: 'Краш скрыт. Ставка: {bet}',
+            crashCashout: 'Забрал на {multiplier}x',
+            crashCashoutResult: 'Призрак выплатил {payout} монет. Профит: +{profit}',
+            crashAt: 'Краш на {multiplier}x',
+            crashLost: 'Призрак разбился. Ты потерял {bet} монет.'
+        }
+    }
+};
+
+function t(key, vars = {}) {
+    const source = I18N[UI_LANG] || I18N.en;
+    const value = key.split('.').reduce((acc, part) => acc?.[part], source) ??
+        key.split('.').reduce((acc, part) => acc?.[part], I18N.en) ??
+        key;
+    return String(value).replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? `{${name}}`);
+}
+
+const tr = t;
 
 if (tg) {
     tg.expand();
@@ -93,6 +491,9 @@ const State = {
         sound: localStorage.getItem('ryohoSettings') ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).sound !== undefined ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).sound : true : true,
+        music: localStorage.getItem('ryohoSettings') ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).music !== undefined ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).music : true : true,
         vibration: localStorage.getItem('ryohoSettings') ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).vibration !== undefined ? 
             JSON.parse(localStorage.getItem('ryohoSettings')).vibration : true : true
@@ -411,7 +812,7 @@ async function loadUserData() {
         
     } catch (err) {
         console.error('Failed to load user data:', err);
-        showToast('⚠️ Ошибка загрузки данных', true);
+        showToast(tr('toasts.loadDataError'), true);
     }
 }
 
@@ -805,7 +1206,7 @@ function renderSkins() {
     }
     
     if (!filtered || filtered.length === 0) {
-        grid.innerHTML = '<div class="loading">Нет скинов</div>';
+        grid.innerHTML = `<div class="loading">${tr('skinsDyn.noSkins')}</div>`;
         return;
     }
     
@@ -852,7 +1253,7 @@ function selectSkin(id) {
     if (!skin) return;
     
     if (State.skins.owned.includes(id)) selectActiveSkin(id);
-    else showToast(`❌ Скин "${skin.name}" еще не открыт!`, true);
+    else showToast(tr('toasts.skinLocked', { name: skin.name }), true);
 }
 
 async function selectActiveSkin(id) {
@@ -862,9 +1263,9 @@ async function selectActiveSkin(id) {
         State.skins.selected = id;
         applySavedSkin();
         renderSkins();
-        showToast('✨ Скин выбран!');
+        showToast(tr('toasts.skinSelected'));
     } catch (err) {
-        showToast('❌ Ошибка выбора скина', true);
+        showToast(tr('toasts.skinSelectError'), true);
     }
 }
 
@@ -874,12 +1275,12 @@ async function unlockSkin(id) {
         const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: id, method: 'free' });
         if (res.success) {
             State.skins.owned.push(id);
-            showToast('✅ Новый скин!');
+            showToast(tr('toasts.skinNew'));
             renderSkins();
             applySavedSkin();
         }
     } catch (err) {
-        showToast('❌ Ошибка разблокировки', true);
+        showToast(tr('toasts.skinUnlockError'), true);
     }
 }
 
@@ -913,20 +1314,20 @@ function openSkinDetail(skinId) {
     const detailImg = document.getElementById('skin-detail-img');
     detailImg.src = skin.image || 'imgg/clickimg.png';
     detailImg.dataset.skinId = skin.id;
-    document.getElementById('skin-detail-name').textContent = skin.name || 'Скин';
+    document.getElementById('skin-detail-name').textContent = skin.name || tr('skins.title');
     
     const rarityEl = document.getElementById('skin-detail-rarity');
     rarityEl.textContent = skin.rarity || 'common';
     rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
     
-    document.getElementById('skin-detail-description').textContent = skin.description || 'Нет описания';
+    document.getElementById('skin-detail-description').textContent = skin.description || tr('skinsDyn.noDescription');
     
     const bonusEl = document.getElementById('skin-detail-bonus');
     if (skin.bonus) {
-        if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = `⚡ x${skin.bonus.value} к доходу`;
+        if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = tr('skinsDyn.incomeBonus', { value: skin.bonus.value });
         else bonusEl.innerHTML = `⚡ +${skin.bonus.value || 0}`;
     } else {
-        bonusEl.innerHTML = '⚡ Бонус: нет';
+        bonusEl.innerHTML = tr('skinsDyn.noBonus');
     }
     
     const reqBlock = document.getElementById('skin-requirement-block');
@@ -938,7 +1339,7 @@ function openSkinDetail(skinId) {
     
     if (isOwned) {
         reqBlock.style.display = 'none';
-        actionBtn.textContent = isSelected ? '✓ ВЫБРАН' : 'ВЫБРАТЬ';
+        actionBtn.textContent = isSelected ? tr('skinsDyn.selected') : tr('skinsDyn.select');
         actionBtn.onclick = isSelected ? closeSkinDetail : () => selectSkinFromDetail(skin.id);
     } else {
         reqBlock.style.display = 'block';
@@ -948,12 +1349,12 @@ function openSkinDetail(skinId) {
             const value = skin.requirement.value || 1;
             const percent = Math.min(100, (current / value) * 100);
             
-            reqText.textContent = `🔓 Требуется уровень ${value}`;
+            reqText.textContent = tr('skinsDyn.reqLevel', { value });
             progressText.textContent = `${current}/${value}`;
             progressFill.style.width = percent + '%';
             reqProgress.style.display = 'flex';
             
-            actionBtn.textContent = current >= value ? 'ПОЛУЧИТЬ' : 'ПРОКАЧАТЬ';
+            actionBtn.textContent = current >= value ? tr('skinsDyn.claim') : tr('skinsDyn.upgrade');
             actionBtn.onclick = current >= value ? () => unlockSkinFromDetail(skin.id) : () => {
                 closeSkinDetail();
                 switchTab('main');
@@ -963,12 +1364,12 @@ function openSkinDetail(skinId) {
             const count = skin.requirement.count || 1;
             const percent = Math.min(100, (current / count) * 100);
             
-            reqText.textContent = `🔓 Посмотри ${count} видео`;
+            reqText.textContent = tr('skinsDyn.reqWatch', { count });
             progressText.textContent = `${current}/${count}`;
             progressFill.style.width = percent + '%';
             reqProgress.style.display = 'flex';
             
-            actionBtn.textContent = current >= count ? 'ПОЛУЧИТЬ' : 'СМОТРЕТЬ ВИДЕО';
+            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
             actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
         } else if (skin.requirement?.type === 'videos') {
             const key = skin.requirement.progressKey || skin.id;
@@ -976,22 +1377,22 @@ function openSkinDetail(skinId) {
             const count = skin.requirement.count || 10;
             const percent = Math.min(100, (current / count) * 100);
 
-            reqText.textContent = `🔓 Посмотри ${count} видео для этого скина`;
+            reqText.textContent = tr('skinsDyn.reqWatchSkin', { count });
             progressText.textContent = `${current}/${count}`;
             progressFill.style.width = percent + '%';
             reqProgress.style.display = 'flex';
 
-            actionBtn.textContent = current >= count ? 'ПОЛУЧИТЬ' : 'СМОТРЕТЬ ВИДЕО';
+            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
             actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
         } else if (skin.requirement?.type === 'stars') {
-            reqText.textContent = `💫 Купить за ${skin.requirement.price} Stars`;
+            reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
             reqProgress.style.display = 'none';
-            actionBtn.textContent = 'КУПИТЬ';
+            actionBtn.textContent = tr('skinsDyn.buy');
             actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
         } else {
-            reqText.textContent = `🔓 Условие: особое`;
+            reqText.textContent = tr('skinsDyn.reqSpecial');
             reqProgress.style.display = 'none';
-            actionBtn.textContent = 'НЕДОСТУПНО';
+            actionBtn.textContent = tr('skinsDyn.unavailable');
         }
     }
     
@@ -1003,23 +1404,23 @@ function closeSkinDetail() {
 }
 
 async function selectSkinFromDetail(skinId) {
-    if (!userId) return showToast('❌ Авторизуйтесь', true);
+    if (!userId) return showToast(tr('toasts.authRequired'), true);
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
         State.skins.selected = skinId;
         applySavedSkin();
-        showToast('✨ Скин выбран!');
+        showToast(tr('toasts.skinSelected'));
         closeSkinDetail();
         renderSkins();
     } catch (err) {
-        showToast('❌ Ошибка выбора', true);
+        showToast(tr('toasts.skinSelectError'), true);
     }
 }
 
 async function unlockSkinFromDetail(skinId) {
-    if (!userId) return showToast('❌ Авторизуйтесь', true);
+    if (!userId) return showToast(tr('toasts.authRequired'), true);
     if (State.skins.owned.includes(skinId)) {
-        showToast('✅ Скин уже есть');
+        showToast(tr('toasts.skinAlreadyOwned'));
         setCharmImageFromSkin(skinId);
         closeSkinDetail();
         return;
@@ -1029,24 +1430,82 @@ async function unlockSkinFromDetail(skinId) {
         const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
         if (res.success) {
             State.skins.owned.push(skinId);
-            showToast('✅ Новый скин!');
+            showToast(tr('toasts.skinNew'));
             setCharmImageFromSkin(skinId);
             closeSkinDetail();
             renderSkins();
             updateCollectionProgress();
         }
     } catch (err) {
-        showToast('❌ Ошибка получения', true);
+        showToast(tr('toasts.skinClaimError'), true);
+    }
+}
+
+async function buySkinWithStarsPlaceholder(skin) {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return;
+    }
+
+    if (!tg?.openInvoice) {
+        showToast(tr('toasts.starsUnavailable'), true);
+        return;
+    }
+
+    try {
+        const response = await API.post('/api/skins/stars-invoice', {
+            user_id: userId,
+            skin_id: skin.id
+        });
+
+        if (!response?.invoice_link) {
+            showToast(tr('toasts.starsInvoiceError'), true);
+            return;
+        }
+
+        tg.openInvoice(response.invoice_link, async (status) => {
+            if (status === 'paid') {
+                showToast(tr('toasts.starsSuccess'));
+                await loadUserData();
+                renderSkins();
+                updateCollectionProgress();
+                openSkinDetail(skin.id);
+                return;
+            }
+
+            if (status === 'pending') {
+                showToast(tr('toasts.starsPending'));
+                return;
+            }
+
+            if (status === 'cancelled') {
+                showToast(tr('toasts.starsCancelled'));
+                return;
+            }
+
+            showToast(tr('toasts.starsFailed'), true);
+        });
+    } catch (err) {
+        if (err?.detail === 'Skin already owned') {
+            showToast(tr('toasts.skinAlreadyOwned'));
+            await loadUserData();
+            renderSkins();
+            updateCollectionProgress();
+            openSkinDetail(skin.id);
+            return;
+        }
+
+        showToast(err?.detail || tr('toasts.starsInvoiceError'), true);
     }
 }
 
 async function watchAdForSkin(skinId) {
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
+        showToast(tr('toasts.adUnavailable'), true);
         return;
     }
 
-    showToast('📺 Загружаем рекламу...');
+    showToast(tr('toasts.adLoading'));
 
     try {
         await window.show_10655027();
@@ -1059,7 +1518,7 @@ async function watchAdForSkin(skinId) {
         trackAchievementProgress('adsWatched', 1);
         checkAchievements();
 
-        showToast('✅ +1 просмотр для скина!');
+        showToast(tr('toasts.skinAdProgress'));
         renderSkins();
 
         if (document.getElementById('skin-detail-modal').classList.contains('active')) {
@@ -1067,7 +1526,7 @@ async function watchAdForSkin(skinId) {
         }
 
     } catch (e) {
-        showToast('❌ Ошибка рекламы', true);
+        showToast(tr('toasts.watchError'), true);
     }
 }
 
@@ -1090,7 +1549,7 @@ async function upgradeBoost(type, internal = false) {
     
     const price = State.game.prices[type];
     if (!price || State.game.coins < price) {
-        showToast(`❌ Нужно ${price} монет`, true);
+        showToast(tr('toasts.notEnoughCoins', { amount: price }), true);
         return;
     }
 
@@ -1119,18 +1578,18 @@ async function upgradeBoost(type, internal = false) {
     }
     } catch (err) {
         if (err.status === 429) {
-            showToast('⏳ Улучшение уже обрабатывается', true);
+            showToast(tr('toasts.upgradeBusy'), true);
             return;
         }
         if (err.status === 400 && err.detail === 'Max level reached') {
-            showToast('⚠️ Максимальный уровень достигнут', true);
+            showToast(tr('toasts.maxLevel'), true);
             return;
         }
         if (err.status === 400 && err.detail === 'Not enough coins') {
-            showToast(`❌ Нужно ${price} монет`, true);
+            showToast(tr('toasts.notEnoughCoins', { amount: price }), true);
             return;
         }
-        showToast(`❌ Ошибка сервера${err.status ? ' ' + err.status : ''}`, true);
+        showToast(`${tr('toasts.serverError')}${err.status ? ' ' + err.status : ''}`, true);
     } finally {
         if (!internal) upgradeInProgress = false;
     }
@@ -1143,7 +1602,7 @@ async function upgradeAll() {
     try {
         const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
         if (State.game.coins < total) {
-            showToast(`❌ Нужно ${formatNumber(total)} монет`, true);
+            showToast(tr('toasts.notEnoughCoins', { amount: formatNumber(total) }), true);
             return;
         }
 
@@ -1152,7 +1611,7 @@ async function upgradeAll() {
         });
 
         if (!result?.success) {
-            showToast('❌ Не удалось применить улучшения', true);
+            showToast(tr('toasts.upgradeApplyError'), true);
             return;
         }
 
@@ -1170,18 +1629,18 @@ async function upgradeAll() {
         checkAchievements();
     } catch (err) {
         if (err.status === 429) {
-            showToast('⏳ Улучшение уже обрабатывается', true);
+            showToast(tr('toasts.upgradeBusy'), true);
             return;
         }
         if (err.status === 400 && err.detail === 'Not enough coins') {
-            showToast('❌ Недостаточно монет для полного апгрейда', true);
+            showToast(tr('toasts.fullUpgradeNoCoins'), true);
             return;
         }
         if (err.status === 400 && err.detail === 'Max level reached') {
-            showToast('⚠️ Один из апгрейдов уже на максимуме', true);
+            showToast(tr('toasts.fullUpgradeMax'), true);
             return;
         }
-        showToast(`❌ Ошибка сервера${err.status ? ' ' + err.status : ''}`, true);
+        showToast(`${tr('toasts.serverError')}${err.status ? ' ' + err.status : ''}`, true);
     } finally {
         upgradeInProgress = false;
     }
@@ -1382,19 +1841,21 @@ function renderVideoTasks() {
             random: 'linear-gradient(135deg, #3498DB, #1F618D)',
         }[task.category] || 'linear-gradient(135deg, #7f8c8d, #2c3e50)';
 
-        const rewardLabel = typeof task.reward === 'number'
-            ? `+${task.reward.toLocaleString('ru-RU')} монет`
-            : task.reward;
+        const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
+        const rewardValue = taskCopy.reward || task.reward;
+        const rewardLabel = typeof rewardValue === 'number'
+            ? `+${rewardValue.toLocaleString(UI_LANG === 'ru' ? 'ru-RU' : 'en-US')} ${t('tasks.coinsSuffix')}`
+            : rewardValue;
 
-        const stateLabel = available ? 'Ready now' : 'Cooldown';
-        const stateNote = available ? 'Instant reward after watch' : `Refresh in ${timeLeft} min`;
-        const actionLabel = available ? 'Watch' : 'Locked';
-        const actionSub = available ? 'Launch ad reward' : 'Recharge running';
+        const stateLabel = available ? t('tasks.readyNow') : t('tasks.cooldown');
+        const stateNote = available ? t('tasks.instantReward') : t('tasks.refreshIn', { time: timeLeft });
+        const actionLabel = available ? t('tasks.watch') : t('tasks.locked');
+        const actionSub = available ? t('tasks.launchReward') : t('tasks.rechargeRunning');
 
         return `
             <div class="task-card ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
                 <div class="task-top">
-                    <span class="task-chip">${task.tag || 'bonus drop'}</span>
+                    <span class="task-chip">${taskCopy.tag || task.tag || 'bonus drop'}</span>
                     <span class="task-state-pill">${stateLabel}</span>
                 </div>
                 <div class="task-body">
@@ -1402,11 +1863,11 @@ function renderVideoTasks() {
                         <div class="task-icon" style="background:${iconColor}">${task.icon}</div>
                     </div>
                     <div class="task-info">
-                        <div class="task-title">${task.title}</div>
-                        <div class="task-desc">${task.description}</div>
+                        <div class="task-title">${taskCopy.title || task.title}</div>
+                        <div class="task-desc">${taskCopy.description || task.description}</div>
                         <div class="task-meta">
                             <span class="task-meta-line">${stateNote}</span>
-                            ${!available && timeLeft > 0 ? `<span class="task-cooldown">⏳ ${timeLeft} min</span>` : '<span class="task-ready-pulse">Live reward</span>'}
+                            ${!available && timeLeft > 0 ? `<span class="task-cooldown">⏳ ${timeLeft} min</span>` : `<span class="task-ready-pulse">${t('tasks.liveReward')}</span>`}
                         </div>
                     </div>
                 </div>
@@ -1426,11 +1887,11 @@ async function handleVideoTask(taskId) {
     if (!task || !task.available) return;
     
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
+        showToast(tr('toasts.adUnavailable'), true);
         return;
     }
     
-    showToast('📺 Загружаем видео...');
+    showToast(tr('toasts.videoLoading'));
     
     try {
         await window.show_10655027();
@@ -1440,12 +1901,12 @@ async function handleVideoTask(taskId) {
         switch(task.type) {
             case 'energy_full':
                 State.game.energy = State.game.maxEnergy;
-                showToast('⚡ Энергия полностью восстановлена!');
+                showToast(tr('toasts.energyFull'));
                 break;
                 
             case 'coins':
                 State.game.coins += task.reward;
-                showToast(`💰 +${task.reward} монет!`);
+                showToast(`💰 +${task.reward} ${tr('tasks.coinsSuffix')}`);
                 break;
                 
             case 'skin':
@@ -1465,7 +1926,7 @@ async function handleVideoTask(taskId) {
                 task.lastUsed = Date.now();
                 task.available = false;
                 renderVideoTasks();
-                showToast('🔄 Кулдауны сброшены');
+                showToast(tr('toasts.cooldownsReset'));
                 break;
         }
         
@@ -1482,7 +1943,7 @@ async function handleVideoTask(taskId) {
         
     } catch (error) {
         console.error('Video error:', error);
-        showToast('❌ Ошибка при просмотре видео', true);
+        showToast(tr('toasts.watchError'), true);
     }
 }
 
@@ -1501,11 +1962,11 @@ function giveRandomReward() {
     switch(random.type) {
         case 'coins':
             State.game.coins += random.value;
-            showToast(`🎁 +${random.value} монет!`);
+            showToast(`🎁 +${random.value} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'energy':
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
-            showToast(`🎁 +${random.value} энергии!`);
+            showToast(UI_LANG === 'ru' ? `🎁 +${random.value} энергии!` : `🎁 +${random.value} energy!`);
             break;
         case 'boost':
             activateCustomBoost(random.multiplier, random.minutes);
@@ -1523,14 +1984,14 @@ function activateCustomBoost(multiplier, minutes) {
     
     // Увеличиваем доход
     State.game.profitPerTap *= multiplier;
-    showToast(`🔥 x${multiplier} на ${minutes} минут!`);
+    showToast(UI_LANG === 'ru' ? `🔥 x${multiplier} на ${minutes} минут!` : `🔥 x${multiplier} for ${minutes} min!`);
     
     // Возвращаем обратно через N минут
     setTimeout(() => {
         State.game.profitPerTap = State.temp.originalProfit;
         State.temp.originalProfit = null;
         updateUI();
-        showToast('⏰ Буст закончился');
+        showToast(tr('toasts.boostFinished'));
     }, minutes * 60 * 1000);
     
     updateUI();
@@ -1541,11 +2002,11 @@ async function watchVideoForTask(taskId) {
     if (!task || task.completed || !task.available) return;
     
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама временно недоступна', true);
+        showToast(tr('toasts.adUnavailableTemp'), true);
         return;
     }
     
-    showToast('📺 Загружаем видео...');
+    showToast(tr('toasts.videoLoading'));
     
     try {
         await window.show_10655027();
@@ -1560,12 +2021,12 @@ async function watchVideoForTask(taskId) {
         }, 24 * 60 * 60 * 1000);
         
         renderVideoTasks();
-        showToast('✅ Награда получена!');
+        showToast(tr('toasts.rewardReceived'));
         createConfetti();
         
     } catch (error) {
         console.error('Video error:', error);
-        showToast('❌ Ошибка при просмотре видео', true);
+        showToast(tr('toasts.watchError'), true);
     }
 }
 
@@ -1583,7 +2044,7 @@ async function claimVideoReward(task) {
         case 'chest':
             const randomReward = Math.floor(Math.random() * 4500) + 500;
             State.game.coins += randomReward;
-            showToast(`🎁 +${randomReward} монет!`);
+            showToast(`🎁 +${randomReward} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'refresh':
             VIDEO_TASKS.forEach(t => {
@@ -1626,22 +2087,25 @@ async function loadReferralData() {
 
 function copyReferralLink() {
     const linkEl = document.getElementById('referral-link');
-    if (!linkEl?.textContent || linkEl.textContent === 'loading...') {
-        showToast('❌ Ссылка не загружена', true);
+    const linkText = linkEl?.textContent?.trim();
+    if (!linkText || linkText === 'loading...' || linkText === t('common.loading')) {
+        showToast(tr('toasts.linkNotLoaded'), true);
         return;
     }
-    navigator.clipboard?.writeText(linkEl.textContent)
-        .then(() => showToast('✅ Ссылка скопирована!'))
-        .catch(() => showToast('❌ Ошибка копирования', true));
+    navigator.clipboard?.writeText(linkText)
+        .then(() => showToast(tr('toasts.linkCopied')))
+        .catch(() => showToast(tr('toasts.copyError'), true));
 }
 
 function shareReferral() {
     const linkEl = document.getElementById('referral-link');
-    if (!linkEl?.textContent || linkEl.textContent === 'loading...') {
-        showToast('❌ Ссылка не загружена', true);
+    const linkText = linkEl?.textContent?.trim();
+    if (!linkText || linkText === 'loading...' || linkText === t('common.loading')) {
+        showToast(tr('toasts.linkNotLoaded'), true);
         return;
     }
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(linkEl.textContent)}&text=${encodeURIComponent('🎮 Присоединяйся к Spirit Clicker!')}`, '_blank');
+    const shareText = UI_LANG === 'ru' ? '🎮 Присоединяйся к Spirit Clicker!' : '🎮 Join Spirit Clicker!';
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(linkText)}&text=${encodeURIComponent(shareText)}`, '_blank');
 }
 
 // ==================== НАСТРОЙКИ ====================
@@ -1654,7 +2118,8 @@ function saveSettings() {
     localStorage.setItem('ryohoSettings', JSON.stringify(State.settings));
     const bgm = State.temp.bgm.audio;
     if (bgm) {
-        if (State.settings.sound) bgm.play().catch(() => {});
+        State.temp.bgm.enabled = State.settings.music;
+        if (State.settings.music) bgm.play().catch(() => {});
         else bgm.pause();
     }
 }
@@ -1675,11 +2140,12 @@ function toggleSound() {
     State.settings.sound = !State.settings.sound;
     saveSettings();
     updateSettingsUI();
-    const bgm = State.temp.bgm.audio;
-    if (bgm) {
-        if (State.settings.sound) bgm.play().catch(() => {});
-        else bgm.pause();
-    }
+}
+
+function toggleMusic() {
+    State.settings.music = !State.settings.music;
+    saveSettings();
+    updateSettingsUI();
 }
 
 function toggleVibration() {
@@ -1692,19 +2158,24 @@ function toggleVibration() {
 function updateSettingsUI() {
     const isNight = State.settings.theme === 'night';
     const soundOn = State.settings.sound;
+    const musicOn = State.settings.music;
     const vibOn = State.settings.vibration;
     
     setToggle('themeTrack', isNight);
     setIcon('themeIcon', isNight ? '🌙' : '☀️');
-    setLabel('themeLabel', isNight ? 'Night' : 'Day');
+    setLabel('themeLabel', isNight ? t('common.night') : t('common.day'));
     
     setToggle('soundTrack', soundOn);
     setIcon('soundIcon', soundOn ? '🔊' : '🔇');
-    setLabel('soundLabel', soundOn ? 'On' : 'Off');
+    setLabel('soundLabel', soundOn ? t('common.on') : t('common.off'));
+
+    setToggle('musicTrack', musicOn);
+    setIcon('musicIcon', musicOn ? '🎵' : '🔕');
+    setLabel('musicLabel', musicOn ? t('common.on') : t('common.off'));
     
     setToggle('vibTrack', vibOn);
     setIcon('vibIcon', vibOn ? '📳' : '📴');
-    setLabel('vibLabel', vibOn ? 'On' : 'Off');
+    setLabel('vibLabel', vibOn ? t('common.on') : t('common.off'));
 }
 
 function setToggle(id, active) {
@@ -1720,6 +2191,113 @@ function setIcon(id, icon) {
 function setLabel(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
+}
+
+function applyStaticTranslations() {
+    const textMap = [
+        ['.header .nav-item:nth-child(1) > span:last-child', 'nav.achievements'],
+        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.tournament'],
+        ['.upgrade-panel-title', 'main.upgrade'],
+        ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
+        ['.nav-bar .nav-item:nth-child(2) > span:last-child', 'nav.friends'],
+        ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.tasks'],
+        ['.nav-bar .nav-item:nth-child(4) > span:last-child', 'nav.games'],
+        ['.nav-bar .nav-item:nth-child(5) > span:last-child', 'nav.skins'],
+        ['#tournament-screen .modal-header h2', 'tournament.title'],
+        ['#tournament-screen .tournament-prize', 'tournament.prizePool'],
+        ['#tournament-screen .online-count-label', 'common.online'],
+        ['#tournament-screen .leaderboard-header span:nth-child(2)', 'common.player'],
+        ['#tournament-screen .leaderboard-header span:nth-child(3)', 'common.score'],
+        ['#tournament-screen #leaderboard-list .loading', 'common.loading'],
+        ['#tournament-screen .player-rank .rank-info:nth-child(1) .rank-label', 'tournament.rank'],
+        ['#tournament-screen .player-rank .rank-info:nth-child(2) .rank-label', 'tournament.score'],
+        ['#friends-screen .modal-header h2', 'friends.title'],
+        ['#friends-screen .stat-small:nth-child(1) .stat-small-label', 'friends.invited'],
+        ['#friends-screen .stat-small:nth-child(2) .stat-small-label', 'friends.earned'],
+        ['#friends-screen .referral-link-label', 'friends.referralLink'],
+        ['#friends-screen .btn-primary', 'friends.copyLink'],
+        ['#friends-screen .btn-secondary', 'friends.share'],
+        ['#friends-screen .referral-rules h3', 'friends.bonuses'],
+        ['#friends-screen .referral-rules li:nth-child(1)', 'friends.bonus1'],
+        ['#friends-screen .referral-rules li:nth-child(2)', 'friends.bonus2'],
+        ['#friends-screen .referral-rules li:nth-child(3)', 'friends.bonus3'],
+        ['#friends-screen .referral-rules li:nth-child(4)', 'friends.bonus4'],
+        ['#tasks-screen .modal-kicker', 'tasks.kicker'],
+        ['#tasks-screen .modal-header-copy h2', 'tasks.title'],
+        ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
+        ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
+        ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
+        ['#tasks-screen .tasks-hero-badge-value', 'tasks.heroValue'],
+        ['#tasks-screen .tasks-list .loading', 'common.loading'],
+        ['#games-screen .modal-kicker', 'games.kicker'],
+        ['#games-screen .modal-header-copy h2', 'games.title'],
+        ['#games-screen .games-hero-title', 'games.heroTitle'],
+        ['#games-screen .games-hero-subtitle', 'games.heroSubtitle'],
+        ['#games-screen .games-hero-jackpot-label', 'games.potential'],
+        ['#games-screen .game-card:nth-child(1) .game-enter', 'games.tapToPlay'],
+        ['#games-screen .game-card:nth-child(2) .game-enter', 'games.pullReels'],
+        ['#games-screen .game-card:nth-child(3) .game-enter', 'games.rollIt'],
+        ['#games-screen .game-card:nth-child(4) .game-enter', 'games.spinNow'],
+        ['#games-screen .game-card:nth-child(5) .game-enter', 'games.openBox'],
+        ['#games-screen .game-card:nth-child(6) .game-enter', 'games.chaseMultiplier'],
+        ['#settings-screen h2', 'gameModals.settings'],
+        ['#settings-screen .settings-section:nth-of-type(1) .settings-title', 'gameModals.theme'],
+        ['#settings-screen .settings-section:nth-of-type(2) .settings-title', 'gameModals.sound'],
+        ['#settings-screen .settings-section:nth-of-type(3) .settings-title', 'gameModals.music'],
+        ['#settings-screen .settings-section:nth-of-type(4) .settings-title', 'gameModals.vibration'],
+        ['#confirm-modal-title', 'gameModals.chooseAction'],
+        ['#confirm-skin-name', 'skins.name'],
+        ['#confirm-skin-desc', 'skins.description'],
+        ['#confirm-skin-requirements .requirement-badge', 'common.claimFree'],
+        ['#confirm-skin-bonus .bonus-badge', 'common.bonusIncome'],
+        ['#confirm-modal .btn-secondary .btn-text', 'common.cancel'],
+        ['#confirm-action-text', 'common.select'],
+        ['#confirm-modal .modal-tip', 'common.closeHint'],
+        ['.skins-title', 'skins.title'],
+        ['#skin-detail-name', 'skins.name'],
+        ['#skin-detail-description', 'skins.description'],
+        ['#skin-detail-rarity', 'skins.rarity'],
+        ['#skin-detail-bonus', 'common.bonusIncome'],
+        ['#skin-action-btn', 'common.claim'],
+        ['#skin-charm-btn', 'common.equip']
+    ];
+
+    textMap.forEach(([selector, key]) => {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = t(key);
+    });
+
+    const placeholders = [
+        ['coin-bet', 'gameModals.betAmount'],
+        ['wheel-bet', 'gameModals.betAmount'],
+        ['wheel-number', 'gameModals.numberRange'],
+        ['slots-bet', 'gameModals.betAmount'],
+        ['dice-bet', 'gameModals.betAmount'],
+        ['luckybox-bet', 'gameModals.betAmount'],
+        ['crash-bet', 'gameModals.betAmount']
+    ];
+
+    placeholders.forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('placeholder', t(key));
+    });
+
+    const buttonMap = [
+        ['#game-coinflip .btn-primary', 'gameModals.flip'],
+        ['#game-wheel .btn-primary', 'gameModals.spin'],
+        ['#game-slots .btn-primary', 'gameModals.spin'],
+        ['#game-dice .btn-primary', 'gameModals.roll']
+    ];
+
+    buttonMap.forEach(([selector, key]) => {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = t(key);
+    });
+
+    const referralLink = document.getElementById('referral-link');
+    if (referralLink && referralLink.textContent.trim().toLowerCase() === 'loading...') {
+        referralLink.textContent = t('common.loading');
+    }
 }
 
 // ==================== НАВИГАЦИЯ ====================
@@ -1773,6 +2351,53 @@ function closeSettingsOutside(e) {
 
 // ==================== ТУРНИР ====================
 let tournamentTimer = null;
+let onlineHeartbeatTimer = null;
+let onlineCountTimer = null;
+
+function setOnlineCount(count) {
+    const countEl = document.getElementById('tournament-online-count');
+    if (countEl) countEl.textContent = formatNumber(Math.max(0, Number(count) || 0));
+}
+
+async function sendOnlineHeartbeat() {
+    if (!userId) return;
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/online/heartbeat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(tg?.initData ? { 'X-Telegram-Init-Data': tg.initData } : {})
+            },
+            body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (data.success) setOnlineCount(data.online_now);
+    } catch (err) {
+        console.warn('Online heartbeat failed:', err);
+    }
+}
+
+async function refreshOnlineCount() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/online/count`);
+        const data = await res.json();
+        if (data.success) setOnlineCount(data.online_now);
+    } catch (err) {
+        console.warn('Online count failed:', err);
+    }
+}
+
+function startOnlinePresence() {
+    if (!userId) return;
+    if (!onlineHeartbeatTimer) {
+        sendOnlineHeartbeat();
+        onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, 25000);
+    }
+    if (!onlineCountTimer) {
+        refreshOnlineCount();
+        onlineCountTimer = setInterval(refreshOnlineCount, 15000);
+    }
+}
 
 async function loadTournamentData() {
     try {
@@ -1783,6 +2408,7 @@ async function loadTournamentData() {
         const rankData = await rankRes.json();
         
         if (leaderboardData.success) {
+            setOnlineCount(leaderboardData.online_now);
             renderLeaderboard({
                 players: leaderboardData.players,
                 playerRank: rankData.rank,
@@ -1833,7 +2459,7 @@ function startTournamentTimer(seconds) {
         remaining--;
         if (remaining <= 0) {
             clearInterval(tournamentTimer);
-            timerEl.textContent = 'Турнир завершен';
+            timerEl.textContent = t('tournament.finished');
             loadTournamentData();
             return;
         }
@@ -1853,13 +2479,13 @@ function showEnergyRecoveryModal() {
     modal.innerHTML = `
         <div class="modal-content glass">
             <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
-            <h3>⚡ Энергия закончилась!</h3>
-            <p>Посмотри рекламу и получи +50 энергии</p>
+            <h3>${UI_LANG === 'ru' ? '⚡ Энергия закончилась!' : '⚡ Energy is empty!'}</h3>
+            <p>${UI_LANG === 'ru' ? 'Посмотри рекламу и получи +50 энергии' : 'Watch an ad and get +50 energy'}</p>
             <button class="btn-primary" onclick="recoverEnergyWithAd()">
-                📺 Смотреть рекламу
+                ${UI_LANG === 'ru' ? '📺 Смотреть рекламу' : '📺 Watch ad'}
             </button>
             <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
-                ⏳ Подождать
+                ${UI_LANG === 'ru' ? '⏳ Подождать' : '⏳ Wait'}
             </button>
         </div>
     `;
@@ -1871,12 +2497,12 @@ async function recoverEnergyWithAd() {
     if (modal) modal.remove();
 
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
+        showToast(tr('toasts.adUnavailable'), true);
         return;
     }
 
     try {
-        showToast('📺 Загружаем рекламу...');
+        showToast(tr('toasts.adLoading'));
         await window.show_10655027();
 
         const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
@@ -1893,10 +2519,10 @@ async function recoverEnergyWithAd() {
 
         applyServerEnergySnapshot(data);
         updateUI();
-        showToast('⚡ Энергия восстановлена!');
+        showToast(tr('toasts.energyRecovered'));
     } catch (err) {
         console.error('Energy recover error:', err);
-        showToast('❌ Ошибка восстановления энергии', true);
+        showToast(tr('toasts.serverError'), true);
     }
 }
 
@@ -1906,22 +2532,22 @@ let boostInterval = null;
 
 function activateMegaBoost() {
     if (!userId) {
-        showToast('❌ Авторизуйтесь', true);
+        showToast(tr('toasts.authRequired'), true);
         return;
     }
     
     const boostBtn = document.getElementById('mega-boost-btn');
     if (boostBtn?.classList.contains('active')) {
-        showToast('⚡ Буст уже активен!', true);
+        showToast(tr('toasts.boostActive'), true);
         return;
     }
     
     if (typeof window.show_10655027 !== 'function') {
-        showToast('❌ Реклама недоступна', true);
+        showToast(tr('toasts.adUnavailable'), true);
         return;
     }
     
-    showToast('📺 Загружаем рекламу...');
+    showToast(tr('toasts.adLoading'));
     
     window.show_10655027()
         .then(() => {
@@ -1951,7 +2577,7 @@ function activateMegaBoost() {
                     if (timerEl) timerEl.style.display = 'none';
                     document.querySelector('.mega-boost-indicator')?.remove();
                     if (energyBar) energyBar.classList.remove('boost-active');
-                    showToast('⏰ Буст закончился');
+                    showToast(tr('toasts.boostFinished'));
                     return;
                 }
                 
@@ -1960,7 +2586,7 @@ function activateMegaBoost() {
                 if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
             }, 1000);
             
-            showToast('🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!');
+            showToast(tr('toasts.megaBoostActivated'));
             
             fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
                 method: 'POST',
@@ -1968,7 +2594,7 @@ function activateMegaBoost() {
                 body: JSON.stringify({ user_id: userId })
             }).catch(() => {});
         })
-        .catch(() => showToast('❌ Ошибка при показе рекламы', true));
+        .catch(() => showToast(tr('toasts.watchError'), true));
 }
 
 function showBoostIndicator() {
@@ -1979,7 +2605,7 @@ function showBoostIndicator() {
     if (energyContainer) {
         const indicator = document.createElement('div');
         indicator.className = 'mega-boost-indicator';
-        indicator.innerHTML = '🔥 MEGA BOOST ACTIVE 🔥';
+        indicator.innerHTML = UI_LANG === 'ru' ? '🔥 МЕГА БУСТ АКТИВЕН 🔥' : '🔥 MEGA BOOST ACTIVE 🔥';
         energyContainer.appendChild(indicator);
     }
 }
@@ -2240,14 +2866,14 @@ async function playCoinflip() {
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
-    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
-    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
-    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
 
     const resultEl = document.getElementById('coin-result');
     const coin = document.getElementById('coin');
     
-    resultEl.textContent = '🪙 Подбрасываем...';
+    resultEl.textContent = tr('minigames.coinflipSpinning');
     coin.classList.add('flipping');
     playSound('coinflip');
     miniGameLocks.coinflip = true;
@@ -2270,7 +2896,7 @@ async function playCoinflip() {
                     playSound('lose');
                 }
                 
-                resultEl.textContent = data.message || '🎮 Сыграно!';
+                resultEl.textContent = data.message || tr('minigames.coinflipPlayed');
                 State.game.coins = data.coins;
                 trackAchievementProgress('games', 1);
                 checkAchievements();
@@ -2283,13 +2909,13 @@ async function playCoinflip() {
                     State.game.coins += bet;
                     coin.classList.add('win');
                     setTimeout(() => coin.classList.remove('win'), 1000);
-                    resultEl.textContent = '🦅 Вы выиграли! +' + bet;
+                    resultEl.textContent = tr('minigames.coinflipWin', { bet });
                     createConfetti();
                     spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
                     playSound('win');
                 } else {
                     State.game.coins -= bet;
-                    resultEl.textContent = '💀 Вы проиграли';
+                    resultEl.textContent = tr('minigames.coinflipLose');
                     shakeGameModal('coinflip');
                     spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
                     playSound('lose');
@@ -2298,9 +2924,9 @@ async function playCoinflip() {
             }
         } catch (err) {
             coin.classList.remove('flipping');
-            resultEl.textContent = `❌ ${err.message || 'Ошибка сервера'}`;
+            resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
             playSound('lose');
-            showToast(`❌ ${err.message || 'Ошибка сервера'}`, true);
+            showToast(`❌ ${err.message || tr('toasts.serverError')}`, true);
         } finally {
             miniGameLocks.coinflip = false;
         }
@@ -2313,9 +2939,9 @@ async function playSlots() {
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
-    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
-    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
-    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
 
     const resultEl = document.getElementById('slots-result');
     const slot1 = document.getElementById('slot1');
@@ -2324,7 +2950,7 @@ async function playSlots() {
     
     const symbols = ['CH', 'LM', 'OR', '77', 'DM', 'ST'];
     
-    resultEl.textContent = '🎰 Крутим...';
+    resultEl.textContent = tr('minigames.slotsSpinning');
     playSound('spin');
     [slot1, slot2, slot3].forEach(el => el?.classList.add('spinning'));
     miniGameLocks.slots = true;
@@ -2364,7 +2990,7 @@ async function playSlots() {
                 })
                 .catch(err => {
                     [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
-                    resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
+                    resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
                     playSound('lose');
                 })
                 .finally(() => {
@@ -2384,14 +3010,14 @@ async function playSlots() {
                     const win = bet * 5;
                     State.game.coins += win;
                     trackAchievementProgress('games', 1);
-                    resultEl.textContent = '🎰 ДЖЕКПОТ! +' + win;
+                    resultEl.textContent = tr('minigames.slotsJackpot', { win });
                     playSound('win');
                     createConfetti();
                     spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
                     checkAchievements();
                 } else {
                     State.game.coins -= bet;
-                    resultEl.textContent = '🎰 Повезет в следующий раз';
+                    resultEl.textContent = tr('minigames.slotsLose');
                     shakeGameModal('slots');
                     spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
                     playSound('lose');
@@ -2413,9 +3039,9 @@ async function playDice() {
     const bet = parseInt(betInput.value);
     const pred = predSelect.value;
     
-    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
-    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
-    if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
 
     const resultEl = document.getElementById('dice-result');
     const dice1 = document.getElementById('dice1');
@@ -2423,7 +3049,7 @@ async function playDice() {
     
     const diceFaces = ['1', '2', '3', '4', '5', '6'];
     
-    resultEl.textContent = '🎲 Бросаем...';
+    resultEl.textContent = tr('minigames.diceRolling');
     playSound('dice');
     dice1?.classList.add('roll');
     dice2?.classList.add('roll');
@@ -2467,7 +3093,7 @@ async function playDice() {
                 .catch(err => {
                     dice1?.classList.remove('roll');
                     dice2?.classList.remove('roll');
-                    resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
+                    resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
                     playSound('lose');
                 })
                 .finally(() => {
@@ -2491,14 +3117,14 @@ async function playDice() {
                 if (win) {
                     const multiplier = pred === '7' ? 5 : 2;
                     State.game.coins += bet * multiplier;
-                    resultEl.textContent = `🎲 Вы выиграли! x${multiplier}`;
+                    resultEl.textContent = tr('minigames.diceWin', { multiplier });
                     playSound('win');
                     spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                 } else {
                     State.game.coins -= bet;
-                    resultEl.textContent = '🎲 Вы проиграли';
+                    resultEl.textContent = tr('minigames.diceLose');
                     shakeGameModal('dice');
                     spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
                     playSound('lose');
@@ -2514,18 +3140,18 @@ async function playWheel() {
     if (miniGameLocks.wheel) return;
     try {
         const betInput = document.getElementById('wheel-bet');
-        if (!betInput) return showToast('❌ Элемент ставки не найден', true);
+        if (!betInput) return showToast(tr('toasts.uiError'), true);
         
         const bet = parseInt(betInput.value);
         const betType = document.getElementById('wheel-color')?.value;
         const betNumber = document.getElementById('wheel-number')?.value;
         
-        if (isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
-        if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+        if (isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+        if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
         if (betType === 'number') {
             const parsedNumber = parseInt(betNumber, 10);
             if (Number.isNaN(parsedNumber) || parsedNumber < 0 || parsedNumber > 36) {
-                return showToast('❌ Введите число от 0 до 36', true);
+                return showToast(tr('toasts.rouletteNumber'), true);
             }
         }
 
@@ -2533,9 +3159,9 @@ async function playWheel() {
         const wheel = document.getElementById('wheel');
         const plate = document.getElementById('roulette-plate');
         
-        if (!resultEl || !wheel) return showToast('❌ Ошибка интерфейса', true);
+        if (!resultEl || !wheel) return showToast(tr('toasts.uiError'), true);
         
-        resultEl.textContent = '🎡 Крутим...';
+        resultEl.textContent = tr('minigames.rouletteSpinning');
         playSound('spin');
         
         plate?.classList.add('spinning');
@@ -2575,7 +3201,7 @@ async function playWheel() {
             .catch(err => {
                 plate?.classList.remove('spinning');
                 console.error('Roulette error:', err);
-                resultEl.textContent = `❌ ${err.message || 'Ошибка сервера'}`;
+                resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
                 playSound('lose');
             })
             .finally(() => {
@@ -2597,14 +3223,14 @@ async function playWheel() {
                 if (win) {
                     const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
                     State.game.coins += bet * multiplier;
-                    resultEl.textContent = `🎡 Landed on ${landedNumber}. You won x${multiplier}`;
+                    resultEl.textContent = tr('minigames.rouletteWin', { number: landedNumber, multiplier });
                     playSound('win');
                     spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                 } else {
                     State.game.coins -= bet;
-                    resultEl.textContent = `🎡 Landed on ${landedNumber}. You lost`;
+                    resultEl.textContent = tr('minigames.rouletteLose', { number: landedNumber });
                     shakeGameModal('wheel');
                     spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
                     playSound('lose');
@@ -2612,7 +3238,7 @@ async function playWheel() {
                 updateUI();
             }).catch(err => {
                 plate?.classList.remove('spinning');
-                resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
+                resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
                 playSound('lose');
             }).finally(() => {
                 miniGameLocks.wheel = false;
@@ -2622,7 +3248,7 @@ async function playWheel() {
     } catch (err) {
         miniGameLocks.wheel = false;
         console.error('Roulette error:', err);
-        showToast('❌ Ошибка', true);
+        showToast(tr('toasts.serverError'), true);
     }
 }
 
@@ -2725,7 +3351,7 @@ function resetLuckyBoxBoard() {
         if (label) label.textContent = `Box ${index + 1}`;
     });
     const resultEl = document.getElementById('luckybox-result');
-    if (resultEl) resultEl.textContent = 'Pick your box.';
+    if (resultEl) resultEl.textContent = tr('minigames.luckyPick');
 }
 
 function playLuckyBox(boxIndex) {
@@ -2737,12 +3363,12 @@ function playLuckyBox(boxIndex) {
     if (!betInput || !resultEl || !cards.length) return;
 
     const bet = parseInt(betInput.value, 10);
-    if (Number.isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
-    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+    if (Number.isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
 
     luckyBoxBusy = true;
     cards.forEach(card => card.disabled = true);
-    resultEl.textContent = 'Opening boxes...';
+    resultEl.textContent = tr('minigames.luckyOpening');
     playSound('spin');
 
     const outcomes = [0, 0.8, 1.6, 3.5];
@@ -2758,7 +3384,7 @@ function playLuckyBox(boxIndex) {
             const mult = shuffled[index];
             const label = card.querySelector('.lucky-box-label');
         if (label) {
-            label.textContent = mult === 0 ? 'Bust' : mult === 0.8 ? 'Save' : `x${mult}`;
+            label.textContent = mult === 0 ? tr('minigames.luckyBust') : mult === 0.8 ? tr('minigames.luckySave') : `x${mult}`;
         }
         });
 
@@ -2770,19 +3396,19 @@ function playLuckyBox(boxIndex) {
         if (multiplier > 1) {
             State.game.coins += payout;
             selectedCard.classList.add('winning');
-            resultEl.textContent = `Lucky hit! x${multiplier}  +${payout - bet}`;
+            resultEl.textContent = tr('minigames.luckyHit', { multiplier, profit: payout - bet });
             createConfetti(selectedCard);
             spawnGameParticles(selectedCard, 'win');
             playSound('win');
         } else if (multiplier === 0.8) {
             State.game.coins += payout;
             selectedCard.classList.add('refund');
-            resultEl.textContent = `Soft save. You kept ${payout} coins.`;
+            resultEl.textContent = tr('minigames.luckySoft', { payout });
             spawnGameParticles(selectedCard, 'soft');
             playSound('coinflip');
         } else {
             selectedCard.classList.add('losing');
-            resultEl.textContent = `Bust. You lost ${bet} coins.`;
+            resultEl.textContent = tr('minigames.luckyLost', { bet });
             shakeGameModal('luckybox');
             spawnGameParticles(selectedCard, 'lose');
             playSound('lose');
@@ -2809,8 +3435,8 @@ function resetCrashGhostUI() {
     const cashBtn = document.getElementById('crash-cashout-btn');
 
     if (multiplierEl) multiplierEl.textContent = '1.00x';
-    if (statusEl) statusEl.textContent = 'Start the round and cash out before the ghost crashes.';
-    if (resultEl) resultEl.textContent = 'Catch the multiplier before it bursts.';
+    if (statusEl) statusEl.textContent = tr('minigames.crashStart');
+    if (resultEl) resultEl.textContent = tr('minigames.crashHint');
     if (fillEl) fillEl.style.width = '0%';
     if (runnerEl) runnerEl.style.left = '0%';
     document.querySelector('#game-crash .crash-track')?.classList.remove('danger');
@@ -2829,8 +3455,8 @@ function startCrashGhost() {
     if (!betInput || !statusEl || !resultEl) return;
 
     const bet = parseInt(betInput.value, 10);
-    if (Number.isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
-    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+    if (Number.isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
 
     State.game.coins -= bet;
     updateUI();
@@ -2845,8 +3471,8 @@ function startCrashGhost() {
 
     if (startBtn) startBtn.disabled = true;
     if (cashBtn) cashBtn.disabled = false;
-    statusEl.textContent = 'Ghost is running... cash out before the crash.';
-    resultEl.textContent = `Crash target hidden. Stake: ${bet}`;
+    statusEl.textContent = tr('minigames.crashRunning');
+    resultEl.textContent = tr('minigames.crashStake', { bet });
     playSound('spin');
 
     crashGhostState.interval = setInterval(() => {
@@ -2896,15 +3522,15 @@ function endCrashGhostRound(cashedOut, silentClose) {
     if (cashedOut) {
         const payout = Math.floor(crashGhostState.bet * crashGhostState.multiplier);
         State.game.coins += payout;
-        if (statusEl) statusEl.textContent = `Cashed out at ${crashGhostState.multiplier.toFixed(2)}x`;
-        if (resultEl) resultEl.textContent = `Ghost paid ${payout} coins. Profit: +${payout - crashGhostState.bet}`;
+        if (statusEl) statusEl.textContent = tr('minigames.crashCashout', { multiplier: crashGhostState.multiplier.toFixed(2) });
+        if (resultEl) resultEl.textContent = tr('minigames.crashCashoutResult', { payout, profit: payout - crashGhostState.bet });
         if (runnerEl) runnerEl.classList.add('ghost-safe');
         createConfetti(document.getElementById('game-crash'));
         spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'win');
         playSound('win');
     } else if (!silentClose) {
-        if (statusEl) statusEl.textContent = `Crash at ${crashGhostState.crashAt.toFixed(2)}x`;
-        if (resultEl) resultEl.textContent = `Ghost crashed. You lost ${crashGhostState.bet} coins.`;
+        if (statusEl) statusEl.textContent = tr('minigames.crashAt', { multiplier: crashGhostState.crashAt.toFixed(2) });
+        if (resultEl) resultEl.textContent = tr('minigames.crashLost', { bet: crashGhostState.bet });
         if (runnerEl) runnerEl.classList.add('ghost-crashed');
         shakeGameModal('crash');
         spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'lose');
@@ -3113,6 +3739,7 @@ function setupGlobalClickHandler() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Spirit Clicker starting...');
 
+    applyStaticTranslations();
     loadAchievementsFromStorage();
     loadSettings();
     initBgm();
@@ -3121,6 +3748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userId) {
         await loadUserData();
+        startOnlinePresence();
         setInterval(sendClickBatch, 1500);
     } else {
         const saved = localStorage.getItem('ryohoGame');
@@ -3306,7 +3934,7 @@ function setCharmFromDetail() {
     const currentId = document.getElementById('skin-detail-img')?.dataset.skinId || State.skins.selected;
     if (!currentId) return;
     setCharmImageFromSkin(currentId);
-    showToast('✅ Брелок обновлен');
+    showToast(tr('toasts.charmUpdated'));
 }
 
 // ==================== BGM ====================
@@ -3318,6 +3946,7 @@ function initBgm() {
     audio.volume = 0.12;
     audio.preload = 'auto';
     bgmState.audio = audio;
+    bgmState.enabled = State.settings.music;
 
     const playBgm = () => {
         if (!bgmState.enabled || !bgmState.audio) return;
@@ -3384,19 +4013,19 @@ function initAutoClicker() {
         if (!autoBtn) return;
         if (autoState.enabledUntil > Date.now()) return; // уже активен
 
-        const enable = () => { showToast('✅ Auto Tap 2 мин'); enableAuto(120000); };
+        const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(120000); };
 
         if (typeof window.show_10655027 !== 'function') {
-            showToast('ℹ️ Реклама недоступна, авто на 30 сек');
+            showToast(tr('toasts.autoTapFallback'));
             enableAuto(30000);
             return;
         }
-        showToast('📺 Загружаем рекламу...');
+        showToast(tr('toasts.adLoading'));
         try {
             await window.show_10655027();
             enable();
         } catch (e) {
-            showToast('❌ Не удалось включить авто', true);
+            showToast(tr('toasts.autoTapError'), true);
         }
     };
 
@@ -3663,6 +4292,7 @@ window.closeSettings = closeSettings;
 window.closeSettingsOutside = closeSettingsOutside;
 window.toggleTheme = toggleTheme;
 window.toggleSound = toggleSound;
+window.toggleMusic = toggleMusic;
 window.toggleVibration = toggleVibration;
 window.activateMegaBoost = activateMegaBoost;
 window.selectSkin = selectSkin;
