@@ -159,8 +159,8 @@ body:not(.night-mode) #stars-canvas {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    padding: 0 16px;
-    gap: 5px;
+    padding: calc(env(safe-area-inset-top, 0px) + 0px) 12px calc(env(safe-area-inset-bottom, 0px) + 92px);
+    gap: 6px;
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
@@ -182,12 +182,15 @@ body:not(.night-mode) #stars-canvas {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
+    padding: 8px 12px;
     background: var(--bg-card);
     border-bottom: 2px solid var(--accent);
     border-radius: 20px;
-    margin-bottom: 1px;
+    margin-bottom: 0px;
     transition: background 0.3s ease;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px));
+    z-index: 20;
 }
 
 .header .nav-item {
@@ -499,8 +502,8 @@ body.modal-open .badge-wrap {
 }
 
 .click-button {
-    width: min(72vmin, 450px);
-    height: min(72vmin, 450px);
+    width: min(78vmin, 480px);
+    height: min(78vmin, 480px);
     border-radius: 50%;
     background: var(--clicker-bg);
     display: flex;
@@ -643,6 +646,13 @@ body.modal-open .badge-wrap {
     mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 0px));
     -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 0px));
     pointer-events: none;
+}
+
+/* TEMP: hide badge/keychain */
+.badge-wrap,
+#badgeRope,
+.badge-card {
+    display: none !important;
 }
 
 /* ---------- Small screens tweaks ---------- */
@@ -821,8 +831,15 @@ body.modal-open .badge-wrap {
     padding: 6px 4px;
     gap: 4px;
     box-shadow: var(--shadow);
-    margin-bottom: 30px;
+    margin-bottom: 0;
     transition: background 0.3s ease;
+    position: fixed;
+    left: 50%;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
+    transform: translateX(-50%);
+    width: calc(100% - 28px);
+    max-width: 440px;
+    z-index: 30;
 }
 
 .nav-item {

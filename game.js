@@ -390,8 +390,8 @@ async function loadUserData() {
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
         
-        State.skins.owned = data.owned_skins || ['default_SP'];
-        State.skins.selected = data.selected_skin || 'default_SP';
+        State.skins.owned = data.owned_skins || ['default.pngSP'];
+        State.skins.selected = data.selected_skin || 'default.pngSP';
         State.skins.adsWatched = data.ads_watched || 0;
         
         await loadPrices();
@@ -462,21 +462,9 @@ function getLocalSkins() {
 
 async function loadSkinsList() {
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/skins/list`);
+        // На клиенте фиксируем актуальный список, чтобы старые серверные записи не перезаписывали имена/изображения
         const localSkins = getLocalSkins();
-        let remoteSkins = [];
-        if (res.ok) {
-            const data = await res.json();
-            remoteSkins = data.skins || [];
-        }
-        if (!remoteSkins.length) {
-            State.skins.data = localSkins;
-        } else {
-            const byId = new Map();
-            remoteSkins.forEach(s => byId.set(s.id, s));
-            localSkins.forEach(s => { if (!byId.has(s.id)) byId.set(s.id, s); });
-            State.skins.data = Array.from(byId.values());
-        }
+        State.skins.data = localSkins;
     } catch (err) {
         State.skins.data = getLocalSkins();
     }
@@ -2857,6 +2845,11 @@ function initBadgePhysics() {
     const ropeCanvas = document.getElementById('badgeRope');
     const wrap = document.querySelector('.badge-wrap');
     const bar = document.querySelector('.energy-bar-container');
+    // временно отключаем отображение брелка, но оставляем код на месте
+    if (wrap) wrap.style.display = 'none';
+    return;
+
+    // (оставлено для будущего включения)
     if (!card || !ropeCanvas || !wrap || !bar) return;
 
     const ctx = ropeCanvas.getContext('2d');
