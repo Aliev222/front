@@ -721,8 +721,6 @@ function handleTap(e) {
             el.style.pointerEvents = 'none';
             el.style.zIndex = '9999';
             el.style.whiteSpace = 'nowrap';
-            el.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
-            el.style.opacity = '0';
             document.body.appendChild(el);
             return el;
         });
@@ -740,13 +738,11 @@ function handleTap(e) {
     effect.style.fontWeight = 'bold';
     effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
     effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
-    // force reflow before animating
-    void effect.offsetHeight;
+    // сброс анимации для реюза
+    effect.style.animation = 'none';
     effect.style.opacity = '1';
-    requestAnimationFrame(() => {
-        effect.style.transform = 'translate(-50%, -150px)';
-        effect.style.opacity = '0';
-    });
+    effect.offsetWidth; // reflow
+    effect.style.animation = 'tapFloat 0.55s ease-out forwards';
 
     if (State.settings.sound) {
         try {
