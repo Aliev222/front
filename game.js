@@ -347,6 +347,10 @@ const API = {
             if (!res.ok) {
                 const err = new Error(`HTTP ${res.status}`);
                 err.status = res.status;
+                try {
+                    const data = await res.json();
+                    err.detail = data?.detail || '';
+                } catch (parseError) {}
                 throw err;
             }
             return await res.json();
@@ -1080,7 +1084,7 @@ function updateCollectionProgress() {
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
 
-async function upgradeBoost(type, internal = false, attempt = 0) {
+async function upgradeBoost(type, internal = false) {
     if (upgradeInProgress && !internal) return;
     if (!userId) return;
     
@@ -1114,10 +1118,17 @@ async function upgradeBoost(type, internal = false, attempt = 0) {
         checkAchievements();
     }
     } catch (err) {
-        if (err.status === 429 && attempt < 2) {
-            showToast('⏳ Подожди 3 сек...', true);
-            await new Promise(r => setTimeout(r, 3200));
-            return upgradeBoost(type, internal, attempt + 1);
+        if (err.status === 429) {
+            showToast('⏳ Улучшение уже обрабатывается', true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Max level reached') {
+            showToast('⚠️ Максимальный уровень достигнут', true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Not enough coins') {
+            showToast(`❌ Нужно ${price} монет`, true);
+            return;
         }
         showToast(`❌ Ошибка сервера${err.status ? ' ' + err.status : ''}`, true);
     } finally {
@@ -1130,13 +1141,47 @@ async function upgradeAll() {
 
     upgradeInProgress = true;
     try {
-        const sequence = ['multitap', 'profit', 'energy'];
-        for (const type of sequence) {
-            await upgradeBoost(type, true);
-            await new Promise(r => setTimeout(r, 200)); // лёгкий зазор
+        const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
+        if (State.game.coins < total) {
+            showToast(`❌ Нужно ${formatNumber(total)} монет`, true);
+            return;
         }
-        State.game.energy = State.game.maxEnergy;
+
+        const result = await API.post('/api/upgrade-all', {
+            user_id: userId
+        });
+
+        if (!result?.success) {
+            showToast('❌ Не удалось применить улучшения', true);
+            return;
+        }
+
+        State.game.coins = result.coins;
+        State.game.levels.multitap = result.levels?.multitap ?? State.game.levels.multitap;
+        State.game.levels.profit = result.levels?.profit ?? State.game.levels.profit;
+        State.game.levels.energy = result.levels?.energy ?? State.game.levels.energy;
+        State.game.prices = { ...State.game.prices, ...(result.prices || {}) };
+        State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
+        State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
+        State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
+        State.game.energy = result.energy ?? State.game.maxEnergy;
+        trackAchievementProgress('upgrades', 3);
         updateUI();
+        checkAchievements();
+    } catch (err) {
+        if (err.status === 429) {
+            showToast('⏳ Улучшение уже обрабатывается', true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Not enough coins') {
+            showToast('❌ Недостаточно монет для полного апгрейда', true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Max level reached') {
+            showToast('⚠️ Один из апгрейдов уже на максимуме', true);
+            return;
+        }
+        showToast(`❌ Ошибка сервера${err.status ? ' ' + err.status : ''}`, true);
     } finally {
         upgradeInProgress = false;
     }
