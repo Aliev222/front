@@ -3323,7 +3323,7 @@ body {
 .glass,
 .energy-bar-container,
 .upgrade-panel {
-    margin-bottom: 0;
+    margin-bottom: 5px;
 }
 
 .clicker-area {
