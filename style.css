@@ -3295,11 +3295,16 @@ body {
     min-height: 100dvh;
     height: 100dvh;
     padding:
-        calc(env(safe-area-inset-top, 0px) + 8px)
+        env(safe-area-inset-top, 0px)
         var(--layout-pad)
         calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 14px);
     gap: var(--layout-gap);
     transform: none;
+}
+
+.header {
+    margin-top: 0;
+    top: env(safe-area-inset-top, 0px);
 }
 
 .header,
