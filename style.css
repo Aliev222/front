@@ -4,6 +4,13 @@
 
 /* ==================== CSS ПЕРЕМЕННЫЕ (ТЕМЫ) ==================== */
 :root {
+    --layout-pad:    clamp(10px, 4vw, 20px);
+    --layout-gap:    clamp(4px, 1.5vw, 10px);
+    --radius-lg:     clamp(18px, 4vw, 26px);
+    --radius-md:     clamp(14px, 3vw, 20px);
+    --nav-height:    clamp(76px, 14vw, 96px);
+    --container-max: 520px;
+
     --bg-primary:    #f5f5f5;
     --bg-secondary:  #ffffff;
     --bg-card:       #ffffff;
@@ -154,13 +161,13 @@ body:not(.night-mode) #stars-canvas {
 /* ==================== GAME CONTAINER ==================== */
 .game-container {
     width: 100%;
-    max-width: 420px;
+    max-width: var(--container-max);
     height: 100dvh;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px calc(env(safe-area-inset-bottom, 0px) + 120px);
-    gap: 6px;
+    padding: calc(env(safe-area-inset-top, 0px) + 5px) var(--layout-pad) calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 12px);
+    gap: var(--layout-gap);
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
@@ -171,10 +178,11 @@ body:not(.night-mode) #stars-canvas {
 .glass {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    padding: clamp(12px, 3.5vw, 16px) clamp(12px, 4vw, 18px);
     box-shadow: var(--shadow);
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: var(--layout-gap);
 }
 
 /* ==================== HEADER ==================== */
@@ -182,14 +190,14 @@ body:not(.night-mode) #stars-canvas {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 8px var(--layout-pad);
     background: var(--bg-card);
     border-bottom: 2px solid var(--accent);
-    border-radius: 20px;
-    margin-bottom: 0px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 5px;
     transition: background 0.3s ease;
     position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + 0px);
+    top: calc(env(safe-area-inset-top, 0px) + 5px);
     z-index: 20;
 }
 
@@ -278,14 +286,15 @@ body:not(.night-mode) #stars-canvas {
 .stats-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: var(--layout-gap);
+    margin-bottom: 5px;
 }
 
 .stat-card {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
+    padding: clamp(10px, 3vw, 14px);
     border-bottom: 2px solid var(--accent);
 }
 
@@ -484,10 +493,10 @@ body.modal-open .badge-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 15px;
+    justify-content: flex-start;
+    gap: 20px;
     position: relative;
-    min-height: 300px;
+    min-height: 110px;
 }
 
 .clicker-container {
@@ -499,11 +508,17 @@ body.modal-open .badge-wrap {
 
 .click-button-wrapper {
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
 }
 
 .click-button {
-    width: min(78vmin, 480px);
-    height: min(78vmin, 480px);
+    width: clamp(320px, 90vw, 580px);
+    height: clamp(320px, 90vw, 580px);
     border-radius: 50%;
     background: var(--clicker-bg);
     display: flex;
@@ -513,9 +528,9 @@ body.modal-open .badge-wrap {
     position: relative;
     border: 3px solid var(--accent);
     box-shadow:
-        0 0 0 8px var(--accent-dim),
-        0 10px 34px var(--accent-glow);
-    transition: all 0.08s ease;
+        0 0 0 12px var(--accent-dim),
+        0 20px 34px var(--accent-glow);
+    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -664,7 +679,7 @@ body.modal-open .badge-wrap {
     .auto-boost-button { width: 56px; height: 56px; }
     .boost-corner { right: 6px; gap: 8px; }
     .energy-charm-wrap { right: 0; }
-    .upgrade-panel { padding: 8px 10px; border-radius: 18px; }
+    .upgrade-panel { padding: 8px 10px; border-radius: var(--radius-md); }
     .upgrade-panel-title { letter-spacing: 1px; }
 }
 
@@ -748,12 +763,12 @@ body.modal-open .badge-wrap {
     justify-content: space-between;
     cursor: pointer;
     transition: all 0.14s ease;
-    border-radius: 22px;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border);
     padding: 10px 12px;
     background: var(--bg-card);
     box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-    margin-bottom: 22px;
+    margin-bottom: 6px;
 }
 
 .upgrade-panel:active {
@@ -826,11 +841,11 @@ body.modal-open .badge-wrap {
     justify-content: space-around;
     align-items: center;
     background: var(--bg-card);
-    border-radius: 30px;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--border);
     border-bottom: 2px solid var(--accent);
-    padding: 6px 4px;
-    gap: 4px;
+    padding: clamp(4px, 2vw, 8px) clamp(6px, 2vw, 12px);
+    gap: clamp(4px, 1.2vw, 10px);
     box-shadow: var(--shadow);
     margin-bottom: 0;
     transition: background 0.3s ease;
@@ -838,8 +853,7 @@ body.modal-open .badge-wrap {
     left: 50%;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
     transform: translateX(-50%);
-    width: calc(100% - 28px);
-    max-width: 440px;
+    width: clamp(260px, 90vw, 520px);
     z-index: 30;
 }
 
@@ -900,8 +914,8 @@ body.modal-open .badge-wrap {
 
 /* Стандартные модалки (tournament / friends / tasks / games) */
 .modal-screen > .glass {
-    width: 100%;
-    max-width: 520px;
+    width: min(96vw, 540px);
+    max-width: 540px;
     margin: 0 auto;
     min-height: auto;
     border-radius: 18px;
@@ -1090,8 +1104,8 @@ body.modal-open .badge-wrap {
 /* ==================== TASKS ==================== */
 .tasks-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--layout-gap);
 }
 
 .task-card {
@@ -1381,8 +1395,8 @@ body.modal-open .badge-wrap {
 /* ==================== GAMES GRID ==================== */
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--layout-gap);
 }
 
 .game-card {
@@ -1443,8 +1457,8 @@ body.modal-open .badge-wrap {
 }
 
 .game-modal-content {
-    width: 100%;
-    max-width: 360px;
+    width: min(94vw, 380px);
+    max-width: 380px;
     background: var(--bg-card);
     border-radius: 30px;
     padding: 24px;
@@ -3199,5 +3213,42 @@ body.modal-open .badge-wrap {
     display: inline-block;
     border: 1px solid #FF6B6B;
 }
+
+/* ==================== RESPONSIVE OVERRIDES ==================== */
+@media (max-width: 480px) {
+    .game-container { max-width: 100%; }
+    .click-button { width: clamp(220px, 78vw, 360px); height: clamp(220px, 78vw, 360px); }
+    .nav-bar { width: clamp(260px, 94vw, 520px); }
+    .upgrade-panel { margin-bottom: 6px; }
+}
+
+/* iPhone 12/13/14 widths and ниже */
+@media (max-width: 430px) {
+    .game-container {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 16px);
+    }
+    .upgrade-panel { margin-bottom: 6px; }
+    .click-button { width: clamp(210px, 74vw, 360px); height: clamp(210px, 74vw, 360px); }
+}
+
+/* Высота экрана мала — аккуратно сжимаем основные блоки */
+@media (max-height: 720px) {
+    :root { --nav-height: clamp(70px, 12vw, 88px); }
+    .game-container { gap: clamp(3px, 1vw, 6px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 12px); }
+    .header { padding: 6px 10px; }
+    .glass { padding: clamp(10px, 3vw, 14px); }
+    .click-button { width: clamp(200px, 58vw, 360px); height: clamp(200px, 58vw, 360px); }
+    .nav-bar { width: clamp(240px, 88vw, 480px); }
+    .upgrade-panel { margin-bottom: 6px; }
+}
+
+@media (max-height: 620px) {
+    :root { --nav-height: clamp(66px, 11vw, 80px); }
+    .game-container { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 8px); }
+    .click-button { width: clamp(180px, 55vw, 320px); height: clamp(180px, 55vw, 320px); }
+    .nav-bar { width: clamp(220px, 86vw, 440px); }
+}
+
+/* убраны расширения на очень широких экранах, чтобы размеры не разъезжались */
 
 
