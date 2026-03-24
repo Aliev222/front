@@ -159,7 +159,7 @@ body:not(.night-mode) #stars-canvas {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px calc(env(safe-area-inset-bottom, 0px) + 128px);
+    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px calc(env(safe-area-inset-bottom, 0px) + 120px);
     gap: 6px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -753,7 +753,7 @@ body.modal-open .badge-wrap {
     padding: 10px 12px;
     background: var(--bg-card);
     box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 
 .upgrade-panel:active {
@@ -966,6 +966,12 @@ body.modal-open .badge-wrap {
     transform: translateY(1px) scale(0.97);
     background: var(--accent);
     color: #fff;
+}
+
+.night-mode .modal-close {
+    background: linear-gradient(145deg, #1f1f1f, #151515);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #f0f0f0;
 }
 
 .modal-content {
