@@ -159,7 +159,7 @@ body:not(.night-mode) #stars-canvas {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    padding: calc(env(safe-area-inset-top, 0px) + 0px) 12px calc(env(safe-area-inset-bottom, 0px) + 92px);
+    padding: calc(env(safe-area-inset-top, 0px) + 78px) 12px calc(env(safe-area-inset-bottom, 0px) + 140px);
     gap: 6px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -188,9 +188,13 @@ body:not(.night-mode) #stars-canvas {
     border-radius: 20px;
     margin-bottom: 0px;
     transition: background 0.3s ease;
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px));
-    z-index: 20;
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 440px;
+    z-index: 50;
 }
 
 .header .nav-item {
@@ -502,8 +506,8 @@ body.modal-open .badge-wrap {
 }
 
 .click-button {
-    width: min(78vmin, 480px);
-    height: min(78vmin, 480px);
+    width: min(82vmin, 520px);
+    height: min(82vmin, 520px);
     border-radius: 50%;
     background: var(--clicker-bg);
     display: flex;
@@ -753,6 +757,7 @@ body.modal-open .badge-wrap {
     padding: 10px 12px;
     background: var(--bg-card);
     box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
 }
 
 .upgrade-panel:active {
@@ -835,7 +840,7 @@ body.modal-open .badge-wrap {
     transition: background 0.3s ease;
     position: fixed;
     left: 50%;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     transform: translateX(-50%);
     width: calc(100% - 28px);
     max-width: 440px;
