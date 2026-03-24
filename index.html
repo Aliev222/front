@@ -276,15 +276,27 @@
             </div>
         </div>
     </div>
-
     <!-- TASKS MODAL -->
     <div class="modal-screen" id="tasks-screen">
-        <div class="glass">
-            <div class="modal-header">
+        <div class="glass tasks-modal-shell">
+            <div class="modal-header modal-header-premium">
                 <button class="modal-close" onclick="closeModal('tasks-screen')">✕</button>
-                <h2>Tasks</h2>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">Daily Boosts</span>
+                    <h2>Tasks</h2>
+                </div>
             </div>
-            <div class="modal-content">
+            <div class="tasks-hero">
+                <div class="tasks-hero-copy">
+                    <div class="tasks-hero-title">Ad rewards with premium drops</div>
+                    <div class="tasks-hero-subtitle">Fast tasks, glowing payouts, instant dopamine.</div>
+                </div>
+                <div class="tasks-hero-badge">
+                    <span class="tasks-hero-badge-label">Ghost Pass</span>
+                    <span class="tasks-hero-badge-value">Hot Loot</span>
+                </div>
+            </div>
+            <div class="modal-content modal-content-premium tasks-modal-content">
                 <div class="tasks-list" id="tasks-list">
                     <div class="loading">Loading...</div>
                 </div>
@@ -294,38 +306,126 @@
 
     <!-- GAMES MODAL -->
     <div class="modal-screen" id="games-screen">
-        <div class="glass">
-            <div class="modal-header">
+        <div class="glass games-modal-shell">
+            <div class="modal-header modal-header-premium">
                 <button class="modal-close" onclick="closeModal('games-screen')">✕</button>
-                <h2>Mini-Games</h2>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">Neon Casino</span>
+                    <h2>Mini-Games</h2>
+                </div>
             </div>
-            <div class="modal-content">
+            <div class="games-hero">
+                <div class="games-hero-copy">
+                    <div class="games-hero-title">One tap in. All risk. Pure premium chaos.</div>
+                    <div class="games-hero-subtitle">Pick a table, chase the glow, spike your coin balance.</div>
+                </div>
+                <div class="games-hero-jackpot">
+                    <span class="games-hero-jackpot-label">Potential</span>
+                    <span class="games-hero-jackpot-value">x35</span>
+                </div>
+            </div>
+            <div class="modal-content modal-content-premium games-modal-content">
                 <div class="games-grid">
                     <div class="game-card glass" onclick="openGame('coinflip')">
-                        <div class="game-icon">🪙</div>
-                        <div class="game-name">Coinflip</div>
-                        <div class="game-desc">x2 chance</div>
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-balanced">Balanced</span>
+                            <span class="game-payout-badge">x2</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-coinflip">
+                            <div class="game-icon">🪙</div>
+                        </div>
+                        <div class="game-name">Coin Flip</div>
+                        <div class="game-desc">50/50 ghost toss with instant double payout.</div>
+                        <div class="game-meta">
+                            <span>Fast round</span>
+                            <span>Safe rush</span>
+                        </div>
+                        <div class="game-enter">Tap to play</div>
                     </div>
                     <div class="game-card glass" onclick="openGame('slots')">
-                        <div class="game-icon">🎰</div>
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-hot">Hot</span>
+                            <span class="game-payout-badge">x10</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-slots">
+                            <div class="game-icon">🎰</div>
+                        </div>
                         <div class="game-name">Slots</div>
-                        <div class="game-desc">Jackpot x10</div>
+                        <div class="game-desc">Rapid jackpot reels with dopamine burst timing.</div>
+                        <div class="game-meta">
+                            <span>Jackpot vibe</span>
+                            <span>High swing</span>
+                        </div>
+                        <div class="game-enter">Pull the reels</div>
                     </div>
                     <div class="game-card glass" onclick="openGame('dice')">
-                        <div class="game-icon">🎲</div>
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-smart">Smart</span>
+                            <span class="game-payout-badge">x4</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-dice">
+                            <div class="game-icon">🎲</div>
+                        </div>
                         <div class="game-name">Dice</div>
-                        <div class="game-desc">Guess the sum</div>
+                        <div class="game-desc">Call the sum and flex your luck on demand.</div>
+                        <div class="game-meta">
+                            <span>Skill feel</span>
+                            <span>Sharp odds</span>
+                        </div>
+                        <div class="game-enter">Roll it</div>
                     </div>
                     <div class="game-card glass" onclick="openGame('wheel')">
-                        <div class="game-icon">🎡</div>
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-chaos">Chaos</span>
+                            <span class="game-payout-badge">x35</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-wheel">
+                            <div class="game-icon">🎡</div>
+                        </div>
                         <div class="game-name">Roulette</div>
-                        <div class="game-desc">Spin & win</div>
+                        <div class="game-desc">Neon wheel, brutal odds, massive highlight wins.</div>
+                        <div class="game-meta">
+                            <span>Max thrill</span>
+                            <span>Big spike</span>
+                        </div>
+                        <div class="game-enter">Spin now</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('luckybox')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-mystic">Mystic</span>
+                            <span class="game-payout-badge">x3.5</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-luckybox">
+                            <div class="game-icon">&#127873;</div>
+                        </div>
+                        <div class="game-name">Lucky Box</div>
+                        <div class="game-desc">Pick one box. Bust, refund, or premium coin drop.</div>
+                        <div class="game-meta">
+                            <span>Pick one</span>
+                            <span>Mystery odds</span>
+                        </div>
+                        <div class="game-enter">Open a box</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('crash')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-ghost">Ghost</span>
+                            <span class="game-payout-badge">x8+</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-crash">
+                            <div class="game-icon">&#128123;</div>
+                        </div>
+                        <div class="game-name">Crash Ghost</div>
+                        <div class="game-desc">Multiplier climbs until the ghost vanishes. Cash out in time.</div>
+                        <div class="game-meta">
+                            <span>High tension</span>
+                            <span>Fast cashout</span>
+                        </div>
+                        <div class="game-enter">Chase multiplier</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
     <!-- COINFLIP GAME MODAL -->
     <div class="game-modal" id="game-coinflip">
         <div class="game-modal-content glass">
@@ -333,8 +433,14 @@
             <h2>Coinflip</h2>
             <div class="game-play-area">
                 <div class="coin-3d" id="coin">
-                    <div class="coin-face front">🦅</div>
-                    <div class="coin-face back">💀</div>
+                    <div class="coin-face front">
+                        <span class="coin-face-ring"></span>
+                        <span class="coin-face-symbol">S</span>
+                    </div>
+                    <div class="coin-face back">
+                        <span class="coin-face-ring"></span>
+                        <span class="coin-face-symbol ghost-symbol">&#128123;</span>
+                    </div>
                 </div>
                 <div class="game-controls">
                     <input type="number" id="coin-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
@@ -380,9 +486,9 @@
             <h2>Slots</h2>
             <div class="game-play-area">
                 <div class="slots-container">
-                    <div class="slot" id="slot1">🍒</div>
-                    <div class="slot" id="slot2">🍒</div>
-                    <div class="slot" id="slot3">🍒</div>
+                    <div class="slot" id="slot1"><span class="slot-symbol">&#127826;</span></div>
+                    <div class="slot" id="slot2"><span class="slot-symbol">&#127826;</span></div>
+                    <div class="slot" id="slot3"><span class="slot-symbol">&#127826;</span></div>
                 </div>
                 <div class="game-controls">
                     <input type="number" id="slots-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
@@ -400,8 +506,12 @@
             <h2>Dice</h2>
             <div class="game-play-area">
                 <div class="dice-container">
-                    <div class="dice" id="dice1">⚀</div>
-                    <div class="dice" id="dice2">⚀</div>
+                    <div class="dice" id="dice1" data-face="1">
+                        <span class="dice-pip pip-center"></span>
+                    </div>
+                    <div class="dice" id="dice2" data-face="1">
+                        <span class="dice-pip pip-center"></span>
+                    </div>
                 </div>
                 <div class="game-controls">
                     <input type="number" id="dice-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
@@ -416,7 +526,86 @@
             </div>
         </div>
     </div>
+    <!-- LUCKY BOX GAME MODAL -->
+    <div class="game-modal" id="game-luckybox">
+        <div class="game-modal-content glass luckybox-modal-content">
+            <button class="modal-close" onclick="closeGame('luckybox')">&times;</button>
+            <h2>Lucky Box</h2>
+            <div class="game-play-area luckybox-play-area">
+                <div class="luckybox-header-strip">
+                    <div class="luckybox-sub">Choose 1 box and reveal your fate</div>
+                    <div class="luckybox-potential">Potential x3.5</div>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="luckybox-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                </div>
+                <div class="luckybox-grid" id="luckybox-grid">
+                    <button class="lucky-box-card" data-box="0" onclick="playLuckyBox(0)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 1</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="1" onclick="playLuckyBox(1)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 2</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="2" onclick="playLuckyBox(2)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 3</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="3" onclick="playLuckyBox(3)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 4</span>
+                    </button>
+                </div>
+                <div class="game-result luckybox-result" id="luckybox-result">Pick your box.</div>
+            </div>
+        </div>
+    </div>
 
+    <!-- CRASH GHOST GAME MODAL -->
+    <div class="game-modal" id="game-crash">
+        <div class="game-modal-content glass crash-modal-content">
+            <button class="modal-close" onclick="closeGame('crash')">&times;</button>
+            <h2>Crash Ghost</h2>
+            <div class="game-play-area crash-play-area">
+                <div class="crash-hero">
+                    <div class="crash-multiplier" id="crash-multiplier">1.00x</div>
+                    <div class="crash-sub" id="crash-status">Start the round and cash out before the ghost crashes.</div>
+                </div>
+                <div class="crash-track">
+                    <div class="crash-track-fill" id="crash-track-fill"></div>
+                    <div class="crash-track-spark"></div>
+                    <div class="crash-ghost-runner" id="crash-ghost-runner">&#128123;</div>
+                </div>
+                <div class="crash-scale">
+                    <span>1x</span>
+                    <span>2x</span>
+                    <span>3x</span>
+                    <span>5x+</span>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="crash-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                    <div class="crash-controls-row">
+                        <button class="btn-primary crash-start-btn" id="crash-start-btn" onclick="startCrashGhost()">Start Run</button>
+                        <button class="btn-primary crash-cashout-btn" id="crash-cashout-btn" onclick="cashOutCrashGhost()" disabled>Cash Out</button>
+                    </div>
+                </div>
+                <div class="game-result crash-result" id="crash-result">Catch the multiplier before it bursts.</div>
+            </div>
+        </div>
+    </div>
     <!-- SETTINGS MODAL -->
     <div class="settings-overlay" id="settings-screen" onclick="closeSettingsOutside(event)">
         <div class="settings-modal glass" id="settings-modal-box">
@@ -741,6 +930,10 @@
     </div>
 </body>
 </html>
+
+
+
+
 
 
 

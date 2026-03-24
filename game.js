@@ -1386,23 +1386,37 @@ function renderVideoTasks() {
             ? `+${task.reward.toLocaleString('ru-RU')} монет`
             : task.reward;
 
+        const stateLabel = available ? 'Ready now' : 'Cooldown';
+        const stateNote = available ? 'Instant reward after watch' : `Refresh in ${timeLeft} min`;
+        const actionLabel = available ? 'Watch' : 'Locked';
+        const actionSub = available ? 'Launch ad reward' : 'Recharge running';
+
         return `
-            <div class="task-card ${!available ? 'cooldown' : ''}" data-category="${task.category}">
+            <div class="task-card ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
                 <div class="task-top">
-                    <span class="task-chip">${task.tag || 'бонус'}</span>
-                    <span class="task-reward-pill">${rewardLabel}</span>
+                    <span class="task-chip">${task.tag || 'bonus drop'}</span>
+                    <span class="task-state-pill">${stateLabel}</span>
                 </div>
                 <div class="task-body">
-                    <div class="task-icon" style="background:${iconColor}">${task.icon}</div>
+                    <div class="task-icon-shell">
+                        <div class="task-icon" style="background:${iconColor}">${task.icon}</div>
+                    </div>
                     <div class="task-info">
                         <div class="task-title">${task.title}</div>
                         <div class="task-desc">${task.description}</div>
-                        ${!available && timeLeft > 0 ? `<div class="task-cooldown">⏳ Через ${timeLeft} мин</div>` : ''}
+                        <div class="task-meta">
+                            <span class="task-meta-line">${stateNote}</span>
+                            ${!available && timeLeft > 0 ? `<span class="task-cooldown">⏳ ${timeLeft} min</span>` : '<span class="task-ready-pulse">Live reward</span>'}
+                        </div>
                     </div>
                 </div>
-                <button class="task-action ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
-                    ${available ? '▶ Смотреть' : '⏳ Жди'}
-                </button>
+                <div class="task-bottom">
+                    <span class="task-reward-pill">${rewardLabel}</span>
+                    <button class="task-action ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
+                        <span class="task-action-text">${actionLabel}</span>
+                        <span class="task-action-sub">${actionSub}</span>
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
@@ -2016,14 +2030,52 @@ async function checkBoostStatus() {
 }
 
 // ==================== МИНИ-ИГРЫ ====================
+const ROULETTE_RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+const ROULETTE_WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+let rouletteWheelRotation = 0;
+let rouletteBallRotation = 0;
+let rouletteAnimationFrame = null;
+const miniGameLocks = {
+    coinflip: false,
+    slots: false,
+    dice: false,
+    wheel: false
+};
+
+async function postMiniGameRequest(endpoint, payload) {
+    const res = await fetch(`${CONFIG.API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === false) {
+        throw new Error(data.detail || data.message || 'Server error');
+    }
+    return data;
+}
+
 function openGame(game) {
     document.querySelectorAll('.game-modal').forEach(m => m.classList.remove('active'));
     const modal = document.getElementById(`game-${game}`);
+    if (game === 'wheel') initRouletteVisuals();
+    if (game === 'luckybox') resetLuckyBoxBoard();
+    if (game === 'crash') resetCrashGhostUI();
     if (modal) modal.classList.add('active');
 }
 
 function closeGame(game) {
     const modal = document.getElementById(`game-${game}`);
+    if (game === 'crash' && crashGhostState.active) {
+        endCrashGhostRound(false, true);
+    }
+    if (game === 'wheel') {
+        cancelAnimationFrame(rouletteAnimationFrame);
+        rouletteAnimationFrame = null;
+        document.getElementById('roulette-plate')?.classList.remove('spinning');
+        miniGameLocks.wheel = false;
+    }
     if (modal) modal.classList.remove('active');
 }
 
@@ -2033,11 +2085,162 @@ function toggleNumberInput() {
     if (numberInput) numberInput.style.display = betType === 'number' ? 'block' : 'none';
 }
 
+function initRouletteVisuals() {
+    const plate = document.getElementById('roulette-plate');
+    if (!plate || plate.querySelector('.roulette-labels')) return;
+
+    const sectorAngle = 360 / 37;
+    const pocketGradient = ROULETTE_WHEEL_ORDER.map((num, index) => {
+        const start = (index * sectorAngle).toFixed(4);
+        const end = ((index + 1) * sectorAngle).toFixed(4);
+        const color = num === 0
+            ? '#1f9b58'
+            : ROULETTE_RED_NUMBERS.includes(num)
+                ? '#d7332f'
+                : '#17181e';
+        return `${color} ${start}deg ${end}deg`;
+    }).join(', ');
+
+    plate.style.background = `conic-gradient(from -90deg, ${pocketGradient})`;
+
+    const labelsWrap = document.createElement('div');
+    labelsWrap.className = 'roulette-labels';
+
+    ROULETTE_WHEEL_ORDER.forEach((num, index) => {
+        const label = document.createElement('span');
+        const angle = ((index + 0.5) * sectorAngle) - 90;
+        label.className = 'roulette-label';
+        if (num === 0) label.classList.add('green');
+        else if (ROULETTE_RED_NUMBERS.includes(num)) label.classList.add('red');
+        else label.classList.add('dark');
+        label.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translate(0, -110px) rotate(${-angle}deg)`;
+        label.textContent = String(num);
+        labelsWrap.appendChild(label);
+    });
+
+    const pointer = document.createElement('div');
+    pointer.className = 'roulette-pointer';
+    plate.appendChild(labelsWrap);
+    plate.appendChild(pointer);
+}
+
+function setRouletteVisualResult(resultNumber) {
+    const wheel = document.getElementById('wheel');
+    const plate = document.getElementById('roulette-plate');
+    const ball = document.getElementById('roulette-ball');
+    if (!wheel || !ball || !plate) return;
+
+    const sectorAngle = 360 / 37;
+    const wheelIndex = ROULETTE_WHEEL_ORDER.indexOf(resultNumber);
+    const targetCenter = (wheelIndex + 0.5) * sectorAngle;
+    const normalizedWheel = ((rouletteWheelRotation % 360) + 360) % 360;
+    const targetWheelNormalized = (360 - targetCenter) % 360;
+    const delta = (targetWheelNormalized - normalizedWheel + 360) % 360;
+    rouletteWheelRotation += delta;
+    rouletteBallRotation = 0;
+
+    plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+    ball.style.transform = `translate(-50%, -126px) rotate(${rouletteBallRotation}deg)`;
+    wheel.textContent = resultNumber;
+
+    if (resultNumber === 0) wheel.style.color = '#b8aa8a';
+    else if (ROULETTE_RED_NUMBERS.includes(resultNumber)) wheel.style.color = '#9a7477';
+    else wheel.style.color = '#4c4b57';
+}
+
+function getRouletteNumberFromState(wheelRotation, ballRotation) {
+    const sectorAngle = 360 / 37;
+    const wheelNormalized = ((wheelRotation % 360) + 360) % 360;
+    const ballNormalized = ((ballRotation % 360) + 360) % 360;
+    const relative = ((ballNormalized - wheelNormalized) % 360 + 360) % 360;
+    const centered = (relative + sectorAngle / 2) % 360;
+    const wheelIndex = Math.floor(centered / sectorAngle) % 37;
+    return ROULETTE_WHEEL_ORDER[wheelIndex];
+}
+
+function animateRouletteToResult(resultNumber, duration = 8600) {
+    const wheel = document.getElementById('wheel');
+    const plate = document.getElementById('roulette-plate');
+    const ball = document.getElementById('roulette-ball');
+    if (!wheel || !ball || !plate) {
+        setRouletteVisualResult(resultNumber);
+        return Promise.resolve(resultNumber);
+    }
+
+    const sectorAngle = 360 / 37;
+    const targetIndex = ROULETTE_WHEEL_ORDER.indexOf(resultNumber);
+    const targetCenter = (targetIndex + 0.5) * sectorAngle;
+    const currentWheelNormalized = ((rouletteWheelRotation % 360) + 360) % 360;
+    const targetWheelNormalized = (360 - targetCenter) % 360;
+    const wheelDelta = (targetWheelNormalized - currentWheelNormalized + 360) % 360;
+
+    const startWheel = rouletteWheelRotation;
+    const startBall = rouletteBallRotation;
+    const finalWheel = startWheel + 1980 + wheelDelta;
+    const fastBallTarget = startBall - 3240;
+    const settleBallTarget = 0;
+
+    cancelAnimationFrame(rouletteAnimationFrame);
+    const startTime = performance.now();
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+    const easeOutExpo = t => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+
+    return new Promise(resolve => {
+        const step = now => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const wheelPhase = 0.92;
+            const ballFastPhase = 0.72;
+
+            if (progress < wheelPhase) {
+                const local = progress / wheelPhase;
+                rouletteWheelRotation = startWheel + (finalWheel - startWheel) * easeOutExpo(local);
+            } else {
+                rouletteWheelRotation = finalWheel;
+            }
+
+            if (progress < ballFastPhase) {
+                const local = progress / ballFastPhase;
+                rouletteBallRotation = startBall + (fastBallTarget - startBall) * easeOutQuart(local);
+            } else {
+                const local = (progress - ballFastPhase) / (1 - ballFastPhase);
+                rouletteBallRotation = fastBallTarget + (settleBallTarget - fastBallTarget) * easeOutCubic(local);
+            }
+
+            plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+            ball.style.transform = `translate(-50%, -126px) rotate(${rouletteBallRotation}deg)`;
+            wheel.textContent = String(getRouletteNumberFromState(rouletteWheelRotation, rouletteBallRotation));
+
+            if (progress < 1) {
+                rouletteAnimationFrame = requestAnimationFrame(step);
+                return;
+            }
+
+            rouletteAnimationFrame = null;
+            rouletteWheelRotation = finalWheel;
+            rouletteBallRotation = 0;
+            plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+            ball.style.transform = `translate(-50%, -126px) rotate(0deg)`;
+            const landedNumber = getRouletteNumberFromState(rouletteWheelRotation, rouletteBallRotation);
+            wheel.textContent = String(landedNumber);
+            if (landedNumber === 0) wheel.style.color = '#b8aa8a';
+            else if (ROULETTE_RED_NUMBERS.includes(landedNumber)) wheel.style.color = '#9a7477';
+            else wheel.style.color = '#4c4b57';
+            resolve(landedNumber);
+        };
+
+        rouletteAnimationFrame = requestAnimationFrame(step);
+    });
+}
+
 async function playCoinflip() {
+    if (miniGameLocks.coinflip) return;
     const betInput = document.getElementById('coin-bet');
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
+    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
     if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
     if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
@@ -2047,25 +2250,25 @@ async function playCoinflip() {
     resultEl.textContent = '🪙 Подбрасываем...';
     coin.classList.add('flipping');
     playSound('coinflip');
+    miniGameLocks.coinflip = true;
     
     setTimeout(async () => {
-        if (userId) {
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/game/coinflip`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, bet })
-                });
-                
-                const data = await res.json();
+        try {
+            if (userId) {
+                const data = await postMiniGameRequest('/api/game/coinflip', { user_id: userId, bet });
                 coin.classList.remove('flipping');
                 
-                if (data.message.includes('won')) {
+                if ((data.message || '').toLowerCase().includes('won')) {
                     coin.classList.add('win');
                     setTimeout(() => coin.classList.remove('win'), 1000);
                     createConfetti();
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
                     playSound('win');
-                } else playSound('lose');
+                } else {
+                    shakeGameModal('coinflip');
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
+                    playSound('lose');
+                }
                 
                 resultEl.textContent = data.message || '🎮 Сыграно!';
                 State.game.coins = data.coins;
@@ -2073,36 +2276,44 @@ async function playCoinflip() {
                 checkAchievements();
                 updateUI();
                 
-            } catch (err) {
-                coin.classList.remove('flipping');
-                resultEl.textContent = '❌ Ошибка сервера';
-                showToast('❌ Ошибка', true);
-            }
-        } else {
-            const win = Math.random() < 0.5;
-            coin.classList.remove('flipping');
-            if (win) {
-                State.game.coins += bet;
-                coin.classList.add('win');
-                setTimeout(() => coin.classList.remove('win'), 1000);
-                resultEl.textContent = '🦅 Вы выиграли! +' + bet;
-                createConfetti();
-                playSound('win');
             } else {
-                State.game.coins -= bet;
-                resultEl.textContent = '💀 Вы проиграли';
-                playSound('lose');
+                const win = Math.random() < 0.5;
+                coin.classList.remove('flipping');
+                if (win) {
+                    State.game.coins += bet;
+                    coin.classList.add('win');
+                    setTimeout(() => coin.classList.remove('win'), 1000);
+                    resultEl.textContent = '🦅 Вы выиграли! +' + bet;
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
+                    playSound('win');
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = '💀 Вы проиграли';
+                    shakeGameModal('coinflip');
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
+                    playSound('lose');
+                }
+                updateUI();
             }
-            updateUI();
+        } catch (err) {
+            coin.classList.remove('flipping');
+            resultEl.textContent = `❌ ${err.message || 'Ошибка сервера'}`;
+            playSound('lose');
+            showToast(`❌ ${err.message || 'Ошибка сервера'}`, true);
+        } finally {
+            miniGameLocks.coinflip = false;
         }
     }, 1500);
 }
 
 async function playSlots() {
+    if (miniGameLocks.slots) return;
     const betInput = document.getElementById('slots-bet');
     if (!betInput) return;
     
     const bet = parseInt(betInput.value);
+    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
     if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
     if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
@@ -2111,57 +2322,62 @@ async function playSlots() {
     const slot2 = document.getElementById('slot2');
     const slot3 = document.getElementById('slot3');
     
-    const symbols = ['🍒', '🍋', '🍊', '7️⃣', '💎', '⭐'];
+    const symbols = ['CH', 'LM', 'OR', '77', 'DM', 'ST'];
     
     resultEl.textContent = '🎰 Крутим...';
     playSound('spin');
     [slot1, slot2, slot3].forEach(el => el?.classList.add('spinning'));
+    miniGameLocks.slots = true;
     
     let spins = 0;
     const maxSpins = 15;
     const spinInterval = setInterval(() => {
-        slot1.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-        slot2.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-        slot3.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        setSlotSymbol(slot1, symbols[Math.floor(Math.random() * symbols.length)]);
+        setSlotSymbol(slot2, symbols[Math.floor(Math.random() * symbols.length)]);
+        setSlotSymbol(slot3, symbols[Math.floor(Math.random() * symbols.length)]);
         spins++;
         
         if (spins >= maxSpins) {
             clearInterval(spinInterval);
             
             if (userId) {
-                fetch(`${CONFIG.API_URL}/api/game/slots`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, bet })
-                })
-                .then(res => res.json())
+                postMiniGameRequest('/api/game/slots', { user_id: userId, bet })
                 .then(data => {
-                    slot1.textContent = data.slots[0];
-                    slot2.textContent = data.slots[1];
-                    slot3.textContent = data.slots[2];
+                    setSlotSymbol(slot1, data.slots?.[0]);
+                    setSlotSymbol(slot2, data.slots?.[1]);
+                    setSlotSymbol(slot3, data.slots?.[2]);
                     [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('JACKPOT') || data.message.includes('won')) {
                         playSound('win');
                         createConfetti();
-                    } else playSound('lose');
+                        spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
+                    } else {
+                        shakeGameModal('slots');
+                        spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
+                        playSound('lose');
+                    }
                     
                     State.game.coins = data.coins;
                     updateUI();
                 })
-                .catch(() => {
-                    resultEl.textContent = '❌ Ошибка';
+                .catch(err => {
+                    [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
+                    resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
                     playSound('lose');
+                })
+                .finally(() => {
+                    miniGameLocks.slots = false;
                 });
             } else {
                 const s1 = symbols[Math.floor(Math.random() * symbols.length)];
                 const s2 = symbols[Math.floor(Math.random() * symbols.length)];
                 const s3 = symbols[Math.floor(Math.random() * symbols.length)];
                 
-                slot1.textContent = s1;
-                slot2.textContent = s2;
-                slot3.textContent = s3;
+                setSlotSymbol(slot1, s1);
+                setSlotSymbol(slot2, s2);
+                setSlotSymbol(slot3, s3);
                 [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
                 
                 if (s1 === s2 && s2 === s3) {
@@ -2171,19 +2387,24 @@ async function playSlots() {
                     resultEl.textContent = '🎰 ДЖЕКПОТ! +' + win;
                     playSound('win');
                     createConfetti();
+                    spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
                     checkAchievements();
                 } else {
                     State.game.coins -= bet;
                     resultEl.textContent = '🎰 Повезет в следующий раз';
+                    shakeGameModal('slots');
+                    spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
                     playSound('lose');
                 }
                 updateUI();
+                miniGameLocks.slots = false;
             }
         }
     }, 100);
 }
 
 async function playDice() {
+    if (miniGameLocks.dice) return;
     const betInput = document.getElementById('dice-bet');
     const predSelect = document.getElementById('dice-prediction');
     
@@ -2192,6 +2413,7 @@ async function playDice() {
     const bet = parseInt(betInput.value);
     const pred = predSelect.value;
     
+    if (Number.isNaN(bet)) return showToast('❌ Введите ставку', true);
     if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
     if (bet < 10) return showToast('❌ Минимальная ставка 10', true);
 
@@ -2199,59 +2421,65 @@ async function playDice() {
     const dice1 = document.getElementById('dice1');
     const dice2 = document.getElementById('dice2');
     
-    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    const diceFaces = ['1', '2', '3', '4', '5', '6'];
     
     resultEl.textContent = '🎲 Бросаем...';
     playSound('dice');
     dice1?.classList.add('roll');
     dice2?.classList.add('roll');
+    miniGameLocks.dice = true;
     
     let spins = 0;
     const maxSpins = 12;
     
     const spinInterval = setInterval(() => {
-        dice1.textContent = diceFaces[Math.floor(Math.random() * 6)];
-        dice2.textContent = diceFaces[Math.floor(Math.random() * 6)];
+        setDiceSymbol(dice1, diceFaces[Math.floor(Math.random() * 6)]);
+        setDiceSymbol(dice2, diceFaces[Math.floor(Math.random() * 6)]);
         spins++;
         
         if (spins >= maxSpins) {
             clearInterval(spinInterval);
             
             if (userId) {
-                fetch(`${CONFIG.API_URL}/api/game/dice`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, bet, prediction: pred })
-                })
-                .then(res => res.json())
+                postMiniGameRequest('/api/game/dice', { user_id: userId, bet, prediction: pred })
                 .then(data => {
-                    dice1.textContent = diceFaces[data.dice1 - 1];
-                    dice2.textContent = diceFaces[data.dice2 - 1];
+                    setDiceSymbol(dice1, diceFaces[data.dice1 - 1]);
+                    setDiceSymbol(dice2, diceFaces[data.dice2 - 1]);
                     dice1?.classList.remove('roll');
                     dice2?.classList.remove('roll');
                     resultEl.textContent = data.message;
                     
                     if (data.message.includes('won')) {
                         createConfetti();
+                        spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
                         playSound('win');
-                    } else playSound('lose');
+                    } else {
+                        shakeGameModal('dice');
+                        spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
+                        playSound('lose');
+                    }
                     
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                     State.game.coins = data.coins;
                     updateUI();
                 })
-                .catch(() => {
-                    resultEl.textContent = '❌ Ошибка';
+                .catch(err => {
+                    dice1?.classList.remove('roll');
+                    dice2?.classList.remove('roll');
+                    resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
                     playSound('lose');
+                })
+                .finally(() => {
+                    miniGameLocks.dice = false;
                 });
             } else {
                 const d1 = Math.floor(Math.random() * 6) + 1;
                 const d2 = Math.floor(Math.random() * 6) + 1;
                 const sum = d1 + d2;
                 
-                dice1.textContent = diceFaces[d1 - 1];
-                dice2.textContent = diceFaces[d2 - 1];
+                setDiceSymbol(dice1, diceFaces[d1 - 1]);
+                setDiceSymbol(dice2, diceFaces[d2 - 1]);
                 dice1?.classList.remove('roll');
                 dice2?.classList.remove('roll');
                 
@@ -2265,20 +2493,25 @@ async function playDice() {
                     State.game.coins += bet * multiplier;
                     resultEl.textContent = `🎲 Вы выиграли! x${multiplier}`;
                     playSound('win');
+                    spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                 } else {
                     State.game.coins -= bet;
                     resultEl.textContent = '🎲 Вы проиграли';
+                    shakeGameModal('dice');
+                    spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
                     playSound('lose');
                 }
                 updateUI();
+                miniGameLocks.dice = false;
             }
         }
     }, 70);
 }
 
 async function playWheel() {
+    if (miniGameLocks.wheel) return;
     try {
         const betInput = document.getElementById('wheel-bet');
         if (!betInput) return showToast('❌ Элемент ставки не найден', true);
@@ -2289,106 +2522,410 @@ async function playWheel() {
         
         if (isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
         if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+        if (betType === 'number') {
+            const parsedNumber = parseInt(betNumber, 10);
+            if (Number.isNaN(parsedNumber) || parsedNumber < 0 || parsedNumber > 36) {
+                return showToast('❌ Введите число от 0 до 36', true);
+            }
+        }
 
         const resultEl = document.getElementById('wheel-result');
         const wheel = document.getElementById('wheel');
         const plate = document.getElementById('roulette-plate');
-        const ball = document.getElementById('roulette-ball');
         
         if (!resultEl || !wheel) return showToast('❌ Ошибка интерфейса', true);
         
         resultEl.textContent = '🎡 Крутим...';
         playSound('spin');
         
-        let spins = 0;
-        const maxSpins = 20;
+        plate?.classList.add('spinning');
+        miniGameLocks.wheel = true;
         
-        const spinInterval = setInterval(() => {
-            wheel.textContent = Math.floor(Math.random() * 37);
-            spins++;
-            plate?.classList.add('spinning');
+        if (userId) {
+            postMiniGameRequest('/api/game/roulette', {
+                    user_id: userId,
+                    bet: bet,
+                    bet_type: betType,
+                    bet_value: betType === 'number' ? parseInt(betNumber) : null
+                })
+            .then(async data => {
+                const landedNumber = await animateRouletteToResult(data.result_number);
+                plate?.classList.remove('spinning');
+                const isWinMessage = data.message?.includes('won');
+                
+                resultEl.textContent = isWinMessage
+                    ? `🎡 Landed on ${landedNumber}. ${data.message || 'You won'}`
+                    : `🎡 Landed on ${landedNumber}. ${data.message || 'You lost'}`;
+                
+                if (isWinMessage) {
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
+                    playSound('win');
+                } else {
+                    shakeGameModal('wheel');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
+                    playSound('lose');
+                }
+                
+                State.game.coins = data.coins;
+                trackAchievementProgress('games', 1);
+                checkAchievements();
+                updateUI();
+            })
+            .catch(err => {
+                plate?.classList.remove('spinning');
+                console.error('Roulette error:', err);
+                resultEl.textContent = `❌ ${err.message || 'Ошибка сервера'}`;
+                playSound('lose');
+            })
+            .finally(() => {
+                miniGameLocks.wheel = false;
+            });
+        } else {
+            const visualIndex = Math.floor(Math.random() * 37);
+            const result = ROULETTE_WHEEL_ORDER[visualIndex];
             
-            if (spins >= maxSpins) {
-                clearInterval(spinInterval);
+            animateRouletteToResult(result).then(landedNumber => {
                 plate?.classList.remove('spinning');
                 
-                if (userId) {
-                    fetch(`${CONFIG.API_URL}/api/game/roulette`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            bet: bet,
-                            bet_type: betType,
-                            bet_value: betType === 'number' ? parseInt(betNumber) : null
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        wheel.textContent = data.result_number;
-                        const angle = 1440 + (data.result_number * (360 / 37));
-                        if (ball) ball.style.transform = `translate(-50%, -80px) rotate(${angle}deg)`;
-                        
-                        const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                        if (data.result_number === 0) wheel.style.color = '#2ecc71';
-                        else if (redNumbers.includes(data.result_number)) wheel.style.color = '#e74c3c';
-                        else wheel.style.color = '#95a5a6';
-                        
-                        resultEl.textContent = data.message || '🎮 Сыграно!';
-                        
-                        if (data.message?.includes('won')) {
-                            createConfetti();
-                            playSound('win');
-                        } else playSound('lose');
-                        
-                        State.game.coins = data.coins;
-                        trackAchievementProgress('games', 1);
-                        checkAchievements();
-                        updateUI();
-                    })
-                    .catch(err => {
-                        console.error('Roulette error:', err);
-                        resultEl.textContent = '❌ Ошибка сервера';
-                        playSound('lose');
-                    });
+                let win = false;
+                if (betType === 'red' && ROULETTE_RED_NUMBERS.includes(landedNumber)) win = true;
+                if (betType === 'black' && landedNumber !== 0 && !ROULETTE_RED_NUMBERS.includes(landedNumber)) win = true;
+                if (betType === 'green' && landedNumber === 0) win = true;
+                if (betType === 'number' && landedNumber === parseInt(betNumber)) win = true;
+                
+                if (win) {
+                    const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
+                    State.game.coins += bet * multiplier;
+                    resultEl.textContent = `🎡 Landed on ${landedNumber}. You won x${multiplier}`;
+                    playSound('win');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
                 } else {
-                    const result = Math.floor(Math.random() * 37);
-                    wheel.textContent = result;
-                    const angle = 1440 + (result * (360 / 37));
-                    if (ball) ball.style.transform = `translate(-50%, -80px) rotate(${angle}deg)`;
-                    
-                    const redNumbers = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-                    if (result === 0) wheel.style.color = '#2ecc71';
-                    else if (redNumbers.includes(result)) wheel.style.color = '#e74c3c';
-                    else wheel.style.color = '#95a5a6';
-                    
-                    let win = false;
-                    if (betType === 'red' && redNumbers.includes(result)) win = true;
-                    if (betType === 'black' && result !== 0 && !redNumbers.includes(result)) win = true;
-                    if (betType === 'green' && result === 0) win = true;
-                    if (betType === 'number' && result === parseInt(betNumber)) win = true;
-                    
-                    if (win) {
-                        const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
-                        State.game.coins += bet * multiplier;
-                        resultEl.textContent = `🎡 Вы выиграли! x${multiplier}`;
-                        playSound('win');
-                        trackAchievementProgress('games', 1);
-                        checkAchievements();
-                    } else {
-                        State.game.coins -= bet;
-                        resultEl.textContent = '🎡 Вы проиграли';
-                        playSound('lose');
-                    }
-                    updateUI();
+                    State.game.coins -= bet;
+                    resultEl.textContent = `🎡 Landed on ${landedNumber}. You lost`;
+                    shakeGameModal('wheel');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
+                    playSound('lose');
                 }
-            }
-        }, 100);
+                updateUI();
+            }).catch(err => {
+                plate?.classList.remove('spinning');
+                resultEl.textContent = `❌ ${err.message || 'Ошибка'}`;
+                playSound('lose');
+            }).finally(() => {
+                miniGameLocks.wheel = false;
+            });
+        }
         
     } catch (err) {
+        miniGameLocks.wheel = false;
         console.error('Roulette error:', err);
         showToast('❌ Ошибка', true);
     }
+}
+
+let luckyBoxBusy = false;
+const crashGhostState = {
+    active: false,
+    bet: 0,
+    multiplier: 1,
+    crashAt: 1.5,
+    interval: null,
+    settled: false
+};
+
+function spawnGameParticles(target, tone = 'soft') {
+    if (!target) return;
+
+    const burst = document.createElement('div');
+    burst.className = 'game-particle-burst';
+    const palette = {
+        win: ['rgba(255,255,255,0.9)', 'rgba(224,217,207,0.95)', 'rgba(180,171,193,0.9)'],
+        soft: ['rgba(255,255,255,0.72)', 'rgba(208,201,189,0.74)', 'rgba(180,171,193,0.72)'],
+        lose: ['rgba(214,208,201,0.54)', 'rgba(180,171,193,0.48)', 'rgba(255,255,255,0.4)']
+    }[tone] || ['rgba(255,255,255,0.72)'];
+
+    for (let i = 0; i < 14; i++) {
+        const particle = document.createElement('span');
+        particle.className = 'game-particle';
+        particle.style.left = `${46 + Math.random() * 8}%`;
+        particle.style.top = `${42 + Math.random() * 12}%`;
+        particle.style.setProperty('--tx', `${(Math.random() - 0.5) * 120}px`);
+        particle.style.setProperty('--ty', `${(Math.random() - 0.7) * 110}px`);
+        particle.style.background = palette[Math.floor(Math.random() * palette.length)];
+        particle.style.animationDelay = `${Math.random() * 0.12}s`;
+        burst.appendChild(particle);
+    }
+
+    target.appendChild(burst);
+    setTimeout(() => burst.remove(), 1000);
+}
+
+function shakeGameModal(game) {
+    const modal = document.querySelector(`#game-${game} .game-modal-content`);
+    if (!modal) return;
+    modal.classList.remove('shake-loss');
+    void modal.offsetWidth;
+    modal.classList.add('shake-loss');
+    setTimeout(() => modal.classList.remove('shake-loss'), 450);
+}
+
+function setSlotSymbol(slotEl, value) {
+    if (!slotEl) return;
+    const symbolEl = slotEl.querySelector('.slot-symbol');
+    const symbolMap = {
+        CH: '🍒',
+        LM: '🍋',
+        OR: '🍊',
+        '77': '7️⃣',
+        DM: '💎',
+        ST: '⭐',
+        '🍒': '🍒',
+        '🍋': '🍋',
+        '🍊': '🍊',
+        '7️⃣': '7️⃣',
+        '💎': '💎',
+        '⭐': '⭐'
+    };
+    const resolved = symbolMap[value] || value;
+    if (symbolEl) symbolEl.textContent = resolved;
+    else slotEl.textContent = resolved;
+}
+
+function setDiceSymbol(diceEl, value) {
+    if (!diceEl) return;
+    const face = Math.max(1, Math.min(6, parseInt(value, 10) || 1));
+    diceEl.dataset.face = String(face);
+    diceEl.innerHTML = '';
+
+    const pipLayouts = {
+        1: ['pip-center'],
+        2: ['pip-top-left', 'pip-bottom-right'],
+        3: ['pip-top-left', 'pip-center', 'pip-bottom-right'],
+        4: ['pip-top-left', 'pip-top-right', 'pip-bottom-left', 'pip-bottom-right'],
+        5: ['pip-top-left', 'pip-top-right', 'pip-center', 'pip-bottom-left', 'pip-bottom-right'],
+        6: ['pip-top-left', 'pip-top-right', 'pip-middle-left', 'pip-middle-right', 'pip-bottom-left', 'pip-bottom-right']
+    };
+
+    pipLayouts[face].forEach(cls => {
+        const pip = document.createElement('span');
+        pip.className = `dice-pip ${cls}`;
+        diceEl.appendChild(pip);
+    });
+}
+
+function resetLuckyBoxBoard() {
+    document.querySelectorAll('.lucky-box-card').forEach((card, index) => {
+        card.disabled = false;
+        card.classList.remove('opened', 'winning', 'losing', 'refund');
+        card.dataset.multiplier = '';
+        const label = card.querySelector('.lucky-box-label');
+        if (label) label.textContent = `Box ${index + 1}`;
+    });
+    const resultEl = document.getElementById('luckybox-result');
+    if (resultEl) resultEl.textContent = 'Pick your box.';
+}
+
+function playLuckyBox(boxIndex) {
+    if (luckyBoxBusy) return;
+
+    const betInput = document.getElementById('luckybox-bet');
+    const resultEl = document.getElementById('luckybox-result');
+    const cards = Array.from(document.querySelectorAll('.lucky-box-card'));
+    if (!betInput || !resultEl || !cards.length) return;
+
+    const bet = parseInt(betInput.value, 10);
+    if (Number.isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
+    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+
+    luckyBoxBusy = true;
+    cards.forEach(card => card.disabled = true);
+    resultEl.textContent = 'Opening boxes...';
+    playSound('spin');
+
+    const outcomes = [0, 0.8, 1.6, 3.5];
+    const shuffled = outcomes.sort(() => Math.random() - 0.5);
+
+    cards.forEach((card, index) => {
+        card.classList.add('opened');
+        card.dataset.multiplier = String(shuffled[index]);
+    });
+
+    setTimeout(() => {
+        cards.forEach((card, index) => {
+            const mult = shuffled[index];
+            const label = card.querySelector('.lucky-box-label');
+        if (label) {
+            label.textContent = mult === 0 ? 'Bust' : mult === 0.8 ? 'Save' : `x${mult}`;
+        }
+        });
+
+        const selectedCard = cards[boxIndex];
+        const multiplier = shuffled[boxIndex];
+        const payout = Math.floor(bet * multiplier);
+        State.game.coins -= bet;
+
+        if (multiplier > 1) {
+            State.game.coins += payout;
+            selectedCard.classList.add('winning');
+            resultEl.textContent = `Lucky hit! x${multiplier}  +${payout - bet}`;
+            createConfetti(selectedCard);
+            spawnGameParticles(selectedCard, 'win');
+            playSound('win');
+        } else if (multiplier === 0.8) {
+            State.game.coins += payout;
+            selectedCard.classList.add('refund');
+            resultEl.textContent = `Soft save. You kept ${payout} coins.`;
+            spawnGameParticles(selectedCard, 'soft');
+            playSound('coinflip');
+        } else {
+            selectedCard.classList.add('losing');
+            resultEl.textContent = `Bust. You lost ${bet} coins.`;
+            shakeGameModal('luckybox');
+            spawnGameParticles(selectedCard, 'lose');
+            playSound('lose');
+        }
+
+        trackAchievementProgress('games', 1);
+        checkAchievements();
+        updateUI();
+
+        setTimeout(() => {
+            luckyBoxBusy = false;
+            resetLuckyBoxBoard();
+        }, 2200);
+    }, 850);
+}
+
+function resetCrashGhostUI() {
+    const multiplierEl = document.getElementById('crash-multiplier');
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const fillEl = document.getElementById('crash-track-fill');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+
+    if (multiplierEl) multiplierEl.textContent = '1.00x';
+    if (statusEl) statusEl.textContent = 'Start the round and cash out before the ghost crashes.';
+    if (resultEl) resultEl.textContent = 'Catch the multiplier before it bursts.';
+    if (fillEl) fillEl.style.width = '0%';
+    if (runnerEl) runnerEl.style.left = '0%';
+    document.querySelector('#game-crash .crash-track')?.classList.remove('danger');
+    if (startBtn) startBtn.disabled = false;
+    if (cashBtn) cashBtn.disabled = true;
+}
+
+function startCrashGhost() {
+    if (crashGhostState.active) return;
+
+    const betInput = document.getElementById('crash-bet');
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+    if (!betInput || !statusEl || !resultEl) return;
+
+    const bet = parseInt(betInput.value, 10);
+    if (Number.isNaN(bet) || bet < 10) return showToast('❌ Минимальная ставка 10', true);
+    if (bet > State.game.coins) return showToast('❌ Недостаточно монет', true);
+
+    State.game.coins -= bet;
+    updateUI();
+
+    crashGhostState.active = true;
+    crashGhostState.settled = false;
+    crashGhostState.bet = bet;
+    crashGhostState.multiplier = 1;
+    crashGhostState.crashAt = Number((1.18 + Math.random() * 4.4).toFixed(2));
+
+    if (Math.random() < 0.12) crashGhostState.crashAt = Number((5.5 + Math.random() * 2.8).toFixed(2));
+
+    if (startBtn) startBtn.disabled = true;
+    if (cashBtn) cashBtn.disabled = false;
+    statusEl.textContent = 'Ghost is running... cash out before the crash.';
+    resultEl.textContent = `Crash target hidden. Stake: ${bet}`;
+    playSound('spin');
+
+    crashGhostState.interval = setInterval(() => {
+        crashGhostState.multiplier = Number((crashGhostState.multiplier + 0.04 + Math.random() * 0.05).toFixed(2));
+        updateCrashGhostVisuals();
+
+        if (crashGhostState.multiplier >= crashGhostState.crashAt) {
+            endCrashGhostRound(false, false);
+        }
+    }, 90);
+}
+
+function updateCrashGhostVisuals() {
+    const multiplierEl = document.getElementById('crash-multiplier');
+    const fillEl = document.getElementById('crash-track-fill');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+    const trackEl = document.querySelector('#game-crash .crash-track');
+    const percent = Math.min(((crashGhostState.multiplier - 1) / 5) * 100, 100);
+
+    if (multiplierEl) multiplierEl.textContent = `${crashGhostState.multiplier.toFixed(2)}x`;
+    if (fillEl) fillEl.style.width = `${percent}%`;
+    if (runnerEl) runnerEl.style.left = `${percent}%`;
+    if (trackEl) {
+        trackEl.classList.toggle('danger', crashGhostState.crashAt - crashGhostState.multiplier <= 0.6);
+    }
+}
+
+function cashOutCrashGhost() {
+    if (!crashGhostState.active || crashGhostState.settled) return;
+    endCrashGhostRound(true, false);
+}
+
+function endCrashGhostRound(cashedOut, silentClose) {
+    if (!crashGhostState.active && !crashGhostState.interval) return;
+
+    clearInterval(crashGhostState.interval);
+    crashGhostState.interval = null;
+
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+
+    crashGhostState.settled = true;
+
+    if (cashedOut) {
+        const payout = Math.floor(crashGhostState.bet * crashGhostState.multiplier);
+        State.game.coins += payout;
+        if (statusEl) statusEl.textContent = `Cashed out at ${crashGhostState.multiplier.toFixed(2)}x`;
+        if (resultEl) resultEl.textContent = `Ghost paid ${payout} coins. Profit: +${payout - crashGhostState.bet}`;
+        if (runnerEl) runnerEl.classList.add('ghost-safe');
+        createConfetti(document.getElementById('game-crash'));
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'win');
+        playSound('win');
+    } else if (!silentClose) {
+        if (statusEl) statusEl.textContent = `Crash at ${crashGhostState.crashAt.toFixed(2)}x`;
+        if (resultEl) resultEl.textContent = `Ghost crashed. You lost ${crashGhostState.bet} coins.`;
+        if (runnerEl) runnerEl.classList.add('ghost-crashed');
+        shakeGameModal('crash');
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'lose');
+        playSound('lose');
+    }
+
+    if (!silentClose) {
+        trackAchievementProgress('games', 1);
+        checkAchievements();
+    }
+
+    updateUI();
+    crashGhostState.active = false;
+
+    if (startBtn) startBtn.disabled = false;
+    if (cashBtn) cashBtn.disabled = true;
+
+    setTimeout(() => {
+        runnerEl?.classList.remove('ghost-safe', 'ghost-crashed');
+        resetCrashGhostUI();
+    }, silentClose ? 0 : 1800);
 }
 
 // ==================== КОНФЕТТИ ====================
@@ -3136,6 +3673,9 @@ window.playCoinflip = playCoinflip;
 window.playSlots = playSlots;
 window.playDice = playDice;
 window.playWheel = playWheel;
+window.playLuckyBox = playLuckyBox;
+window.startCrashGhost = startCrashGhost;
+window.cashOutCrashGhost = cashOutCrashGhost;
 window.State = State;
 window.state = State;
 window.startPerfectEnergySystem = startPerfectEnergySystem;
