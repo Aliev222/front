@@ -554,6 +554,15 @@ function applyPerformanceMode() {
     document.body.classList.toggle('lite-performance', State.temp.performanceLite);
 }
 
+function parseServerDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' && !/[zZ]|[+\-]\d{2}:\d{2}$/.test(value)) {
+        return new Date(`${value}Z`);
+    }
+    return new Date(value);
+}
+
 const formatNumber = (num) => {
     num = Math.floor(num);
     if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
@@ -2681,9 +2690,9 @@ function activateMegaBoost() {
             });
 
             if (activation?.already_active && activation.expires_at) {
-                boostEndTime = new Date(activation.expires_at);
+                boostEndTime = parseServerDate(activation.expires_at);
             } else {
-                boostEndTime = new Date(activation?.expires_at || (Date.now() + 5 * 60 * 1000));
+                boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + 5 * 60 * 1000);
             }
             
             if (boostBtn) boostBtn.classList.add('active');
@@ -2748,7 +2757,7 @@ async function checkBoostStatus() {
         if (res.ok) {
             const data = await res.json();
             if (data.active) {
-                boostEndTime = new Date(data.expires_at);
+                boostEndTime = parseServerDate(data.expires_at);
                 const boostBtn = document.getElementById('mega-boost-btn');
                 if (boostBtn) boostBtn.classList.add('active');
                 
