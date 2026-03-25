@@ -1975,52 +1975,35 @@ function renderVideoTasks() {
     container.innerHTML = VIDEO_TASKS.map(task => {
         const available = task.available;
         const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
-
-        const iconColor = {
-            energy: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
-            coins: 'linear-gradient(135deg, #FFD700, #B8860B)',
-            skins: 'linear-gradient(135deg, #7F49B4, #4A2C6D)',
-            boost: 'linear-gradient(135deg, #FF6B6B, #C0392B)',
-            random: 'linear-gradient(135deg, #3498DB, #1F618D)',
-        }[task.category] || 'linear-gradient(135deg, #7f8c8d, #2c3e50)';
-
         const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
         const rewardValue = taskCopy.reward || task.reward;
         const rewardLabel = typeof rewardValue === 'number'
             ? `+${rewardValue.toLocaleString(UI_LANG === 'ru' ? 'ru-RU' : 'en-US')} ${t('tasks.coinsSuffix')}`
             : rewardValue;
 
-        const stateLabel = available ? t('tasks.readyNow') : t('tasks.cooldown');
-        const stateNote = available ? t('tasks.instantReward') : t('tasks.refreshIn', { time: timeLeft });
         const actionLabel = available ? t('tasks.watch') : t('tasks.locked');
-        const actionSub = available ? t('tasks.launchReward') : t('tasks.rechargeRunning');
+        const stateText = available
+            ? `${taskCopy.description || task.description} • ${rewardLabel}`
+            : `${t('tasks.refreshIn', { time: timeLeft })} • ${rewardLabel}`;
 
         return `
-            <div class="task-card ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
-                <div class="task-top">
-                    <span class="task-chip">${taskCopy.tag || task.tag || 'bonus drop'}</span>
-                    <span class="task-state-pill">${stateLabel}</span>
+            <div class="task-card task-card-simple ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
+                <div class="task-copy-simple">
+                    <div class="task-title">${taskCopy.title || task.title}</div>
+                    <div class="task-desc">${stateText}</div>
                 </div>
-                <div class="task-body">
-                    <div class="task-icon-shell">
-                        <div class="task-icon" style="background:${iconColor}">${task.icon}</div>
-                    </div>
-                    <div class="task-info">
-                        <div class="task-title">${taskCopy.title || task.title}</div>
-                        <div class="task-desc">${taskCopy.description || task.description}</div>
-                        <div class="task-meta">
-                            <span class="task-meta-line">${stateNote}</span>
-                            ${!available && timeLeft > 0 ? `<span class="task-cooldown">⏳ ${timeLeft} min</span>` : `<span class="task-ready-pulse">${t('tasks.liveReward')}</span>`}
-                        </div>
-                    </div>
-                </div>
-                <div class="task-bottom">
-                    <span class="task-reward-pill">${rewardLabel}</span>
-                    <button class="task-action ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
-                        <span class="task-action-text">${actionLabel}</span>
-                        <span class="task-action-sub">${actionSub}</span>
+                <div class="task-actions-simple">
+                    <span class="task-reward-pill task-reward-pill-simple">${rewardLabel}</span>
+                    <button class="task-action task-action-simple ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
+                        ${available ? `📺 ${actionLabel}` : `⏳ ${actionLabel}`}
                     </button>
                 </div>
+                ${!available && timeLeft > 0 ? `
+                    <div class="task-note-simple">⏳ ${t('tasks.refreshIn', { time: timeLeft })}</div>
+                ` : ''}
+                ${available ? `
+                    <div class="task-note-simple">${t('tasks.launchReward')}</div>
+                ` : ''}
             </div>
         `;
     }).join('');

@@ -6265,3 +6265,363 @@ body {
         --stable-circle-gap: 8px;
     }
 }
+
+/* ==================== MODAL SYSTEM OVERRIDE ==================== */
+.modal-screen {
+    background: rgba(240, 242, 250, 0.82) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    padding: 12px !important;
+}
+
+body.night-mode .modal-screen {
+    background: rgba(14, 14, 18, 0.76) !important;
+}
+
+.modal-screen > .glass,
+.skins-modal,
+.achievements-modal {
+    width: min(94vw, 360px) !important;
+    max-width: 360px !important;
+    max-height: min(88dvh, 760px) !important;
+    border-radius: 30px !important;
+    border: 2px solid #8b63e8 !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 18px 42px rgba(108, 92, 231, 0.12) !important;
+    overflow: hidden !important;
+}
+
+body.night-mode .modal-screen > .glass,
+body.night-mode .skins-modal,
+body.night-mode .achievements-modal {
+    background: rgba(23, 23, 28, 0.96) !important;
+    border-color: #8b63e8 !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38) !important;
+}
+
+.modal-header,
+.skins-header,
+.achievements-header {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 40px 1fr auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 20px 18px 10px !important;
+    background: transparent !important;
+    border-bottom: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.modal-header h2,
+.skins-title,
+.achievements-title {
+    margin: 0 !important;
+    text-align: center !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: clamp(24px, 5vw, 32px) !important;
+    font-weight: 700 !important;
+    line-height: 1.12 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: none !important;
+    color: #7b5ce6 !important;
+}
+
+body.night-mode .modal-header h2,
+body.night-mode .skins-title,
+body.night-mode .achievements-title {
+    color: #bfaeff !important;
+}
+
+.modal-header-actions {
+    justify-self: end !important;
+}
+
+.modal-close,
+.skins-close,
+.achievements-close {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(139, 99, 232, 0.18) !important;
+    background: #ffffff !important;
+    color: #7a7f92 !important;
+    box-shadow: 0 6px 16px rgba(88, 97, 122, 0.08) !important;
+}
+
+body.night-mode .modal-close,
+body.night-mode .skins-close,
+body.night-mode .achievements-close {
+    background: #1f2028 !important;
+    color: #d8d9e6 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.modal-content,
+.modal-content-premium,
+.skins-grid,
+.achievements-list {
+    padding: 0 18px 18px !important;
+}
+
+#tasks-screen .tasks-hero,
+#games-screen .games-hero {
+    margin: 0 18px 12px !important;
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+    background: rgba(108, 92, 231, 0.08) !important;
+    border: 1px solid rgba(108, 92, 231, 0.14) !important;
+    box-shadow: none !important;
+}
+
+body.night-mode #tasks-screen .tasks-hero,
+body.night-mode #games-screen .games-hero {
+    background: rgba(139, 99, 232, 0.12) !important;
+    border-color: rgba(191, 174, 255, 0.14) !important;
+}
+
+#tasks-screen .modal-kicker,
+#games-screen .modal-kicker,
+#tasks-screen .tasks-hero-badge,
+#games-screen .games-hero-jackpot {
+    display: none !important;
+}
+
+#tasks-screen .tasks-hero-title,
+#games-screen .games-hero-title {
+    font-family: 'Space Mono', monospace !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    color: var(--text-primary) !important;
+}
+
+#tasks-screen .tasks-hero-subtitle,
+#games-screen .games-hero-subtitle {
+    margin-top: 4px !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: var(--text-dim) !important;
+}
+
+.tasks-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+
+.task-card.task-card-simple {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(108, 92, 231, 0.12) !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 22px rgba(108, 92, 231, 0.06) !important;
+}
+
+body.night-mode .task-card.task-card-simple {
+    background: #191a22 !important;
+    border-color: rgba(191, 174, 255, 0.14) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24) !important;
+}
+
+.task-card.task-card-simple::before,
+.task-card.task-card-simple .task-top,
+.task-card.task-card-simple .task-body,
+.task-card.task-card-simple .task-bottom,
+.task-card.task-card-simple .task-chip,
+.task-card.task-card-simple .task-state-pill,
+.task-card.task-card-simple .task-icon-shell,
+.task-card.task-card-simple .task-meta,
+.task-card.task-card-simple .task-action-text,
+.task-card.task-card-simple .task-action-sub {
+    display: none !important;
+}
+
+.task-copy-simple {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-card.task-card-simple .task-title {
+    margin: 0 !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    color: var(--text-primary) !important;
+}
+
+.task-card.task-card-simple .task-desc,
+.task-note-simple {
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: var(--text-dim) !important;
+}
+
+.task-actions-simple {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.task-reward-pill-simple {
+    min-height: 38px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    background: rgba(108, 92, 231, 0.08) !important;
+    color: #6c5ce7 !important;
+    box-shadow: none !important;
+    animation: none !important;
+}
+
+.task-reward-pill-simple::before {
+    display: none !important;
+}
+
+.task-action-simple {
+    min-width: 152px !important;
+    min-height: 44px !important;
+    padding: 0 16px !important;
+    border-radius: 14px !important;
+    border: 0 !important;
+    background: linear-gradient(135deg, #7a68f0, #8b76f2) !important;
+    color: #fff !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 10px 22px rgba(108, 92, 231, 0.22) !important;
+    animation: none !important;
+}
+
+.task-action-simple::before,
+.task-action-simple::after {
+    display: none !important;
+}
+
+.task-action-simple:disabled {
+    background: #f4f5f9 !important;
+    color: #9aa0b2 !important;
+    border: 1px solid rgba(142, 142, 147, 0.16) !important;
+    box-shadow: none !important;
+}
+
+body.night-mode .task-action-simple:disabled {
+    background: #262834 !important;
+    color: #9ea3b7 !important;
+}
+
+.referral-stats,
+.referral-link-card,
+.referral-rules,
+.tournament-header,
+.leaderboard,
+.player-rank,
+#games-screen .game-card {
+    border-radius: 18px !important;
+}
+
+.referral-link-card,
+.referral-rules,
+.leaderboard,
+.player-rank,
+#games-screen .game-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(108, 92, 231, 0.12) !important;
+    box-shadow: 0 10px 22px rgba(108, 92, 231, 0.06) !important;
+}
+
+body.night-mode .referral-link-card,
+body.night-mode .referral-rules,
+body.night-mode .leaderboard,
+body.night-mode .player-rank,
+body.night-mode #games-screen .game-card {
+    background: #191a22 !important;
+    border-color: rgba(191, 174, 255, 0.14) !important;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.24) !important;
+}
+
+#games-screen .games-grid {
+    gap: 10px !important;
+}
+
+#games-screen .game-card {
+    padding: 16px 12px !important;
+}
+
+#games-screen .game-card-top,
+#games-screen .game-meta {
+    display: none !important;
+}
+
+#games-screen .game-name {
+    font-family: 'Space Mono', monospace !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+#games-screen .game-desc {
+    font-size: 11px !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+#games-screen .game-enter {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(108, 92, 231, 0.08);
+    color: #6c5ce7;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#skins-screen {
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.skins-header,
+.achievements-header {
+    grid-template-columns: 1fr auto !important;
+}
+
+.skins-title,
+.achievements-title {
+    text-align: left !important;
+    font-size: 24px !important;
+}
+
+.collection-progress,
+.achievements-progress,
+.skins-filters {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+}
+
+@media (max-width: 380px) {
+    .modal-screen > .glass,
+    .skins-modal,
+    .achievements-modal {
+        width: min(96vw, 340px) !important;
+    }
+
+    .task-actions-simple {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .task-action-simple {
+        width: 100% !important;
+    }
+}
