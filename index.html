@@ -1,0 +1,1015 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spirit Clicker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="https://libtl.com/sdk.js" data-zone="10655027" data-sdk="show_10655027" defer></script>
+
+    <!-- РћСЃРЅРѕРІРЅРѕР№ СЃРєСЂРёРїС‚ -->
+    <script src="game.js" defer></script>
+    
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyABiy3f1mXpYHCW7GRPXijXbgK1PT_u-x4",
+            authDomain: "ryoho-b11f4.firebaseapp.com",
+            projectId: "ryoho-b11f4",
+            storageBucket: "ryoho-b11f4.firebasestorage.app",
+            messagingSenderId: "728309020755",
+            appId: "1:728309020755:web:5e12b91f64b776186beea6",
+            measurementId: "G-KLMRXPTEQG"
+        };
+        const app = initializeApp(firebaseConfig);
+
+        try {
+            if (await isSupported()) {
+                getAnalytics(app);
+            }
+        } catch (err) {
+            console.warn('Firebase analytics disabled:', err);
+        }
+    </script>
+</head>
+<body>
+
+    <div class="game-container" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
+        <div class="game-click-layer"></div>
+        
+        <!-- BACKGROUND -->
+        <div class="space-bg"></div>
+        <div class="stars"></div>
+        <div class="nebula"></div>
+
+        <!-- HEADER -->
+        <div class="header glass">
+            <div class="nav-item" onclick="openAchievements()">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-light">
+                </span>
+                <span>Achievements</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tournament', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/achievements.webp" alt="Tournament" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/achievements.webp" alt="Tournament" class="nav-icon-img icon-light">
+                </span>
+                <span>Tournament</span>
+            </div>
+            
+            <button class="header-daily-button glass" onclick="openDailyRewards()" aria-label="Daily Rewards">
+                <span class="header-daily-icon">🎁</span>
+                <span class="daily-reward-dot" id="dailyRewardDot"></span>
+            </button>
+
+            <div class="settings-container">
+                <button class="settings-btn" onclick="openSettings()" title="Settings">
+                    <img src="imgg/dark icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-light">
+                </button>
+            </div>
+        </div>
+
+        <!-- STATS ROW -->
+        <div class="stats-row">
+            <div class="stat-card glass">
+                <div class="stat-icon">
+                    <img src="imgg/dark icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-light">
+                </div>
+                <div>
+                    <div class="stat-label">per hour</div>
+                    <div class="stat-value" id="profitPerHour"><span class="loading-spinner"></span></div>
+                </div>
+            </div>
+            <div class="stat-card glass">
+                <img src="imgg/coin.png" class="stat-icon-img">
+                <div>
+                    <div class="stat-label">per tap</div>
+                    <div class="stat-value" id="profitPerTap">1</div>
+                </div>
+            </div>
+        </div>
+        
+            <div class="energy-bar-container">
+                <div class="energy-bar-bg">
+                    <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
+                </div>
+                <div class="badge-wrap">
+                    <canvas id="badgeRope" width="220" height="420" aria-hidden="true"></canvas>
+                    <div class="badge-card" id="badgeCard">
+                        <img src="imgg/skins/icon.png" alt="badge" class="badge-texture">
+                        <div class="badge-glow"></div>
+                    </div>
+                </div>
+            </div>
+
+        <div class="daily-reward-launch-wrap">
+            <div class="balance-container daily-balance-container">
+                <div class="balance-value daily-balance-value" id="coinBalance">0</div>
+            </div>
+        </div>
+                    
+        <!-- CLICKER AREA -->
+        <div class="clicker-area">
+            <div class="energy-preview">
+                <span id="energyText">1000</span> / <span id="maxEnergyText">1000</span>
+            </div>
+
+            <div class="clicker-container">
+                <div class="click-button-wrapper">
+                    <div class="click-button" id="ryoho">
+                        <img src="imgg/skins/default.png" alt="Spirit" class="click-image" onerror="this.src='imgg/skins/default.png'">
+                        <div class="click-ripple"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="boost-corner">
+                <button class="mini-boost-button" onclick="activateMegaBoost()" id="mega-boost-btn">
+                    <span class="mini-boost-icon">
+                        <img src="imgg/rocket.png" style="width: 40px; height: 40px; vertical-align: middle;overflow: hidden;">
+                    </span>
+                    <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
+                </button>
+                <button class="auto-boost-button" onclick="toggleAutoClick()" id="auto-boost-btn">
+                    <span class="auto-icon">🤖</span>
+                    <span class="auto-timer" id="auto-boost-timer"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- UPGRADE PANEL -->
+        <div class="upgrade-panel glass" onclick="upgradeAll()">
+            <div class="upgrade-panel-left">
+                <div class="upgrade-panel-icons"></div>
+                <div class="upgrade-panel-info">
+                    <div class="upgrade-panel-title">Upgrade</div>
+                    <div class="upgrade-panel-bonuses"></div>
+                </div>
+            </div>
+            <div class="upgrade-panel-right">
+                <div class="upgrade-panel-level">LVL <span id="globalLevel">0</span></div>
+                <div class="upgrade-panel-price">
+                    <img src="imgg/coin.png" class="stat-icon-img">
+                    <span id="globalPrice">730</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchTab('main', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/home.svg" alt="Main" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/home.svg" alt="Main" class="nav-icon-img icon-light">
+                </span>
+                <span>Main</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('friends', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/friends.svg" alt="Friends" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/friends.svg" alt="Friends" class="nav-icon-img icon-light">
+                </span>
+                <span>Friends</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tasks', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
+                </span>
+                <span>Tasks</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('games', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/games.svg" alt="Games" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/games.svg" alt="Games" class="nav-icon-img icon-light">
+                </span>
+                <span>Games</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('skins', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/skins.svg" alt="Skins" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/skins.svg" alt="Skins" class="nav-icon-img icon-light">
+                </span>
+                <span>Skins</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOURNAMENT MODAL -->
+    <div class="modal-screen" id="tournament-screen">
+        <div class="glass">
+            <div class="modal-header">
+                <h2>Tournament</h2>
+                <div class="modal-header-actions">
+                    <div class="tournament-online-indicator tournament-online-indicator-top" id="tournament-online-indicator">
+                        <span class="online-dot"></span>
+                        <span class="online-count-label">Online</span>
+                        <span class="online-count-value" id="tournament-online-count">0</span>
+                    </div>
+                    <button class="modal-close" onclick="closeModal('tournament-screen')">×</button>
+                </div>
+            </div>
+            <div class="modal-content">
+                <div class="tournament-header">
+                    <div class="tournament-timer" id="tournament-timer">23:59:59</div>
+                    <div class="tournament-prize">Prize Pool: 100,000 coins</div>
+                </div>
+                
+                <div class="leaderboard">
+                    <div class="leaderboard-header">
+                        <span>#</span>
+                        <span>Player</span>
+                        <span>Score</span>
+                    </div>
+                    <div id="leaderboard-list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="player-rank glass">
+                    <div class="rank-info">
+                        <span class="rank-label">Your rank:</span>
+                        <span class="rank-value" id="player-rank">#42</span>
+                    </div>
+                    <div class="rank-info">
+                        <span class="rank-label">Your score:</span>
+                        <span class="rank-value" id="player-score">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FRIENDS MODAL -->
+    <div class="modal-screen" id="friends-screen">
+        <div class="glass">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal('friends-screen')">×</button>
+                <h2>Friends</h2>
+            </div>
+            <div class="modal-content">
+                <div class="referral-stats">
+                    <div class="stat-small glass">
+                        <span class="stat-small-label">Invited</span>
+                        <span class="stat-small-value" id="referral-count">0</span>
+                    </div>
+                    <div class="stat-small glass">
+                        <span class="stat-small-label">Earned</span>
+                        <span class="stat-small-value" id="referral-earnings">0</span>
+                    </div>
+                </div>
+
+                <div class="referral-link-card glass">
+                    <div class="referral-link-label">Your referral link</div>
+                    <div class="referral-link-box" id="referral-link" onclick="copyReferralLink()">loading...</div>
+                    <button class="btn-primary" onclick="copyReferralLink()">Copy link</button>
+                    <button class="btn-secondary" onclick="shareReferral()">Share</button>
+                </div>
+
+                <div class="referral-rules glass">
+                    <h3>Bonuses</h3>
+                    <ul>
+                        <li><span class="rule-icon">🤝</span> Invite 1 friend — <span class="highlight">+25000 coins</span></li>
+                        <li><span class="rule-icon">💎</span> Friend income share — <span class="highlight">5% forever</span></li>
+                        <li><span class="rule-icon">👻</span> First invited friend — <span class="highlight">special skin</span></li>
+                        <li><span class="rule-icon">🛡️</span> Referral income limit — <span class="highlight">50000 per day</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-screen" id="daily-screen">
+        <div class="glass daily-modal-shell">
+            <div class="modal-header modal-header-premium">
+                <button class="modal-close" onclick="closeModal('daily-screen')">×</button>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">Login Streak</span>
+                    <h2>Daily Rewards</h2>
+                </div>
+            </div>
+            <div class="modal-content daily-modal-content">
+                <div class="daily-modal-summary" id="dailyRewardSummary">
+                    Come back every day and claim your reward.
+                </div>
+                <button class="btn-primary daily-claim-btn" id="dailyClaimBtn" onclick="claimDailyReward()">
+                    Claim reward
+                </button>
+                <div class="daily-track-wrap">
+                    <div class="daily-track" id="dailyRewardTrack"></div>
+                </div>
+                <div class="daily-skin-teaser">
+                    <div class="daily-skin-teaser-copy">
+                        <div class="daily-skin-teaser-kicker">Day 30 reward</div>
+                        <div class="daily-skin-teaser-title">Exclusive skin</div>
+                        <div class="daily-skin-teaser-text">Log in for all 30 days to unlock the final skin bonus.</div>
+                    </div>
+                    <div class="daily-skin-teaser-visual">
+                        <img src="imgg/skins/retro.png" alt="Day 30 skin" class="daily-skin-teaser-img" onerror="this.src='imgg/skins/default.png'">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TASKS MODAL -->
+    <div class="modal-screen" id="tasks-screen">
+        <div class="glass tasks-modal-shell">
+            <div class="modal-header modal-header-premium">
+                <button class="modal-close" onclick="closeModal('tasks-screen')">×</button>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">Daily Boosts</span>
+                    <h2>Tasks</h2>
+                </div>
+            </div>
+            <div class="tasks-hero">
+                <div class="tasks-hero-copy">
+                    <div class="tasks-hero-title">Ad rewards with premium drops</div>
+                    <div class="tasks-hero-subtitle">Fast tasks, glowing payouts, instant dopamine.</div>
+                </div>
+                <div class="tasks-hero-badge">
+                    <span class="tasks-hero-badge-label">Ghost Pass</span>
+                    <span class="tasks-hero-badge-value">Hot Loot</span>
+                </div>
+            </div>
+            <div class="modal-content modal-content-premium tasks-modal-content">
+                <div class="tasks-list" id="tasks-list">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAMES MODAL -->
+    <div class="modal-screen" id="games-screen">
+        <div class="glass games-modal-shell">
+            <div class="modal-header modal-header-premium">
+                <button class="modal-close" onclick="closeModal('games-screen')">×</button>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">Neon Casino</span>
+                    <h2>Mini-Games</h2>
+                </div>
+            </div>
+            <div class="games-hero">
+                <div class="games-hero-copy">
+                    <div class="games-hero-title">One tap in. All risk. Pure premium chaos.</div>
+                    <div class="games-hero-subtitle">Pick a table, chase the glow, spike your coin balance.</div>
+                </div>
+                <div class="games-hero-jackpot">
+                    <span class="games-hero-jackpot-label">Potential</span>
+                    <span class="games-hero-jackpot-value">x35</span>
+                </div>
+            </div>
+            <div class="modal-content modal-content-premium games-modal-content">
+                <div class="games-grid">
+                    <div class="game-card glass" onclick="openGame('coinflip')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-balanced">Balanced</span>
+                            <span class="game-payout-badge">x2</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-coinflip">
+                            <div class="game-icon">🪙</div>
+                        </div>
+                        <div class="game-name">Coin Flip</div>
+                        <div class="game-desc">50/50 ghost toss with instant double payout.</div>
+                        <div class="game-meta">
+                            <span>Fast round</span>
+                            <span>Safe rush</span>
+                        </div>
+                        <div class="game-enter">Tap to play</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('slots')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-hot">Hot</span>
+                            <span class="game-payout-badge">x10</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-slots">
+                            <div class="game-icon">🎰</div>
+                        </div>
+                        <div class="game-name">Slots</div>
+                        <div class="game-desc">Rapid jackpot reels with dopamine burst timing.</div>
+                        <div class="game-meta">
+                            <span>Jackpot vibe</span>
+                            <span>High swing</span>
+                        </div>
+                        <div class="game-enter">Pull the reels</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('dice')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-smart">Smart</span>
+                            <span class="game-payout-badge">x4</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-dice">
+                            <div class="game-icon">🎲</div>
+                        </div>
+                        <div class="game-name">Dice</div>
+                        <div class="game-desc">Call the sum and flex your luck on demand.</div>
+                        <div class="game-meta">
+                            <span>Skill feel</span>
+                            <span>Sharp odds</span>
+                        </div>
+                        <div class="game-enter">Roll it</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('wheel')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-chaos">Chaos</span>
+                            <span class="game-payout-badge">x35</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-wheel">
+                            <div class="game-icon">🎡</div>
+                        </div>
+                        <div class="game-name">Roulette</div>
+                        <div class="game-desc">Neon wheel, brutal odds, massive highlight wins.</div>
+                        <div class="game-meta">
+                            <span>Max thrill</span>
+                            <span>Big spike</span>
+                        </div>
+                        <div class="game-enter">Spin now</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('luckybox')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-mystic">Mystic</span>
+                            <span class="game-payout-badge">x3.5</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-luckybox">
+                            <div class="game-icon">&#127873;</div>
+                        </div>
+                        <div class="game-name">Lucky Box</div>
+                        <div class="game-desc">Pick one box. Bust, refund, or premium coin drop.</div>
+                        <div class="game-meta">
+                            <span>Pick one</span>
+                            <span>Mystery odds</span>
+                        </div>
+                        <div class="game-enter">Open a box</div>
+                    </div>
+                    <div class="game-card glass" onclick="openGame('crash')">
+                        <div class="game-card-top">
+                            <span class="game-risk-badge risk-ghost">Ghost</span>
+                            <span class="game-payout-badge">x8+</span>
+                        </div>
+                        <div class="game-icon-wrap game-icon-wrap-crash">
+                            <div class="game-icon">&#128123;</div>
+                        </div>
+                        <div class="game-name">Crash Ghost</div>
+                        <div class="game-desc">Multiplier climbs until the ghost vanishes. Cash out in time.</div>
+                        <div class="game-meta">
+                            <span>High tension</span>
+                            <span>Fast cashout</span>
+                        </div>
+                        <div class="game-enter">Chase multiplier</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- COINFLIP GAME MODAL -->
+    <div class="game-modal" id="game-coinflip">
+        <div class="game-modal-content glass">
+            <button class="modal-close" onclick="closeGame('coinflip')">×</button>
+            <h2>Coinflip</h2>
+            <div class="game-play-area">
+                <div class="coin-3d" id="coin">
+                    <div class="coin-face front">
+                        <span class="coin-face-ring"></span>
+                        <span class="coin-face-symbol">S</span>
+                    </div>
+                    <div class="coin-face back">
+                        <span class="coin-face-ring"></span>
+                        <span class="coin-face-symbol ghost-symbol">&#128123;</span>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="coin-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                    <button class="btn-primary" onclick="playCoinflip()">Flip</button>
+                </div>
+                <div class="game-result" id="coin-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROULETTE GAME MODAL -->
+    <div class="game-modal" id="game-wheel">
+        <div class="game-modal-content glass">
+            <button class="modal-close" onclick="closeGame('wheel')">×</button>
+            <h2>Roulette</h2>
+            <div class="roulette-container">
+                <div class="roulette-plate" id="roulette-plate">
+                    <div class="roulette-ring"></div>
+                    <div class="roulette-ball" id="roulette-ball"></div>
+                </div>
+                <div class="roulette-center" id="wheel">0</div>
+                <div class="game-desc">Red ×2 | Black ×2 | Green ×35</div>
+            </div>
+            <div class="game-controls">
+                <input type="number" id="wheel-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                <select id="wheel-color" class="game-select" onchange="toggleNumberInput()">
+                    <option value="red">Red (×2)</option>
+                    <option value="black">Black (×2)</option>
+                    <option value="green">Green (×35)</option>
+                    <option value="number">Number (×35)</option>
+                </select>
+                <input type="number" id="wheel-number" min="0" max="36" value="0" class="game-input" placeholder="Number 0-36" style="display:none;">
+                <button class="btn-primary" onclick="playWheel()">Spin</button>
+            </div>
+            <div class="game-result" id="wheel-result"></div>
+        </div>
+    </div>
+
+    <!-- SLOTS GAME MODAL -->
+    <div class="game-modal" id="game-slots">
+        <div class="game-modal-content glass">
+            <button class="modal-close" onclick="closeGame('slots')">×</button>
+            <h2>Slots</h2>
+            <div class="game-play-area">
+                <div class="slots-container">
+                    <div class="slot" id="slot1"><span class="slot-symbol">&#127826;</span></div>
+                    <div class="slot" id="slot2"><span class="slot-symbol">&#127826;</span></div>
+                    <div class="slot" id="slot3"><span class="slot-symbol">&#127826;</span></div>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="slots-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                    <button class="btn-primary" onclick="playSlots()">Spin</button>
+                </div>
+                <div class="game-result" id="slots-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DICE GAME MODAL -->
+    <div class="game-modal" id="game-dice">
+        <div class="game-modal-content glass">
+            <button class="modal-close" onclick="closeGame('dice')">×</button>
+            <h2>Dice</h2>
+            <div class="game-play-area">
+                <div class="dice-container">
+                    <div class="dice" id="dice1" data-face="1">
+                        <span class="dice-pip pip-center"></span>
+                    </div>
+                    <div class="dice" id="dice2" data-face="1">
+                        <span class="dice-pip pip-center"></span>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="dice-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                    <select id="dice-prediction" class="game-select">
+                        <option value="7">Sum = 7 (×5)</option>
+                        <option value="even">Even (×2)</option>
+                        <option value="odd">Odd (×2)</option>
+                    </select>
+                    <button class="btn-primary" onclick="playDice()">Roll</button>
+                </div>
+                <div class="game-result" id="dice-result"></div>
+            </div>
+        </div>
+    </div>
+    <!-- LUCKY BOX GAME MODAL -->
+    <div class="game-modal" id="game-luckybox">
+        <div class="game-modal-content glass luckybox-modal-content">
+            <button class="modal-close" onclick="closeGame('luckybox')">&times;</button>
+            <h2>Lucky Box</h2>
+            <div class="game-play-area luckybox-play-area">
+                <div class="luckybox-header-strip">
+                    <div class="luckybox-sub">Choose 1 box and reveal your fate</div>
+                    <div class="luckybox-potential">Potential x3.5</div>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="luckybox-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                </div>
+                <div class="luckybox-grid" id="luckybox-grid">
+                    <button class="lucky-box-card" data-box="0" onclick="playLuckyBox(0)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 1</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="1" onclick="playLuckyBox(1)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 2</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="2" onclick="playLuckyBox(2)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 3</span>
+                    </button>
+                    <button class="lucky-box-card" data-box="3" onclick="playLuckyBox(3)">
+                        <span class="lucky-box-glow"></span>
+                        <span class="lucky-box-lid"></span>
+                        <span class="lucky-box-core"></span>
+                        <span class="lucky-box-mark">&#127873;</span>
+                        <span class="lucky-box-label">Box 4</span>
+                    </button>
+                </div>
+                <div class="game-result luckybox-result" id="luckybox-result">Pick your box.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRASH GHOST GAME MODAL -->
+    <div class="game-modal" id="game-crash">
+        <div class="game-modal-content glass crash-modal-content">
+            <button class="modal-close" onclick="closeGame('crash')">&times;</button>
+            <h2>Crash Ghost</h2>
+            <div class="game-play-area crash-play-area">
+                <div class="crash-hero">
+                    <div class="crash-multiplier" id="crash-multiplier">1.00x</div>
+                    <div class="crash-sub" id="crash-status">Start the round and cash out before the ghost crashes.</div>
+                </div>
+                <div class="crash-track">
+                    <div class="crash-track-fill" id="crash-track-fill"></div>
+                    <div class="crash-track-spark"></div>
+                    <div class="crash-ghost-runner" id="crash-ghost-runner">&#128123;</div>
+                </div>
+                <div class="crash-scale">
+                    <span>1x</span>
+                    <span>2x</span>
+                    <span>3x</span>
+                    <span>5x+</span>
+                </div>
+                <div class="game-controls">
+                    <input type="number" id="crash-bet" min="10" value="100" class="game-input" placeholder="Bet amount">
+                    <div class="crash-controls-row">
+                        <button class="btn-primary crash-start-btn" id="crash-start-btn" onclick="startCrashGhost()">Start Run</button>
+                        <button class="btn-primary crash-cashout-btn" id="crash-cashout-btn" onclick="cashOutCrashGhost()" disabled>Cash Out</button>
+                    </div>
+                </div>
+                <div class="game-result crash-result" id="crash-result">Catch the multiplier before it bursts.</div>
+            </div>
+        </div>
+    </div>
+    <!-- SETTINGS MODAL -->
+    <div class="settings-overlay" id="settings-screen" onclick="closeSettingsOutside(event)">
+        <div class="settings-modal glass" id="settings-modal-box">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
+                    <span class="settings-icon" id="themeIcon">☀️</span>
+                    <div>
+                        <div class="settings-title">Theme</div>
+                        <div class="settings-sub" id="themeLabel">Day</div>
+                    </div>
+                </div>
+                <div class="toggle-wrap" onclick="toggleTheme()">
+                    <div class="toggle-track" id="themeTrack">
+                        <div class="toggle-thumb" id="themeThumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
+                    <span class="settings-icon" id="soundIcon">🔊</span>
+                    <div>
+                        <div class="settings-title">Sound</div>
+                        <div class="settings-sub" id="soundLabel">On</div>
+                    </div>
+                </div>
+                <div class="toggle-wrap" onclick="toggleSound()">
+                    <div class="toggle-track active" id="soundTrack">
+                        <div class="toggle-thumb" id="soundThumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
+                    <span class="settings-icon" id="musicIcon">🎵</span>
+                    <div>
+                        <div class="settings-title">Music</div>
+                        <div class="settings-sub" id="musicLabel">On</div>
+                    </div>
+                </div>
+                <div class="toggle-wrap" onclick="toggleMusic()">
+                    <div class="toggle-track active" id="musicTrack">
+                        <div class="toggle-thumb" id="musicThumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
+                    <span class="settings-icon" id="vibIcon">📳</span>
+                    <div>
+                        <div class="settings-title">Vibration</div>
+                        <div class="settings-sub" id="vibLabel">On</div>
+                    </div>
+                </div>
+                <div class="toggle-wrap" onclick="toggleVibration()">
+                    <div class="toggle-track active" id="vibTrack">
+                        <div class="toggle-thumb" id="vibThumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-footer">Spirix Clicker • v2.0</div>
+        </div>
+    </div>
+
+    <!-- CONFIRM MODAL (for skins) -->
+    <div class="confirm-modal" id="confirm-modal" style="display: none;">
+        <div class="confirm-modal-overlay" onclick="closeConfirmModal?.()"></div>
+        <div class="confirm-modal-content glass">
+            <button class="confirm-modal-close" onclick="closeConfirmModal?.()">×</button>
+            <div class="confirm-modal-icon" id="confirm-modal-icon">🎨</div>
+            <h3 class="confirm-modal-title" id="confirm-modal-title">Choose an action</h3>
+            <div class="skin-preview-mini" id="confirm-skin-preview">
+                <img src="" alt="" id="confirm-skin-img" class="confirm-skin-img" loading="lazy">
+            </div>
+            <p class="confirm-skin-name" id="confirm-skin-name">Skin name</p>
+            <p class="confirm-skin-desc" id="confirm-skin-desc">Skin description</p>
+            <div class="skin-requirements-mini" id="confirm-skin-requirements">
+                <span class="requirement-badge">✨ Free</span>
+            </div>
+            <div class="skin-bonus-mini" id="confirm-skin-bonus">
+                <span class="bonus-badge">⚡ +50% income</span>
+            </div>
+            <div class="confirm-modal-buttons">
+                <button class="btn-secondary modal-btn" onclick="closeConfirmModal?.()">
+                    <span class="btn-icon">×</span>
+                    <span class="btn-text">Cancel</span>
+                </button>
+                <button class="btn-primary modal-btn" id="confirm-action-btn" onclick="executeSkinAction?.()">
+                    <span class="btn-icon">✓</span>
+                    <span class="btn-text" id="confirm-action-text">Select</span>
+                </button>
+            </div>
+            <div class="modal-tip">
+                Tap outside the window to close
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== РќРћР’РђРЇ РњРћР”РђР›РљРђ РЎРџРРЎРљРђ РЎРљРРќРћР’ ==================== -->
+    <div class="modal-screen" id="skins-screen">
+        <div class="skins-modal">
+            <div class="skins-header">
+                <h2 class="skins-title">Skin</h2>
+                <button class="skins-close" onclick="closeModal('skins-screen')">×</button>
+            </div>
+
+            <!-- РџСЂРѕРіСЂРµСЃСЃ РєРѕР»Р»РµРєС†РёРё -->
+            <div class="collection-progress">
+                <img src="imgg/skins/icon.png" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 4px;">
+                <span id="skins-collected">0</span>/<span id="skins-total">21</span>
+                <div class="progress-bar-mini">
+                    <div class="progress-fill" id="skins-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Р¤РёР»СЊС‚СЂС‹ -->
+            <div class="skins-filters">
+                <button class="filter-btn active" onclick="filterSkins('all')">All</button>
+                <button class="filter-btn" onclick="filterSkins('common')">Common</button>
+                <button class="filter-btn" onclick="filterSkins('rare')">Rare</button>
+                <button class="filter-btn" onclick="filterSkins('legendary')">Legendary</button>
+                <button class="filter-btn" onclick="filterSkins('super')">Super</button>
+            </div>
+
+            <!-- РЎРµС‚РєР° СЃРєРёРЅРѕРІ (2 РІ СЂСЏРґ) -->
+            <div class="skins-grid" id="skins-grid">
+                <!-- РЎСЋРґР° Р±СѓРґСѓС‚ РіСЂСѓР·РёС‚СЊСЃСЏ СЃРєРёРЅС‹ РёР· game.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== РњРћР”РђР›РљРђ Р”Р•РўРђР›Р•Р™ РЎРљРРќРђ ==================== -->
+    <div class="skin-detail-modal" id="skin-detail-modal">
+        <div class="skin-detail-content">
+            <div class="skin-detail-image">
+                <img src="" alt="" id="skin-detail-img">
+                <button class="detail-close" onclick="closeSkinDetail()">×</button>
+            </div>
+
+            <div class="skin-detail-info">
+                <div class="skin-detail-header">
+                    <h3 id="skin-detail-name">Skin name</h3>
+                    <span class="skin-rarity-badge" id="skin-detail-rarity">rarity</span>
+                </div>
+
+                <p class="skin-detail-description" id="skin-detail-description">Skin description</p>
+
+                <div class="skin-detail-bonus" id="skin-detail-bonus">
+                    ⚡ Bonus: +50% income
+                </div>
+
+                <!-- РЈСЃР»РѕРІРёРµ РїРѕР»СѓС‡РµРЅРёСЏ -->
+                <div class="skin-requirement" id="skin-requirement-block">
+                    <div class="requirement-text" id="skin-requirement-text"></div>
+                    <div class="requirement-progress" id="skin-requirement-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="requirement-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="requirement-progress-text">0/10</span>
+                    </div>
+                </div>
+
+            <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
+                Claim
+            </button>
+        </div>
+    </div>
+    </div>
+    <canvas id="stars-canvas"></canvas>
+    <script>
+    (function() {
+        const canvas = document.getElementById('stars-canvas');
+        const ctx = canvas.getContext('2d');
+        const litePerformance =
+            window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ||
+            (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+            (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+            Math.min(window.innerWidth, window.innerHeight) <= 430;
+
+        if (litePerformance) {
+            document.body.classList.add('lite-performance');
+        }
+
+        const STAR_COUNT = litePerformance ? 90 : 260;
+        const stars = [];
+        const shooting = [];
+        let frameId = 0;
+
+        function resize() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function randomStar() {
+            const isBig = Math.random() < 0.18; // 18% РєСЂСѓРїРЅС‹Рµ
+            return {
+                x:  Math.random() * canvas.width  - canvas.width  / 2,
+                y:  Math.random() * canvas.height - canvas.height / 2,
+                z:  Math.random() * canvas.width,
+                pz: 0,
+                big: isBig,
+                layer: Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1),
+                tw: Math.random() * Math.PI * 2
+            };
+        }
+
+        resize();
+        window.addEventListener('resize', resize);
+        for (let i = 0; i < STAR_COUNT; i++) stars.push(randomStar());
+
+        function isNight() {
+            return document.body.classList.contains('night-mode');
+        }
+
+        function draw() {
+            if (document.hidden) {
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            frameId += 1;
+            if (litePerformance && frameId % 2 !== 0) {
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width  / 2;
+            const cy = canvas.height / 2;
+            const baseSpeed = litePerformance ? 3 : 4;
+
+            for (let s of stars) {
+                s.pz = s.z;
+                s.z -= baseSpeed * s.layer;
+                if (s.z <= 0) {
+                    s.x   = Math.random() * canvas.width  - cx;
+                    s.y   = Math.random() * canvas.height - cy;
+                    s.z   = canvas.width;
+                    s.pz  = s.z;
+                    s.big = Math.random() < 0.18;
+                    s.layer = Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1);
+                    s.tw = Math.random() * Math.PI * 2;
+                }
+
+                const sx  = (s.x / s.z)  * canvas.width  + cx;
+                const sy  = (s.y / s.z)  * canvas.height + cy;
+                const spx = (s.x / s.pz) * canvas.width  + cx;
+                const spy = (s.y / s.pz) * canvas.height + cy;
+
+                const progress = 1 - s.z / canvas.width;
+                const twinkle  = 0.5 + 0.5 * Math.sin(s.tw += 0.035 + 0.02 * s.layer);
+                const opacity  = Math.min(1, (progress * 1.8) * twinkle + 0.35);
+                const size     = s.big
+                    ? Math.max(1.2, progress * 5.5 * s.layer)
+                    : Math.max(0.9, progress * 3.2 * s.layer);
+
+                const r = isNight()
+                    ? (s.layer < 0.7 ? '210,190,255' : '255,245,255')
+                    : (s.layer < 0.7 ? '140,110,255' : '170,140,255'); // day в†’ С„РёРѕР»РµС‚РѕРІС‹Р№ РѕС‚С‚РµРЅРѕРє
+
+                // РҐРІРѕСЃС‚
+                ctx.beginPath();
+                ctx.moveTo(spx, spy);
+                ctx.lineTo(sx, sy);
+                const longTail = progress > 0.2;
+                ctx.strokeStyle = `rgba(${r},${opacity * (longTail ? 0.95 : 0.8)})`;
+                ctx.lineWidth = longTail ? size * 1.2 : size * 0.7;
+                ctx.stroke();
+
+                // РўРѕС‡РєР° РЅР° РєРѕРЅС†Рµ
+                ctx.beginPath();
+                ctx.arc(sx, sy, size * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${r},${opacity})`;
+                ctx.fill();
+
+                // РЎРІРµС‡РµРЅРёРµ РґР»СЏ РєСЂСѓРїРЅС‹С… Р·РІС‘Р·Рґ
+                if (progress > 0.2) {
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
+                    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2.5);
+                    glow.addColorStop(0, `rgba(${r},${opacity * 0.55})`);
+                    glow.addColorStop(1, `rgba(${r},0)`);
+                    ctx.fillStyle = glow;
+                    ctx.fill();
+                }
+            }
+
+            // РџР°РґР°СЋС‰РёРµ Р·РІС‘Р·РґС‹
+            if (!litePerformance && Math.random() < 0.008 && shooting.length < 4) {
+                shooting.push({
+                    x: Math.random() * canvas.width * 0.7,
+                    y: Math.random() * canvas.height * 0.2,
+                    vx: 11 + Math.random() * 10,
+                    vy: 5 + Math.random() * 5,
+                    life: 0,
+                    maxLife: 56
+                });
+            }
+
+            for (let i = shooting.length - 1; i >= 0; i--) {
+                const sh = shooting[i];
+                sh.life++;
+                sh.x += sh.vx;
+                sh.y += sh.vy;
+                const fade = 1 - sh.life / sh.maxLife;
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255,255,255,${0.95 * fade})`;
+                ctx.lineWidth = 3;
+                ctx.moveTo(sh.x - sh.vx * 5, sh.y - sh.vy * 5);
+                ctx.lineTo(sh.x, sh.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(255,255,255,${0.9 * fade})`;
+                ctx.arc(sh.x, sh.y, 3.4, 0, Math.PI * 2);
+                ctx.fill();
+                if (sh.life >= sh.maxLife) shooting.splice(i, 1);
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    </script>
+    <div class="modal-screen" id="achievements-screen">
+        <div class="achievements-modal">
+            <div class="achievements-header">
+                <h2 class="achievements-title">🏅</h2>
+                <button class="achievements-close" onclick="closeModal('achievements-screen')">×</button>
+            </div>
+
+            <div class="achievements-progress">
+                <span>📊 <span id="achievements-completed">0</span>/<span id="achievements-total">6</span></span>
+                <div class="progress-bar-mini">
+                    <div class="progress-fill" id="achievements-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="achievements-list" id="achievements-list">
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

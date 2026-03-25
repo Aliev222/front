@@ -1,0 +1,4807 @@
+﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+window.API_URL = 'https://ryoho.onrender.com';
+window.recoveryInterval = null;
+
+'use strict';
+
+console.log('🚀 game.js загружен', new Date().toLocaleTimeString());
+
+// ==================== КОНФИГУРАЦИЯ ====================
+const CONFIG = {
+    API_URL: window.API_URL,
+    CLICK_BATCH_INTERVAL: 1000,
+    ENERGY_RECHARGE_INTERVAL: 1000,
+    PASSIVE_INCOME_INTERVAL: 60000,
+    CACHE_TTL: 30000
+};
+
+window.CONFIG = CONFIG;
+
+// ==================== TELEGRAM INIT ====================
+const tg = window.Telegram?.WebApp;
+let userId = null;
+let username = null;
+let referrerId = null;
+const telegramInitData = tg?.initData || '';
+const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
+const UI_LANG = telegramLanguage.startsWith('ru') ? 'ru' : 'en';
+
+const I18N = {
+    en: {
+        common: {
+            loading: 'Loading...',
+            on: 'On',
+            off: 'Off',
+            day: 'Day',
+            night: 'Night',
+            player: 'Player',
+            score: 'Score',
+            online: 'Online',
+            claim: 'Claim',
+            equip: 'Equip',
+            cancel: 'Cancel',
+            select: 'Select',
+            closeHint: 'Tap outside the window to close',
+            claimFree: 'Free',
+            bonusIncome: 'Bonus: +50% income'
+        },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Games', skins: 'Skins', tournament: 'Tournament', achievements: 'Achievements' },
+        main: { upgrade: 'Upgrade' },
+        tournament: {
+            title: 'Tournament',
+            prizePool: 'Prize Pool: 100,000 coins',
+            rank: 'Your rank:',
+            score: 'Your score:',
+            finished: 'Tournament finished'
+        },
+        friends: {
+            title: 'Friends',
+            invited: 'Invited',
+            earned: 'Earned',
+            referralLink: 'Your referral link',
+            copyLink: 'Copy link',
+            share: 'Share',
+            bonuses: 'Bonuses',
+            bonus1: 'Invite 1 friend — +25000 coins',
+            bonus2: 'Friend income share — 5% forever',
+            bonus3: 'First invited friend — special skin',
+            bonus4: 'Referral income limit — 50000 per day'
+        },
+        tasks: {
+            title: 'Tasks',
+            kicker: 'Daily Boosts',
+            heroTitle: 'Ad rewards with premium drops',
+            heroSubtitle: 'Fast tasks, glowing payouts, instant dopamine.',
+            heroLabel: 'Ghost Pass',
+            heroValue: 'Hot Loot',
+            readyNow: 'Ready now',
+            cooldown: 'Cooldown',
+            instantReward: 'Instant reward after watch',
+            refreshIn: 'Refresh in {time} min',
+            watch: 'Watch',
+            locked: 'Locked',
+            launchReward: 'Launch ad reward',
+            rechargeRunning: 'Recharge running',
+            liveReward: 'Live reward',
+            coinsSuffix: 'coins'
+        },
+        games: {
+            title: 'Mini-Games',
+            kicker: 'Neon Casino',
+            heroTitle: 'One tap in. All risk. Pure premium chaos.',
+            heroSubtitle: 'Pick a table, chase the glow, spike your coin balance.',
+            potential: 'Potential',
+            tapToPlay: 'Tap to play',
+            pullReels: 'Pull the reels',
+            rollIt: 'Roll it',
+            spinNow: 'Spin now',
+            openBox: 'Open a box',
+            chaseMultiplier: 'Chase multiplier'
+        },
+        gameModals: {
+            betAmount: 'Bet amount',
+            numberRange: 'Number 0-36',
+            flip: 'Flip',
+            spin: 'Spin',
+            roll: 'Roll',
+            chooseAction: 'Choose an action',
+            settings: 'Settings',
+            theme: 'Theme',
+            sound: 'Sound',
+            music: 'Music',
+            vibration: 'Vibration'
+        },
+        skins: { title: 'Skin', name: 'Skin name', description: 'Skin description', rarity: 'rarity' },
+        achievements: { title: 'Achievements' }
+        ,
+        toasts: {
+            loadDataError: '⚠️ Data loading error',
+            authRequired: '❌ Please sign in',
+            adUnavailable: '❌ Ad unavailable',
+            adUnavailableTemp: '❌ Ad temporarily unavailable',
+            adLoading: '📺 Loading ad...',
+            videoLoading: '📺 Loading video...',
+            serverError: '❌ Server error',
+            copyError: '❌ Copy failed',
+            linkNotLoaded: '❌ Link not loaded',
+            linkCopied: '✅ Link copied!',
+            rewardReceived: '✅ Reward received!',
+            watchError: '❌ Video error',
+            notEnoughCoins: '❌ Need {amount} coins',
+            minBet: '❌ Minimum bet is 10',
+            betRequired: '❌ Enter a bet',
+            maxLevel: '⚠️ Max level reached',
+            upgradeBusy: '⏳ Upgrade is already processing',
+            fullUpgradeNoCoins: '❌ Not enough coins for full upgrade',
+            fullUpgradeMax: '⚠️ One upgrade is already at max',
+            upgradeApplyError: '❌ Failed to apply upgrades',
+            uiError: '❌ Interface error',
+            rouletteNumber: '❌ Enter a number from 0 to 36',
+            skinLocked: '❌ Skin "{name}" is not unlocked yet!',
+            skinSelected: '✨ Skin selected!',
+            skinNew: '✅ New skin!',
+            skinUnlockError: '❌ Skin unlock error',
+            skinSelectError: '❌ Skin selection error',
+            skinAlreadyOwned: '✅ You already own this skin',
+            skinClaimError: '❌ Claim error',
+            skinAdProgress: '✅ +1 video view for skin!',
+            starsUnavailable: '❌ Stars payments are not available in this client',
+            starsInvoiceError: '❌ Failed to create payment invoice',
+            starsPending: '⏳ Waiting for payment confirmation',
+            starsCancelled: 'ℹ️ Payment cancelled',
+            starsFailed: '❌ Payment failed',
+            starsSuccess: '✅ Payment successful',
+            boostActive: '⚡ Boost is already active!',
+            boostFinished: '⏰ Boost finished',
+            megaBoostActivated: '🔥 BOOST ACTIVATED FOR 3 MINUTES!',
+            autoTapEnabled: '✅ Auto Tap 2 min',
+            autoTapFallback: 'ℹ️ Ad unavailable, auto for 30 sec',
+            autoTapError: '❌ Failed to enable auto',
+            charmUpdated: '✅ Charm updated',
+            energyRecovered: '⚡ Energy restored!',
+            energyFull: '⚡ Energy fully restored!',
+            cooldownsReset: '🔄 Cooldowns reset'
+        },
+        skinsDyn: {
+            noSkins: 'No skins',
+            noDescription: 'No description',
+            selected: '✓ SELECTED',
+            select: 'SELECT',
+            claim: 'CLAIM',
+            upgrade: 'UPGRADE',
+            watchVideo: 'WATCH VIDEO',
+            buy: 'BUY',
+            unavailable: 'UNAVAILABLE',
+            reqLevel: '🔓 Level {value} required',
+            reqWatch: '🔓 Watch {count} videos',
+            reqWatchSkin: '🔓 Watch {count} videos for this skin',
+            reqStars: '💫 Buy for {price} Stars',
+            reqSpecial: '🔓 Special condition',
+            noBonus: '⚡ No bonus',
+            incomeBonus: '⚡ x{value} income'
+        },
+        tasksList: {
+            energy_full: { title: 'Full energy', description: 'Restore energy to 100%', tag: 'energy', reward: '⚡ FULL' },
+            coins_rush: { title: 'Coin rush', description: 'Get +1,500 coins instantly', tag: 'coins' },
+            coins_jackpot: { title: 'Jackpot', description: '+8,000 coins every 45 minutes', tag: 'jackpot' },
+            boost_combo: { title: 'Combo boost', description: 'x2 income for 7 minutes after watching', tag: 'buff', reward: 'x2 • 7 min' },
+            skin_drop: { title: 'Skin drop', description: 'Rare skin for watching (once per hour)', tag: 'skin', reward: '🎁 Rare drop' },
+            reset_tasks: { title: 'Task reset', description: 'Refreshes cooldowns for all tasks', tag: 'utility', reward: '♻ reset' },
+            telegram_sub: { title: 'Telegram', description: 'Subscribe to the Telegram channel', tag: 'social', reward: '+20,000 + skin' },
+            tiktok_sub: { title: 'TikTok', description: 'Subscribe to the TikTok page', tag: 'social', reward: '+20,000 + skin' },
+            instagram_sub: { title: 'Instagram', description: 'Subscribe to the Instagram page', tag: 'social', reward: '+20,000 + skin' }
+        },
+        minigames: {
+            coinflipSpinning: '🪙 Flipping...',
+            coinflipPlayed: '🎮 Played!',
+            coinflipWin: '🦅 You won! +{bet}',
+            coinflipLose: '💀 You lost',
+            slotsSpinning: '🎰 Spinning...',
+            slotsJackpot: '🎰 JACKPOT! +{win}',
+            slotsLose: '🎰 Better luck next time',
+            diceRolling: '🎲 Rolling...',
+            diceWin: '🎲 You won! x{multiplier}',
+            diceLose: '🎲 You lost',
+            rouletteSpinning: '🎡 Spinning...',
+            rouletteWin: '🎡 Landed on {number}. You won x{multiplier}',
+            rouletteLose: '🎡 Landed on {number}. You lost',
+            luckyPick: 'Pick your box.',
+            luckyOpening: 'Opening boxes...',
+            luckyBust: 'Bust',
+            luckySave: 'Save',
+            luckyHit: 'Lucky hit! x{multiplier} +{profit}',
+            luckySoft: 'Soft save. You kept {payout} coins.',
+            luckyLost: 'Bust. You lost {bet} coins.',
+            crashStart: 'Start the round and cash out before the ghost crashes.',
+            crashHint: 'Catch the multiplier before it bursts.',
+            crashRunning: 'Ghost is running... cash out before the crash.',
+            crashStake: 'Crash target hidden. Stake: {bet}',
+            crashCashout: 'Cashed out at {multiplier}x',
+            crashCashoutResult: 'Ghost paid {payout} coins. Profit: +{profit}',
+            crashAt: 'Crash at {multiplier}x',
+            crashLost: 'Ghost crashed. You lost {bet} coins.'
+        }
+    },
+    ru: {
+        common: {
+            loading: 'Загрузка...',
+            on: 'Вкл',
+            off: 'Выкл',
+            day: 'День',
+            night: 'Ночь',
+            player: 'Игрок',
+            score: 'Счёт',
+            online: 'Онлайн',
+            claim: 'Получить',
+            equip: 'Надеть',
+            cancel: 'Отмена',
+            select: 'Выбрать',
+            closeHint: 'Нажмите вне окна, чтобы закрыть',
+            claimFree: 'Бесплатно',
+            bonusIncome: 'Бонус: +50% к доходу'
+        },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Игры', skins: 'Скины', tournament: 'Турнир', achievements: 'Ачивки' },
+        main: { upgrade: 'Прокачка' },
+        tournament: {
+            title: 'Турнир',
+            prizePool: 'Призовой фонд: 100 000 монет',
+            rank: 'Ваш ранг:',
+            score: 'Ваш счёт:',
+            finished: 'Турнир завершён'
+        },
+        friends: {
+            title: 'Друзья',
+            invited: 'Приглашено',
+            earned: 'Заработано',
+            referralLink: 'Ваша реферальная ссылка',
+            copyLink: 'Копировать',
+            share: 'Поделиться',
+            bonuses: 'Бонусы',
+            bonus1: 'Пригласи 1 друга — +25000 монет',
+            bonus2: 'Доход с друга — 5% навсегда',
+            bonus3: 'Первый приглашённый друг — специальный скин',
+            bonus4: 'Лимит дохода с рефералов — 50000 в день'
+        },
+        tasks: {
+            title: 'Задания',
+            kicker: 'Ежедневные бусты',
+            heroTitle: 'Награды за рекламу с премиум-дропами',
+            heroSubtitle: 'Быстрые задания, сочные награды и моментальный дофамин.',
+            heroLabel: 'Ghost Pass',
+            heroValue: 'Горячий лут',
+            readyNow: 'Готово',
+            cooldown: 'Кулдаун',
+            instantReward: 'Мгновенная награда после просмотра',
+            refreshIn: 'Обновление через {time} мин',
+            watch: 'Смотреть',
+            locked: 'Закрыто',
+            launchReward: 'Запустить награду',
+            rechargeRunning: 'Идёт перезарядка',
+            liveReward: 'Живая награда',
+            coinsSuffix: 'монет'
+        },
+        games: {
+            title: 'Мини-игры',
+            kicker: 'Неон Казино',
+            heroTitle: 'Один тап. Весь риск. Чистый премиум-хаос.',
+            heroSubtitle: 'Выбирай стол, лови сияние и поднимай баланс.',
+            potential: 'Потенциал',
+            tapToPlay: 'Играть',
+            pullReels: 'Крутить слоты',
+            rollIt: 'Бросить',
+            spinNow: 'Крутить',
+            openBox: 'Открыть бокс',
+            chaseMultiplier: 'Ловить множитель'
+        },
+        gameModals: {
+            betAmount: 'Ставка',
+            numberRange: 'Число 0-36',
+            flip: 'Подбросить',
+            spin: 'Крутить',
+            roll: 'Бросить',
+            chooseAction: 'Выберите действие',
+            settings: 'Настройки',
+            theme: 'Тема',
+            sound: 'Звуки',
+            music: 'Музыка',
+            vibration: 'Вибрация'
+        },
+        skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
+        achievements: { title: 'Ачивки' },
+        toasts: {
+            loadDataError: '⚠️ Ошибка загрузки данных',
+            authRequired: '❌ Авторизуйтесь',
+            adUnavailable: '❌ Реклама недоступна',
+            adUnavailableTemp: '❌ Реклама временно недоступна',
+            adLoading: '📺 Загружаем рекламу...',
+            videoLoading: '📺 Загружаем видео...',
+            serverError: '❌ Ошибка сервера',
+            copyError: '❌ Ошибка копирования',
+            linkNotLoaded: '❌ Ссылка не загружена',
+            linkCopied: '✅ Ссылка скопирована!',
+            rewardReceived: '✅ Награда получена!',
+            watchError: '❌ Ошибка при просмотре видео',
+            notEnoughCoins: '❌ Нужно {amount} монет',
+            minBet: '❌ Минимальная ставка 10',
+            betRequired: '❌ Введите ставку',
+            maxLevel: '⚠️ Максимальный уровень достигнут',
+            upgradeBusy: '⏳ Улучшение уже обрабатывается',
+            fullUpgradeNoCoins: '❌ Недостаточно монет для полного апгрейда',
+            fullUpgradeMax: '⚠️ Один из апгрейдов уже на максимуме',
+            upgradeApplyError: '❌ Не удалось применить улучшения',
+            uiError: '❌ Ошибка интерфейса',
+            rouletteNumber: '❌ Введите число от 0 до 36',
+            skinLocked: '❌ Скин "{name}" ещё не открыт!',
+            skinSelected: '✨ Скин выбран!',
+            skinNew: '✅ Новый скин!',
+            skinUnlockError: '❌ Ошибка разблокировки',
+            skinSelectError: '❌ Ошибка выбора скина',
+            skinAlreadyOwned: '✅ Скин уже есть',
+            skinClaimError: '❌ Ошибка получения',
+            skinAdProgress: '✅ +1 просмотр для скина!',
+            starsUnavailable: '❌ Оплата Stars недоступна в этом клиенте',
+            starsInvoiceError: '❌ Не удалось создать счёт на оплату',
+            starsPending: '⏳ Ожидаем подтверждение оплаты',
+            starsCancelled: 'ℹ️ Оплата отменена',
+            starsFailed: '❌ Ошибка оплаты',
+            starsSuccess: '✅ Оплата прошла успешно',
+            boostActive: '⚡ Буст уже активен!',
+            boostFinished: '⏰ Буст закончился',
+            megaBoostActivated: '🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!',
+            autoTapEnabled: '✅ Auto Tap 2 мин',
+            autoTapFallback: 'ℹ️ Реклама недоступна, авто на 30 сек',
+            autoTapError: '❌ Не удалось включить авто',
+            charmUpdated: '✅ Брелок обновлен',
+            energyRecovered: '⚡ Энергия восстановлена!',
+            energyFull: '⚡ Энергия полностью восстановлена!',
+            cooldownsReset: '🔄 Кулдауны сброшены'
+        },
+        skinsDyn: {
+            noSkins: 'Нет скинов',
+            noDescription: 'Нет описания',
+            selected: '✓ ВЫБРАН',
+            select: 'ВЫБРАТЬ',
+            claim: 'ПОЛУЧИТЬ',
+            upgrade: 'ПРОКАЧАТЬ',
+            watchVideo: 'СМОТРЕТЬ ВИДЕО',
+            buy: 'КУПИТЬ',
+            unavailable: 'НЕДОСТУПНО',
+            reqLevel: '🔓 Требуется уровень {value}',
+            reqWatch: '🔓 Посмотри {count} видео',
+            reqWatchSkin: '🔓 Посмотри {count} видео для этого скина',
+            reqStars: '💫 Купить за {price} Stars',
+            reqSpecial: '🔓 Условие: особое',
+            noBonus: '⚡ Бонус: нет',
+            incomeBonus: '⚡ x{value} к доходу'
+        },
+        tasksList: {
+            energy_full: { title: 'Полная энергия', description: 'Восстанови запас энергии до 100%', tag: 'энергия', reward: '⚡ FULL' },
+            coins_rush: { title: 'Монетный дождь', description: 'Сразу получи +1 500 монет', tag: 'коины' },
+            coins_jackpot: { title: 'Джекпот', description: '+8 000 монет раз в 45 минут', tag: 'джекпот' },
+            boost_combo: { title: 'Комбо-ускорение', description: 'x2 доход на 7 минут после просмотра', tag: 'баф', reward: 'x2 • 7 мин' },
+            skin_drop: { title: 'Дроп скина', description: 'Редкий скин за просмотр (1 раз в час)', tag: 'скин', reward: '🎁 Rare drop' },
+            reset_tasks: { title: 'Сброс заданий', description: 'Обновляет кулдауны всех заданий', tag: 'utility', reward: '♻ reset' },
+            telegram_sub: { title: 'Telegram', description: 'Подпишись на Telegram-канал', tag: 'social', reward: '+20 000 + скин' },
+            tiktok_sub: { title: 'TikTok', description: 'Подпишись на TikTok', tag: 'social', reward: '+20 000 + скин' },
+            instagram_sub: { title: 'Instagram', description: 'Подпишись на Instagram', tag: 'social', reward: '+20 000 + скин' }
+        },
+        minigames: {
+            coinflipSpinning: '🪙 Подбрасываем...',
+            coinflipPlayed: '🎮 Сыграно!',
+            coinflipWin: '🦅 Вы выиграли! +{bet}',
+            coinflipLose: '💀 Вы проиграли',
+            slotsSpinning: '🎰 Крутим...',
+            slotsJackpot: '🎰 ДЖЕКПОТ! +{win}',
+            slotsLose: '🎰 Повезет в следующий раз',
+            diceRolling: '🎲 Бросаем...',
+            diceWin: '🎲 Вы выиграли! x{multiplier}',
+            diceLose: '🎲 Вы проиграли',
+            rouletteSpinning: '🎡 Крутим...',
+            rouletteWin: '🎡 Выпало {number}. Вы выиграли x{multiplier}',
+            rouletteLose: '🎡 Выпало {number}. Вы проиграли',
+            luckyPick: 'Выбери свой бокс.',
+            luckyOpening: 'Открываем боксы...',
+            luckyBust: 'Пусто',
+            luckySave: 'Сейв',
+            luckyHit: 'Удача! x{multiplier} +{profit}',
+            luckySoft: 'Мягкий сейв. Ты сохранил {payout} монет.',
+            luckyLost: 'Пусто. Ты потерял {bet} монет.',
+            crashStart: 'Запусти раунд и успей забрать выигрыш до краша.',
+            crashHint: 'Поймай множитель до взрыва.',
+            crashRunning: 'Призрак бежит... успей вывести до краша.',
+            crashStake: 'Краш скрыт. Ставка: {bet}',
+            crashCashout: 'Забрал на {multiplier}x',
+            crashCashoutResult: 'Призрак выплатил {payout} монет. Профит: +{profit}',
+            crashAt: 'Краш на {multiplier}x',
+            crashLost: 'Призрак разбился. Ты потерял {bet} монет.'
+        }
+    }
+};
+
+function t(key, vars = {}) {
+    const source = I18N[UI_LANG] || I18N.en;
+    const value = key.split('.').reduce((acc, part) => acc?.[part], source) ??
+        key.split('.').reduce((acc, part) => acc?.[part], I18N.en) ??
+        key;
+    return String(value).replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? `{${name}}`);
+}
+
+const tr = t;
+
+if (tg) {
+    tg.expand();
+    if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+    if (tg.initDataUnsafe?.user) {
+        userId = tg.initDataUnsafe.user.id;
+        username = tg.initDataUnsafe.user.username || `user_${userId}`;
+    }
+    
+    const startParam = tg.initDataUnsafe?.start_param || '';
+    if (startParam?.startsWith('ref_')) {
+        referrerId = parseInt(startParam.replace('ref_', '')) || null;
+    }
+}
+
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => {
+    const requestUrl = typeof input === 'string' ? input : input?.url || '';
+    const isApiRequest =
+        requestUrl.startsWith(CONFIG.API_URL) ||
+        requestUrl.startsWith('/api/');
+
+    if (!isApiRequest || !telegramInitData) {
+        return originalFetch(input, init);
+    }
+
+    const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
+    headers.set('X-Telegram-Init-Data', telegramInitData);
+
+    return originalFetch(input, {
+        ...init,
+        headers
+    });
+};
+
+// ==================== СОСТОЯНИЕ ====================
+const State = {
+    user: { id: userId, username, referrerId },
+    achievements: {
+        clicks: 0,
+        upgrades: 0,
+        games: 0,
+        referrals: 0,
+        adsWatched: 0,
+        completed: []
+    },
+    game: {
+        coins: 0,
+        energy: 500,
+        maxEnergy: 500,
+        profitPerTap: 1,
+        profitPerHour: 100,
+        level: 0,
+        prices: { multitap: 50, profit: 40, energy: 30 },
+        levels: { multitap: 0, profit: 0, energy: 0 }
+    },
+    skins: {
+        owned: ['default.pngSP'],
+        selected: 'default.pngSP',
+        adsWatched: 0,
+        friendsInvited: 0,
+        data: [],
+        videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}')
+    },
+    tasks: {
+        social: JSON.parse(localStorage.getItem('socialTaskState') || '{}')
+    },
+    daily: {
+        claimedDays: 0,
+        claimAvailable: false,
+        nextDay: 1,
+        infiniteEnergyExpiresAt: null
+    },
+    settings: {
+        theme: localStorage.getItem('ryohoSettings') ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).theme || 'day' : 'day',
+        sound: localStorage.getItem('ryohoSettings') ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).sound !== undefined ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).sound : true : true,
+        music: localStorage.getItem('ryohoSettings') ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).music !== undefined ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).music : true : true,
+        vibration: localStorage.getItem('ryohoSettings') ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).vibration !== undefined ? 
+            JSON.parse(localStorage.getItem('ryohoSettings')).vibration : true : true
+    },
+    temp: {
+        tapAnimation: null,
+        clickBuffer: 0,
+        clickValueBuffer: 0,
+        clickBatchInFlight: false,
+        lastAutoSoundAt: 0,
+        lastAutoVibrationAt: 0,
+        animationTimer: null,
+        syncTimer: null,
+        bgm: {
+            audio: null,
+            ready: false,
+            enabled: true
+        },
+        auto: {
+            enabledUntil: 0,
+            timer: null,
+            fingerDown: false,
+            point: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+            effect: null
+        },
+
+        // энергосистема
+        energyUiTimer: null,
+        serverEnergyBase: 0,
+        serverEnergySyncedAtMs: 0,
+        energyRegenMs: 5000,
+        lastTapAt: 0,
+
+    },
+    cache: new Map()
+};
+
+window.State = State;
+window.state = State;
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+function detectLitePerformanceMode() {
+    try {
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        const lowCpu = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+        const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 4;
+        const smallViewport = Math.min(window.innerWidth, window.innerHeight) <= 430;
+        return Boolean(prefersReducedMotion || lowCpu || lowMemory || smallViewport);
+    } catch (err) {
+        return false;
+    }
+}
+
+function isLitePerformanceMode() {
+    return !!State.temp.performanceLite;
+}
+
+function applyPerformanceMode() {
+    State.temp.performanceLite = detectLitePerformanceMode();
+    document.body.classList.toggle('lite-performance', State.temp.performanceLite);
+}
+
+function parseServerDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string' && !/[zZ]|[+\-]\d{2}:\d{2}$/.test(value)) {
+        return new Date(`${value}Z`);
+    }
+    return new Date(value);
+}
+
+const formatNumber = (num) => {
+    num = Math.floor(num);
+    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+    return num.toString();
+};
+
+const showToast = (msg, isError = false) => {
+    const oldToast = document.querySelector('.toast-message');
+    if (oldToast) oldToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${isError ? '#e74c3c' : '#7F49B4'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 40px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 20000;
+        animation: toastFade 2s forwards;
+        box-shadow: 0 4px 15px rgba(127, 73, 180, 0.5);
+        white-space: nowrap;
+        border: 1px solid rgba(255,255,255,0.3);
+    `;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+};
+
+// ==================== ДОСТИЖЕНИЯ ====================
+const ACHIEVEMENTS_KEY = 'ryohoAchievements';
+const ACHIEVEMENTS = [
+    { id: 'click_100',    title: 'Разогрев',           description: 'Сделай 100 кликов',     icon: '👆', condition: (s) => s.clicks >= 100,    reward: 1000 },
+    { id: 'click_500',    title: 'Ритм',               description: 'Сделай 500 кликов',     icon: '👆', condition: (s) => s.clicks >= 500,    reward: 2000 },
+    { id: 'click_1000',   title: 'Опытный кликер',     description: 'Сделай 1000 кликов',    icon: '👆', condition: (s) => s.clicks >= 1000,   reward: 5000 },
+    { id: 'click_5000',   title: 'Поток',              description: 'Сделай 5000 кликов',    icon: '🚀', condition: (s) => s.clicks >= 5000,   reward: 12000 },
+    { id: 'click_25000',  title: 'Мастер кликов',      description: 'Сделай 25000 кликов',   icon: '👑', condition: (s) => s.clicks >= 25000,  reward: 40000 },
+
+    { id: 'upgrade_5',    title: 'Инженер',            description: 'Купи 5 улучшений',      icon: '🛠️', condition: (s) => s.upgrades >= 5,   reward: 2000 },
+    { id: 'upgrade_15',   title: 'Архитектор',         description: 'Купи 15 улучшений',     icon: '🧰', condition: (s) => s.upgrades >= 15,  reward: 8000 },
+    { id: 'upgrade_30',   title: 'Системный',          description: 'Купи 30 улучшений',     icon: '⬆️', condition: (s) => s.upgrades >= 30,  reward: 20000 },
+
+    { id: 'games_10',     title: 'Игрок',              description: 'Сыграй 10 мини-игр',    icon: '🎮', condition: (s) => s.games >= 10,     reward: 3000 },
+    { id: 'games_30',     title: 'Стример',            description: 'Сыграй 30 мини-игр',    icon: '🎬', condition: (s) => s.games >= 30,     reward: 12000 },
+
+    { id: 'referral_1',   title: 'Первый друг',        description: 'Пригласи 1 друга',      icon: '🤝', condition: (s) => s.referrals >= 1,  reward: 2000 },
+    { id: 'referral_5',   title: 'Популярный',         description: 'Пригласи 5 друзей',     icon: '👥', condition: (s) => s.referrals >= 5,  reward: 10000 },
+    { id: 'referral_15',  title: 'Амбассадор',         description: 'Пригласи 15 друзей',    icon: '🌐', condition: (s) => s.referrals >= 15, reward: 25000 },
+
+    { id: 'ads_5',        title: 'Поддержал игру',     description: 'Посмотри 5 видео',      icon: '🎥', condition: (s) => s.adsWatched >= 5, reward: 5000 }
+];
+
+function loadAchievementsFromStorage() {
+    try {
+        const saved = localStorage.getItem(ACHIEVEMENTS_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        State.achievements = {
+            ...State.achievements,
+            ...parsed,
+            completed: Array.from(new Set(parsed.completed || []))
+        };
+    } catch (e) {
+        console.warn('Achievements restore failed', e);
+    }
+}
+
+function saveAchievementsToStorage() {
+    try {
+        localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify({
+            ...State.achievements,
+            completed: Array.from(new Set(State.achievements.completed || []))
+        }));
+    } catch (e) {
+        console.warn('Achievements save failed', e);
+    }
+}
+
+function trackAchievementProgress(key, delta = 1) {
+    State.achievements[key] = (State.achievements[key] || 0) + delta;
+    saveAchievementsToStorage();
+}
+
+function applyServerEnergySnapshot(payload) {
+    if (typeof payload.energy === 'number') {
+        State.temp.serverEnergyBase = payload.energy;
+        State.game.energy = payload.energy;
+    }
+
+    if (typeof payload.max_energy === 'number') {
+        State.game.maxEnergy = payload.max_energy;
+    }
+
+    if (typeof payload.regen_seconds === 'number') {
+        State.temp.energyRegenMs = payload.regen_seconds * 1000;
+    }
+
+    State.temp.serverEnergySyncedAtMs = Date.now();
+}
+
+function getVisualEnergy() {
+    if (!State.temp.serverEnergySyncedAtMs) {
+        return State.game.energy || 0;
+    }
+
+    const elapsed = Date.now() - State.temp.serverEnergySyncedAtMs;
+    const gained = Math.floor(elapsed / State.temp.energyRegenMs);
+
+    return Math.min(
+        State.game.maxEnergy,
+        State.temp.serverEnergyBase + gained
+    );
+}
+
+function refreshEnergyUIOnly() {
+    // Пока игрок активно кликает, не рисуем реген поверх тапа
+    if (Date.now() - (State.temp.lastTapAt || 0) < 700) {
+        return;
+    }
+
+    const visualEnergy = getVisualEnergy();
+
+    if (visualEnergy !== State.game.energy) {
+        State.game.energy = visualEnergy;
+        updateUI();
+    }
+}
+
+function checkAchievements() {
+    const stats = {
+        clicks: State.achievements.clicks || 0,
+        upgrades: State.achievements.upgrades || 0,
+        games: State.achievements.games || 0,
+        referrals: State.skins.friendsInvited || 0,
+        adsWatched: State.skins.adsWatched || 0
+    };
+    
+    let changed = false;
+    ACHIEVEMENTS.forEach(achievement => {
+        if (!State.achievements.completed.includes(achievement.id) && 
+            achievement.condition(stats)) {
+            State.achievements.completed.push(achievement.id);
+            State.game.coins += achievement.reward;
+            showAchievementNotification(achievement);
+            updateUI();
+            changed = true;
+        }
+    });
+
+    if (changed) saveAchievementsToStorage();
+}
+
+function showAchievementNotification(achievement) {
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast';
+    toast.innerHTML = `
+        <div class="achievement-toast-icon">${achievement.icon}</div>
+        <div class="achievement-toast-info">
+            <div class="achievement-toast-title">🏆 Достижение!</div>
+            <div class="achievement-toast-name">${achievement.title}</div>
+            <div class="achievement-toast-reward">+${achievement.reward} 🪙</div>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 100);
+    createConfetti();
+    playAchievementSound();
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function playAchievementSound() {
+    if (!State.settings.sound) return;
+    try {
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        const now = window.audioCtx.currentTime;
+        for (let i = 0; i < 3; i++) {
+            const osc = window.audioCtx.createOscillator();
+            const gain = window.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(window.audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600 + i * 200, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        }
+    } catch (err) {}
+}
+
+// ==================== API ====================
+const API = {
+    async request(endpoint, options = {}, retries = 2) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+            const res = await fetch(CONFIG.API_URL + endpoint, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (!res.ok) {
+                const err = new Error(`HTTP ${res.status}`);
+                err.status = res.status;
+                try {
+                    const data = await res.json();
+                    err.detail = data?.detail || '';
+                } catch (parseError) {}
+                throw err;
+            }
+            return await res.json();
+        } catch (err) {
+            clearTimeout(timeout);
+            if (retries > 0 && (err.name === 'AbortError' || err.status >= 500)) {
+                await new Promise(r => setTimeout(r, 1000));
+                return this.request(endpoint, options, retries - 1);
+            }
+            throw err;
+        }
+    },
+    get(endpoint) { return this.request(endpoint); },
+    post(endpoint, data) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(data) }); }
+};
+
+// ==================== ЗАГРУЗКА ДАННЫХ ====================
+async function loadUserData() {
+    if (!userId) return;
+    
+    try {
+        await API.post('/api/register', {
+            user_id: userId,
+            username,
+            referrer_id: referrerId
+        });
+        
+        const data = await API.get(`/api/user/${userId}`);
+        
+        State.game.coins = data.coins || 0;
+        State.game.energy = data.energy || 500;
+        State.game.maxEnergy = data.max_energy || 500;
+        applyServerEnergySnapshot({
+            energy: data.energy || 0,
+            max_energy: data.max_energy || 500,
+            regen_seconds: data.regen_seconds || 2
+        });
+        State.game.profitPerTap = data.profit_per_tap || 1;
+        State.game.profitPerHour = data.profit_per_hour || 100;
+        State.game.levels.multitap = data.multitap_level || 0;
+        State.game.levels.profit = data.profit_level || 0;
+        State.game.levels.energy = data.energy_level || 0;
+        
+        State.skins.owned = normalizeOwnedSkinIds(data.owned_skins);
+        State.skins.selected = data.selected_skin || 'default.pngSP';
+        if (!State.skins.owned.includes(State.skins.selected)) {
+            State.skins.selected = 'default.pngSP';
+        }
+        State.skins.adsWatched = data.ads_watched || 0;
+        
+        await loadPrices();
+        await loadSkinsList();
+        await loadReferralData();
+        await checkBoostStatus();
+        await loadDailyRewardStatus();
+
+        
+        applySavedSkin();
+        updateUI();
+        startPerfectEnergySystem();
+        
+        
+    } catch (err) {
+        console.error('Failed to load user data:', err);
+        showToast(tr('toasts.loadDataError'), true);
+    }
+}
+
+async function loadPrices() {
+    if (!userId) return;
+    try {
+        const prices = await API.get(`/api/upgrade-prices/${userId}`);
+        State.game.prices = { ...State.game.prices, ...prices };
+    } catch (err) {
+        console.error('Failed to load prices:', err);
+    }
+}
+
+// ==================== ЛОКАЛЬНЫЕ СКИНЫ ====================
+function getLocalSkins() {
+    return [
+        // Default
+        { id: "default.pngSP", name: "Default", image: "imgg/skins/default.png", rarity: "common", bonus: { type: "multiplier", value: 1.0 }, requirement: null },
+        { id: "refferal.pngSP", name: "Referral Special", image: "imgg/skins/refferal.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.8 }, requirement: { type: "friends", value: 1 } },
+        { id: "retro.pngSP", name: "Daily 30", image: "imgg/skins/retro.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.8 }, requirement: { type: "special" } },
+        { id: "telega.pngSP", name: "Telegram", image: "imgg/skins/telega.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "special" } },
+        { id: "tiktok.pngSP", name: "TikTok", image: "imgg/skins/tiktok.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "special" } },
+        { id: "insta.pngSP", name: "Instagram", image: "imgg/skins/insta.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "special" } },
+
+        // Level skins (common, x1.2)
+        { id: "10lvl.pngSP", name: "Level 10", image: "imgg/skins/10lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 10 } },
+        { id: "25lvl.pngSP", name: "Level 25", image: "imgg/skins/25lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 25 } },
+        { id: "50lvl.pngSP", name: "Level 50", image: "imgg/skins/50lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 50 } },
+        { id: "75lvl.pngSP", name: "Level 75", image: "imgg/skins/75lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 75 } },
+        { id: "100lvl.pngSP", name: "Level 100", image: "imgg/skins/100lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 100 } },
+
+        // Video skins (rare, x1.5) — per-skin 10 views
+        { id: "video.pngSP",  name: "Video 1", image: "imgg/skins/video.png",  rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video.pngSP" } },
+        { id: "video2.pngSP", name: "Video 2", image: "imgg/skins/video2.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video2.pngSP" } },
+        { id: "video3.pngSP", name: "Video 3", image: "imgg/skins/video3.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video3.pngSP" } },
+        { id: "video4.pngSP", name: "Video 4", image: "imgg/skins/video4.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video4.pngSP" } },
+        { id: "video5.pngSP", name: "Video 5", image: "imgg/skins/video5.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video5.pngSP" } },
+        { id: "video6.pngSP", name: "Video 6", image: "imgg/skins/video6.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video6.pngSP" } },
+        { id: "video7.pngSP", name: "Video 7", image: "imgg/skins/video7.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video7.pngSP" } },
+        { id: "video8.pngSP", name: "Video 8", image: "imgg/skins/video8.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video8.pngSP" } },
+
+        // Legendary (achievements) – пусто, пока без скинов
+
+        // Stars skins (super, x2). Prices: 3 at 149, 3 at 249, 2 at 500
+        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+
+        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+
+        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+    ];
+}
+
+function normalizeOwnedSkinIds(ownedIds) {
+    const legacySkinIdMap = {
+        'referral-special.pngSP': 'refferal.pngSP',
+        'daily30.pngSP': 'retro.pngSP',
+        'telegram-social.pngSP': 'telega.pngSP',
+        'tiktok-social.pngSP': 'tiktok.pngSP',
+        'instagram-social.pngSP': 'insta.pngSP'
+    };
+    const validIds = new Set(getLocalSkins().map((skin) => skin.id));
+    const uniqueOwned = Array.isArray(ownedIds)
+        ? [...new Set(ownedIds.map((id) => legacySkinIdMap[id] || id))]
+        : [];
+
+    if (!uniqueOwned.includes('default.pngSP')) {
+        uniqueOwned.unshift('default.pngSP');
+    }
+
+    return uniqueOwned.filter((id) => validIds.has(id));
+}
+
+async function loadSkinsList() {
+    try {
+        // На клиенте фиксируем актуальный список, чтобы старые серверные записи не перезаписывали имена/изображения
+        const localSkins = getLocalSkins();
+        State.skins.data = localSkins;
+    } catch (err) {
+        State.skins.data = getLocalSkins();
+    }
+    
+    State.skins.data.forEach(skin => {
+        if (skin.requirement?.type === 'level') {
+            skin.requirement.current = State.game.levels.multitap || 0;
+        } else if (skin.requirement?.type === 'videos') {
+            const key = skin.requirement.progressKey || skin.id;
+            skin.requirement.current = State.skins.videoViews[key] || 0;
+        } else if (skin.requirement?.type === 'friends') {
+            skin.requirement.current = State.skins.friendsInvited || 0;
+        }
+    });
+    
+    renderSkins();
+    updateCollectionProgress();
+}
+
+// ==================== UI ОБНОВЛЕНИЕ ====================
+let pendingUI = false;
+
+function updateUI() {
+    if (pendingUI) return;
+    pendingUI = true;
+    
+    requestAnimationFrame(() => {
+        const coinEl = document.getElementById('coinBalance');
+        if (coinEl) coinEl.textContent = formatNumber(State.game.coins);
+
+        const hourEl = document.getElementById('profitPerHour');
+        if (hourEl) hourEl.textContent = formatNumber(State.game.profitPerHour);
+        
+        const tapEl = document.getElementById('profitPerTap');
+        if (tapEl) tapEl.textContent = State.game.profitPerTap;
+
+        const energyFill = document.getElementById('energyFill');
+        const energyText = document.getElementById('energyText');
+        const maxEnergyEl = document.getElementById('maxEnergyText');
+        
+        if (energyFill && energyText && maxEnergyEl) {
+            const percent = (State.game.energy / State.game.maxEnergy) * 100;
+            energyFill.style.width = percent + '%';
+            energyText.textContent = Math.floor(State.game.energy);
+            maxEnergyEl.textContent = State.game.maxEnergy;
+        }
+
+        const globalLevelEl = document.getElementById('globalLevel');
+        if (globalLevelEl) {
+            const minLevel = Math.min(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
+            globalLevelEl.textContent = minLevel;
+        }
+
+        const globalPriceEl = document.getElementById('globalPrice');
+        if (globalPriceEl) {
+            const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
+            globalPriceEl.textContent = formatNumber(total);
+        }
+
+        renderDailyRewardButton();
+        
+        pendingUI = false;
+    });
+}
+
+const DAILY_REWARD_DAYS = 30;
+const DAILY_REWARD_BASE_COINS = 500;
+
+function isDailyInfiniteEnergyActive() {
+    const expiresAt = parseServerDate(State.daily.infiniteEnergyExpiresAt);
+    return !!(expiresAt && expiresAt.getTime() > Date.now());
+}
+
+function buildDailyRewards() {
+    return Array.from({ length: DAILY_REWARD_DAYS }, (_, index) => {
+        const day = index + 1;
+        if (day === 30) {
+            return {
+                day,
+                coins: day * DAILY_REWARD_BASE_COINS,
+                title: UI_LANG === 'ru' ? 'Скин дня 30' : 'Day 30 skin',
+                accent: UI_LANG === 'ru' ? 'Скин + монеты' : 'Skin + coins',
+                type: 'skin'
+            };
+        }
+
+        if (day % 7 === 0) {
+            return {
+                day,
+                coins: day * DAILY_REWARD_BASE_COINS,
+                title: UI_LANG === 'ru' ? '∞ энергия' : '∞ energy',
+                accent: UI_LANG === 'ru' ? '10 минут' : '10 minutes',
+                type: 'infinite-energy'
+            };
+        }
+
+        return {
+            day,
+            coins: day * DAILY_REWARD_BASE_COINS,
+            title: UI_LANG === 'ru' ? 'Монеты' : 'Coins',
+            accent: `+${formatNumber(day * DAILY_REWARD_BASE_COINS)}`,
+            type: 'coins'
+        };
+    });
+}
+
+function renderDailyRewardButton() {
+    const dot = document.getElementById('dailyRewardDot');
+    if (!dot) return;
+
+    if (State.daily.claimedDays >= DAILY_REWARD_DAYS) {
+        dot.classList.remove('is-active');
+        return;
+    }
+
+    if (State.daily.claimAvailable) {
+        dot.classList.add('is-active');
+        return;
+    }
+
+    if (isDailyInfiniteEnergyActive()) {
+        dot.classList.remove('is-active');
+        return;
+    }
+
+    dot.classList.remove('is-active');
+}
+
+function renderDailyRewardsModal() {
+    const track = document.getElementById('dailyRewardTrack');
+    const summary = document.getElementById('dailyRewardSummary');
+    const claimBtn = document.getElementById('dailyClaimBtn');
+    if (!track || !summary || !claimBtn) return;
+
+    const rewards = buildDailyRewards();
+    track.innerHTML = rewards.map((reward) => {
+        const isClaimed = reward.day <= State.daily.claimedDays;
+        const isCurrent = reward.day === State.daily.nextDay && State.daily.claimedDays < DAILY_REWARD_DAYS;
+        const stateClass = isClaimed ? 'is-claimed' : isCurrent ? 'is-current' : 'is-locked';
+        const rewardLine = reward.type === 'skin'
+            ? (UI_LANG === 'ru' ? `+${formatNumber(reward.coins)} и скин` : `+${formatNumber(reward.coins)} + skin`)
+            : reward.type === 'infinite-energy'
+                ? `${UI_LANG === 'ru' ? `+${formatNumber(reward.coins)} и` : `+${formatNumber(reward.coins)} +`} ∞ 10m`
+                : `+${formatNumber(reward.coins)}`;
+
+        return `
+            <div class="daily-day-card ${stateClass}" data-day="${reward.day}">
+                <div class="daily-day-index">${UI_LANG === 'ru' ? 'День' : 'Day'} ${reward.day}</div>
+                <div class="daily-day-title">${reward.title}</div>
+                <div class="daily-day-reward">${rewardLine}</div>
+                <div class="daily-day-accent">${reward.accent}</div>
+            </div>
+        `;
+    }).join('');
+
+    if (State.daily.claimedDays >= DAILY_REWARD_DAYS) {
+        summary.textContent = UI_LANG === 'ru'
+            ? 'Ты собрал все 30 ежедневных наград.'
+            : 'You claimed all 30 daily rewards.';
+        claimBtn.disabled = true;
+        claimBtn.textContent = UI_LANG === 'ru' ? 'Все забрано' : 'Completed';
+    } else if (State.daily.claimAvailable) {
+        summary.textContent = UI_LANG === 'ru'
+            ? `Сегодня доступен день ${State.daily.nextDay}. Забери монеты и бонус.`
+            : `Day ${State.daily.nextDay} is ready to claim.`;
+        claimBtn.disabled = false;
+        claimBtn.textContent = UI_LANG === 'ru'
+            ? `Забрать день ${State.daily.nextDay}`
+            : `Claim day ${State.daily.nextDay}`;
+    } else {
+        summary.textContent = UI_LANG === 'ru'
+            ? `Сегодня награда уже получена. Следующая — день ${State.daily.nextDay}.`
+            : `Reward already claimed today. Next reward is day ${State.daily.nextDay}.`;
+        claimBtn.disabled = true;
+        claimBtn.textContent = UI_LANG === 'ru' ? 'Жди завтра' : 'Come back tomorrow';
+    }
+
+    const currentCard = track.querySelector(`.daily-day-card[data-day="${State.daily.nextDay}"]`);
+    currentCard?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+async function loadDailyRewardStatus() {
+    if (!userId) return;
+    try {
+        const data = await API.get(`/api/daily-reward/status/${userId}`);
+        State.daily.claimedDays = data.claimed_days || 0;
+        State.daily.claimAvailable = !!data.claim_available;
+        State.daily.nextDay = data.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_DAYS);
+        State.daily.infiniteEnergyExpiresAt = data.infinite_energy_expires_at || null;
+        renderDailyRewardButton();
+        renderDailyRewardsModal();
+    } catch (err) {
+        console.error('Daily reward status error:', err);
+    }
+}
+
+function openDailyRewards() {
+    renderDailyRewardsModal();
+    openModal('daily-screen');
+}
+
+async function claimDailyReward() {
+    if (!userId || !State.daily.claimAvailable) return;
+    try {
+        const data = await API.post('/api/daily-reward/claim', { user_id: userId });
+        State.game.coins = data.coins || State.game.coins;
+        State.daily.claimedDays = data.day || State.daily.claimedDays;
+        State.daily.claimAvailable = false;
+        State.daily.nextDay = Math.min((data.day || State.daily.claimedDays) + 1, DAILY_REWARD_DAYS);
+        State.daily.infiniteEnergyExpiresAt = data.infinite_energy_expires_at || State.daily.infiniteEnergyExpiresAt;
+
+        if (data.skin_id && !State.skins.owned.includes(data.skin_id)) {
+            State.skins.owned.push(data.skin_id);
+            renderSkins();
+            updateCollectionProgress();
+        }
+
+        updateUI();
+        renderDailyRewardsModal();
+
+        if (data.skin_id) {
+            showToast(UI_LANG === 'ru'
+                ? `День ${data.day}: +${formatNumber(data.coins_reward)} и новый скин`
+                : `Day ${data.day}: +${formatNumber(data.coins_reward)} and a new skin`);
+        } else if (data.infinite_energy_expires_at) {
+            showToast(UI_LANG === 'ru'
+                ? `День ${data.day}: +${formatNumber(data.coins_reward)} и ∞ энергия на 10 минут`
+                : `Day ${data.day}: +${formatNumber(data.coins_reward)} and ∞ energy for 10 minutes`);
+        } else {
+            showToast(UI_LANG === 'ru'
+                ? `День ${data.day}: +${formatNumber(data.coins_reward)}`
+                : `Day ${data.day}: +${formatNumber(data.coins_reward)}`);
+        }
+    } catch (err) {
+        showToast(err?.detail || (UI_LANG === 'ru' ? 'Не удалось забрать награду' : 'Failed to claim reward'), true);
+    }
+}
+
+// ==================== ЭНЕРГИЯ ====================
+function startPerfectEnergySystem() {
+    if (State.temp.syncTimer) {
+        clearInterval(State.temp.syncTimer);
+    }
+
+    if (State.temp.energyUiTimer) {
+        clearInterval(State.temp.energyUiTimer);
+    }
+
+    // Плавное обновление UI
+    State.temp.energyUiTimer = setInterval(() => {
+        refreshEnergyUIOnly();
+    }, isLitePerformanceMode() ? 400 : 250);
+
+    // Редкий sync с сервером
+    State.temp.syncTimer = setInterval(() => {
+        if (!userId) return;
+        syncEnergyWithServer();
+    }, isLitePerformanceMode() ? 20000 : 15000);
+}
+
+async function syncEnergyWithServer() {
+    if (!userId) return;
+
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        applyServerEnergySnapshot(data);
+        updateUI();
+    } catch (e) {
+        console.error('Energy sync error:', e);
+    }
+}
+
+async function fullSyncWithServer() {
+    if (!userId) return;
+
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
+        State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
+        State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
+
+        applyServerEnergySnapshot(data);
+        updateUI();
+    } catch (e) {
+        console.error('Full sync error:', e);
+    }
+}
+
+// ==================== КЛИКИ ====================
+let lastBatchTime = 0;
+
+async function sendClickBatch() {
+    const clicks = State.temp.clickBuffer;
+
+    if (clicks === 0 || !userId || State.temp.clickBatchInFlight) return;
+
+    const optimisticGain = State.temp.clickValueBuffer;
+    State.temp.clickBuffer = 0;
+    State.temp.clickValueBuffer = 0;
+    State.temp.clickBatchInFlight = true;
+
+    try {
+        const batchId = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+
+        const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                clicks,
+                batch_id: batchId
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (data.success) {
+            State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
+            State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
+            State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
+
+            applyServerEnergySnapshot(data);
+            updateUI();
+        }
+    } catch (err) {
+        console.error('Click batch error:', err);
+        State.temp.clickBuffer += clicks;
+        State.temp.clickValueBuffer += optimisticGain;
+    } finally {
+        State.temp.clickBatchInFlight = false;
+    }
+}
+
+function handleTap(e) {
+    const isAutoTap = !!e?.syntheticAuto;
+    const target = (e && e.target && e.target.closest) ? e.target : null;
+    if (target && target.closest(
+        'button, a, .nav-item, .settings-btn, .modal-close, ' +
+        '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
+        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card'
+    )) return;
+
+    if (e.cancelable) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+
+    let clientX, clientY;
+    if (e.touches && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+
+    const megaBoostActive =
+        document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
+    const freeEnergyTap = megaBoostActive || isDailyInfiniteEnergyActive();
+
+    let previewGain = State.game.profitPerTap;
+
+    const skin = State.skins.data.find(s => s.id === State.skins.selected);
+    if (skin?.bonus?.type === 'multiplier') {
+        previewGain *= skin.bonus.value;
+    }
+
+    if (megaBoostActive) {
+        previewGain *= 2;
+    }
+
+    previewGain = Math.floor(previewGain) || 1;
+
+    State.temp.lastTapAt = Date.now();
+
+    // СНАЧАЛА проверяем энергию
+    if (!freeEnergyTap) {
+        const currentVisualEnergy = getVisualEnergy();
+
+        if (currentVisualEnergy < 1) {
+            showEnergyRecoveryModal();
+            return;
+        }
+
+        State.temp.serverEnergyBase = Math.max(0, currentVisualEnergy - 1);
+        State.temp.serverEnergySyncedAtMs = Date.now();
+        State.game.energy = State.temp.serverEnergyBase;
+    }
+
+
+    // И только потом считаем клик успешным
+    State.temp.clickBuffer += 1;
+    State.temp.clickValueBuffer += previewGain;
+    State.game.coins += previewGain;
+
+    trackAchievementProgress('clicks', 1);
+    checkAchievements();
+    updateUI();
+
+    // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
+    if (!State.temp.tapPool) {
+        State.temp.tapPool = Array.from({ length: isLitePerformanceMode() ? 6 : 10 }, () => {
+            const el = document.createElement('div');
+            el.className = 'tap-effect-global';
+            el.style.position = 'fixed';
+            el.style.pointerEvents = 'none';
+            el.style.zIndex = '9999';
+            el.style.whiteSpace = 'nowrap';
+            document.body.appendChild(el);
+            return el;
+        });
+        State.temp.tapPoolIdx = 0;
+    }
+    const pool = State.temp.tapPool;
+    const idx = State.temp.tapPoolIdx % pool.length;
+    State.temp.tapPoolIdx++;
+    const effect = pool[idx];
+    const isNightMode = document.body.classList.contains('night-mode');
+    const tapColor = megaBoostActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4');
+    const tapGlow = megaBoostActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4');
+    effect.style.left = `${clientX}px`;
+    effect.style.top = `${clientY}px`;
+    effect.style.transform = 'translate(-50%, -50%)';
+    effect.style.color = tapColor;
+    effect.style.fontSize = isAutoTap ? '22px' : '28px';
+    effect.style.fontWeight = isAutoTap ? '700' : 'bold';
+    effect.style.textShadow = `0 0 10px ${tapGlow}`;
+    effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
+    effect.style.animation = 'none';
+    effect.style.opacity = '1';
+    effect.offsetWidth;
+    effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
+
+    const allowAutoSound = !isAutoTap || (Date.now() - State.temp.lastAutoSoundAt >= 220);
+    const allowAutoVibration = !isAutoTap || (Date.now() - State.temp.lastAutoVibrationAt >= 260);
+
+    if (State.settings.sound && allowAutoSound) {
+        try {
+            if (!window.audioCtx) window.audioCtx = new AudioContext();
+            const now = window.audioCtx.currentTime;
+            const osc = window.audioCtx.createOscillator();
+            const gainNode = window.audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(window.audioCtx.destination);
+            osc.type = megaBoostActive ? 'sawtooth' : 'sine';
+            osc.frequency.setValueAtTime(megaBoostActive ? 800 : (isAutoTap ? 560 : 650), now);
+            osc.frequency.exponentialRampToValueAtTime(megaBoostActive ? 400 : (isAutoTap ? 420 : 450), now + (isAutoTap ? 0.08 : 0.1));
+            gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
+            osc.start(now);
+            osc.stop(now + (isAutoTap ? 0.12 : 0.2));
+            if (isAutoTap) State.temp.lastAutoSoundAt = Date.now();
+        } catch (err) {}
+    }
+
+    if (State.settings.vibration && allowAutoVibration) {
+        try {
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
+            else if (navigator.vibrate) navigator.vibrate(isAutoTap ? 12 : 20);
+            if (isAutoTap) State.temp.lastAutoVibrationAt = Date.now();
+        } catch (err) {}
+    }
+}
+
+// ==================== СИНХРОНИЗАЦИЯ ====================
+let syncTimer = null;
+const SYNC_INTERVAL = 15000;
+
+async function forceSync() {
+    if (State.temp.clickBuffer > 0) {
+        await sendClickBatch();
+    }
+
+    await fullSyncWithServer();
+}
+
+function startSync() {
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = setInterval(forceSync, SYNC_INTERVAL);
+}
+
+// ==================== СКИНЫ ====================
+let currentFilter = 'all';
+
+function getSkinById(id) {
+    return State.skins.data.find(s => s.id === id);
+}
+
+function applySavedSkin() {
+    const img = document.querySelector('.click-image');
+    if (!img) return;
+    
+    const skin = getSkinById(State.skins.selected);
+    img.src = (skin?.image || 'imgg/skins/default.png') + '?t=' + Date.now();
+    img.onerror = () => img.src = 'imgg/skins/default.png';
+}
+
+function renderSkins() {
+    const grid = document.getElementById('skins-grid');
+    if (!grid) return;
+    
+    let filtered = State.skins.data;
+    if (currentFilter && currentFilter !== 'all') {
+        filtered = filtered.filter(s => s.rarity === currentFilter);
+    }
+    
+    if (!filtered || filtered.length === 0) {
+        grid.innerHTML = `<div class="loading">${tr('skinsDyn.noSkins')}</div>`;
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(skin => {
+        const isOwned = State.skins.owned.includes(skin.id);
+        const isSelected = State.skins.selected === skin.id;
+        const isLocked = !isOwned;
+        
+        return `
+            <div class="skin-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}" 
+                 data-id="${skin.id}" onclick="openSkinDetail('${skin.id}')">
+                <div class="skin-image">
+                    <img src="${skin.image}" alt="${skin.name}" 
+                         onerror="this.src='imgg/skins/default.png'">
+                </div>
+                <div class="skin-name">${skin.name}</div>
+                <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
+                ${isLocked ? '<div class="skin-lock">🔒</div>' : ''}
+                ${isSelected ? '<div class="skin-selected-badge">✓</div>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function filterSkins(category, event) {
+    currentFilter = category;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    if (event?.target) event.target.classList.add('active');
+    else {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(category) || 
+                (category === 'all' && btn.textContent === 'All')) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
+    renderSkins();
+}
+
+function selectSkin(id) {
+    const skin = getSkinById(id);
+    if (!skin) return;
+    
+    if (State.skins.owned.includes(id)) selectActiveSkin(id);
+    else showToast(tr('toasts.skinLocked', { name: skin.name }), true);
+}
+
+async function selectActiveSkin(id) {
+    if (!userId) return;
+    try {
+        await API.post('/api/select-skin', { user_id: userId, skin_id: id });
+        State.skins.selected = id;
+        applySavedSkin();
+        renderSkins();
+        showToast(tr('toasts.skinSelected'));
+    } catch (err) {
+        showToast(tr('toasts.skinSelectError'), true);
+    }
+}
+
+async function unlockSkin(id) {
+    if (!userId || State.skins.owned.includes(id)) return;
+    try {
+        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: id, method: 'free' });
+        if (res.success) {
+            State.skins.owned.push(id);
+            showToast(tr('toasts.skinNew'));
+            renderSkins();
+            applySavedSkin();
+        }
+    } catch (err) {
+        showToast(tr('toasts.skinUnlockError'), true);
+    }
+}
+
+function openSkins() {
+    renderSkins();
+    openModal('skins-screen');
+}
+
+function getSkinEffect(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) return null;
+    
+    switch(skin.rarity) {
+        case 'legendary': return { color: '#FFD700', particleColor: ['#FFD700', '#FFA500', '#FF4500'], particleCount: 15 };
+        case 'super': return { color: '#FF6B6B', particleColor: ['#FF6B6B', '#FF8E8E', '#FFB6B6'], particleCount: 10 };
+        case 'rare': return { color: '#4ECDC4', particleColor: ['#4ECDC4', '#6ED4CC', '#8EDBD4'], particleCount: 8 };
+        default: return { color: '#7F49B4', particleColor: ['#7F49B4', '#9B6BDF', '#B88CE8'], particleCount: 5 };
+    }
+}
+
+function openSkinDetail(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    if (!skin) return;
+    
+    const modal = document.getElementById('skin-detail-modal');
+    if (!modal) return;
+    
+    const isOwned = State.skins.owned.includes(skin.id);
+    const isSelected = State.skins.selected === skin.id;
+    
+    const detailImg = document.getElementById('skin-detail-img');
+    detailImg.src = skin.image || 'imgg/clickimg.png';
+    detailImg.dataset.skinId = skin.id;
+    document.getElementById('skin-detail-name').textContent = skin.name || tr('skins.title');
+    
+    const rarityEl = document.getElementById('skin-detail-rarity');
+    rarityEl.textContent = skin.rarity || 'common';
+    rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
+    
+    document.getElementById('skin-detail-description').textContent = skin.description || tr('skinsDyn.noDescription');
+    
+    const bonusEl = document.getElementById('skin-detail-bonus');
+    if (skin.bonus) {
+        if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = tr('skinsDyn.incomeBonus', { value: skin.bonus.value });
+        else bonusEl.innerHTML = `⚡ +${skin.bonus.value || 0}`;
+    } else {
+        bonusEl.innerHTML = tr('skinsDyn.noBonus');
+    }
+    
+    const reqBlock = document.getElementById('skin-requirement-block');
+    const reqText = document.getElementById('skin-requirement-text');
+    const reqProgress = document.getElementById('skin-requirement-progress');
+    const progressText = document.getElementById('requirement-progress-text');
+    const progressFill = document.getElementById('requirement-progress-fill');
+    const actionBtn = document.getElementById('skin-action-btn');
+    
+    if (isOwned) {
+        reqBlock.style.display = 'none';
+        actionBtn.textContent = isSelected ? tr('skinsDyn.selected') : tr('skinsDyn.select');
+        actionBtn.onclick = isSelected ? closeSkinDetail : () => selectSkinFromDetail(skin.id);
+    } else {
+        reqBlock.style.display = 'block';
+        
+        if (skin.requirement?.type === 'level') {
+            const current = State.game.levels.multitap || 0;
+            const value = skin.requirement.value || 1;
+            const percent = Math.min(100, (current / value) * 100);
+            
+            reqText.textContent = tr('skinsDyn.reqLevel', { value });
+            progressText.textContent = `${current}/${value}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            actionBtn.textContent = current >= value ? tr('skinsDyn.claim') : tr('skinsDyn.upgrade');
+            actionBtn.onclick = current >= value ? () => unlockSkinFromDetail(skin.id) : () => {
+                closeSkinDetail();
+                switchTab('main');
+            };
+        } else if (skin.requirement?.type === 'ads') {
+            const current = State.skins.adsWatched || 0;
+            const count = skin.requirement.count || 1;
+            const percent = Math.min(100, (current / count) * 100);
+            
+            reqText.textContent = tr('skinsDyn.reqWatch', { count });
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+            
+            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
+            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+        } else if (skin.requirement?.type === 'videos') {
+            const key = skin.requirement.progressKey || skin.id;
+            const current = State.skins.videoViews[key] || 0;
+            const count = skin.requirement.count || 10;
+            const percent = Math.min(100, (current / count) * 100);
+
+            reqText.textContent = tr('skinsDyn.reqWatchSkin', { count });
+            progressText.textContent = `${current}/${count}`;
+            progressFill.style.width = percent + '%';
+            reqProgress.style.display = 'flex';
+
+            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
+            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+        } else if (skin.requirement?.type === 'stars') {
+            reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = tr('skinsDyn.buy');
+            actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
+        } else if (!skin.requirement) {
+            reqText.textContent = '';
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = tr('skinsDyn.claim');
+            actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+        } else {
+            reqText.textContent = tr('skinsDyn.reqSpecial');
+            reqProgress.style.display = 'none';
+            actionBtn.textContent = tr('skinsDyn.unavailable');
+        }
+    }
+    
+    modal.classList.add('active');
+}
+
+function closeSkinDetail() {
+    document.getElementById('skin-detail-modal')?.classList.remove('active');
+}
+
+async function selectSkinFromDetail(skinId) {
+    if (!userId) return showToast(tr('toasts.authRequired'), true);
+    try {
+        await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
+        State.skins.selected = skinId;
+        applySavedSkin();
+        showToast(tr('toasts.skinSelected'));
+        closeSkinDetail();
+        renderSkins();
+    } catch (err) {
+        showToast(tr('toasts.skinSelectError'), true);
+    }
+}
+
+async function unlockSkinFromDetail(skinId) {
+    if (!userId) return showToast(tr('toasts.authRequired'), true);
+    if (State.skins.owned.includes(skinId)) {
+        showToast(tr('toasts.skinAlreadyOwned'));
+        setCharmImageFromSkin(skinId);
+        closeSkinDetail();
+        return;
+    }
+    
+    try {
+        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
+        if (res.success) {
+            State.skins.owned.push(skinId);
+            showToast(tr('toasts.skinNew'));
+            setCharmImageFromSkin(skinId);
+            closeSkinDetail();
+            renderSkins();
+            updateCollectionProgress();
+        }
+    } catch (err) {
+        showToast(tr('toasts.skinClaimError'), true);
+    }
+}
+
+async function buySkinWithStarsPlaceholder(skin) {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return;
+    }
+
+    if (!tg?.openInvoice) {
+        showToast(tr('toasts.starsUnavailable'), true);
+        return;
+    }
+
+    try {
+        const response = await API.post('/api/skins/stars-invoice', {
+            user_id: userId,
+            skin_id: skin.id
+        });
+
+        if (!response?.invoice_link) {
+            showToast(tr('toasts.starsInvoiceError'), true);
+            return;
+        }
+
+        tg.openInvoice(response.invoice_link, async (status) => {
+            if (status === 'paid') {
+                showToast(tr('toasts.starsSuccess'));
+                await loadUserData();
+                renderSkins();
+                updateCollectionProgress();
+                openSkinDetail(skin.id);
+                return;
+            }
+
+            if (status === 'pending') {
+                showToast(tr('toasts.starsPending'));
+                return;
+            }
+
+            if (status === 'cancelled') {
+                showToast(tr('toasts.starsCancelled'));
+                return;
+            }
+
+            showToast(tr('toasts.starsFailed'), true);
+        });
+    } catch (err) {
+        if (err?.detail === 'Skin already owned') {
+            showToast(tr('toasts.skinAlreadyOwned'));
+            await loadUserData();
+            renderSkins();
+            updateCollectionProgress();
+            openSkinDetail(skin.id);
+            return;
+        }
+
+        showToast(err?.detail || tr('toasts.starsInvoiceError'), true);
+    }
+}
+
+async function watchAdForSkin(skinId) {
+    if (typeof window.show_10655027 !== 'function') {
+        showToast(tr('toasts.adUnavailable'), true);
+        return;
+    }
+
+    showToast(tr('toasts.adLoading'));
+
+    try {
+        await window.show_10655027();
+
+        // локальный прогресс для конкретного скина
+        const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
+        State.skins.videoViews[key] = (State.skins.videoViews[key] || 0) + 1;
+        localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
+
+        trackAchievementProgress('adsWatched', 1);
+        checkAchievements();
+
+        showToast(tr('toasts.skinAdProgress'));
+        renderSkins();
+
+        if (document.getElementById('skin-detail-modal').classList.contains('active')) {
+            openSkinDetail(skinId);
+        }
+
+    } catch (e) {
+        showToast(tr('toasts.watchError'), true);
+    }
+}
+
+function updateCollectionProgress() {
+    const validIds = new Set(State.skins.data.map((skin) => skin.id));
+    const collected = [...new Set(State.skins.owned)].filter((id) => validIds.has(id)).length;
+    const total = State.skins.data.length || 21;
+    const percent = (collected / total) * 100;
+    
+    document.getElementById('skins-collected').textContent = collected;
+    document.getElementById('skins-total').textContent = total;
+    document.getElementById('skins-progress-fill').style.width = percent + '%';
+}
+
+// ==================== УЛУЧШЕНИЯ ====================
+let upgradeInProgress = false;
+let queuedUpgradeAllCount = 0;
+let nextUpgradeRequestAt = 0;
+const UPGRADE_REQUEST_GAP_MS = 380;
+
+function getUpgradeAllPrice() {
+    return (State.game.prices.multitap || 0) + (State.game.prices.profit || 0) + (State.game.prices.energy || 0);
+}
+
+function triggerUpgradeHaptics() {
+    if (!State.settings.vibration) return;
+
+    try {
+        if (tg?.HapticFeedback) {
+            let pulses = 0;
+            const interval = setInterval(() => {
+                try {
+                    tg.HapticFeedback.impactOccurred(pulses > 4 ? 'heavy' : 'medium');
+                } catch (err) {}
+                pulses += 1;
+                if (pulses >= 7) clearInterval(interval);
+            }, 320);
+        } else if (navigator.vibrate) {
+            navigator.vibrate([180, 80, 220, 90, 260, 100, 320, 120, 360]);
+        }
+    } catch (err) {}
+}
+
+function triggerUpgradeBurst() {
+    if (isLitePerformanceMode()) return;
+
+    const wrapper = document.querySelector('.click-button-wrapper');
+    if (!wrapper) return;
+
+    let layer = wrapper.querySelector('.upgrade-burst-layer');
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'upgrade-burst-layer';
+        wrapper.prepend(layer);
+    }
+
+    layer.innerHTML = '';
+    layer.classList.remove('is-active');
+    layer.offsetWidth;
+
+    for (let i = 0; i < 16; i += 1) {
+        const spark = document.createElement('span');
+        spark.className = 'upgrade-spark';
+        spark.style.setProperty('--spark-angle', `${(360 / 16) * i + (Math.random() * 16 - 8)}deg`);
+        spark.style.setProperty('--spark-distance', `${150 + Math.random() * 75}px`);
+        spark.style.setProperty('--spark-delay', `${Math.random() * 0.7}s`);
+        spark.style.setProperty('--spark-duration', `${1.6 + Math.random() * 0.8}s`);
+        spark.style.setProperty('--spark-scale', `${0.8 + Math.random() * 0.6}`);
+        layer.appendChild(spark);
+    }
+
+    layer.classList.add('is-active');
+    clearTimeout(layer.cleanupTimer);
+    layer.cleanupTimer = setTimeout(() => {
+        layer.classList.remove('is-active');
+        layer.innerHTML = '';
+    }, 4000);
+}
+
+function playUpgradeCelebration() {
+    playUpgradeSound();
+    triggerUpgradeHaptics();
+    triggerUpgradeBurst();
+}
+
+async function upgradeBoost(type, internal = false) {
+    if (upgradeInProgress && !internal) return;
+    if (!userId) return;
+    
+    const price = State.game.prices[type];
+    if (!price || State.game.coins < price) {
+        showToast(tr('toasts.notEnoughCoins', { amount: price }), true);
+        return;
+    }
+
+    if (!internal) upgradeInProgress = true;
+    
+    try {
+        const result = await API.post('/api/upgrade', {
+            user_id: userId,
+            boost_type: type
+        });
+        
+        if (result) {
+            State.game.coins = result.coins;
+            State.game.levels[type] = result.new_level;
+            State.game.prices[type] = result.next_cost || 0;
+            trackAchievementProgress('upgrades', 1);
+            
+        if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
+        if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
+        if (result.max_energy) {
+            State.game.maxEnergy = result.max_energy;
+            State.game.energy = result.max_energy;
+        }
+        playUpgradeCelebration();
+        updateUI();
+        checkAchievements();
+    }
+    } catch (err) {
+        if (err.status === 429) {
+            showToast(tr('toasts.upgradeBusy'), true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Max level reached') {
+            showToast(tr('toasts.maxLevel'), true);
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Not enough coins') {
+            showToast(tr('toasts.notEnoughCoins', { amount: price }), true);
+            return;
+        }
+        showToast(`${tr('toasts.serverError')}${err.status ? ' ' + err.status : ''}`, true);
+    } finally {
+        if (!internal) upgradeInProgress = false;
+    }
+}
+
+async function upgradeAll(internal = false) {
+    if (!userId) return;
+
+    if (upgradeInProgress) {
+        queuedUpgradeAllCount = Math.min(queuedUpgradeAllCount + 1, 25);
+        return;
+    }
+
+    upgradeInProgress = true;
+    try {
+        const total = getUpgradeAllPrice();
+        if (State.game.coins < total) {
+            if (!internal) {
+                showToast(tr('toasts.notEnoughCoins', { amount: formatNumber(total) }), true);
+            }
+            queuedUpgradeAllCount = 0;
+            return;
+        }
+
+        nextUpgradeRequestAt = Date.now() + UPGRADE_REQUEST_GAP_MS;
+        const result = await API.post('/api/upgrade-all', {
+            user_id: userId
+        });
+
+        if (!result?.success) {
+            showToast(tr('toasts.upgradeApplyError'), true);
+            return;
+        }
+
+        State.game.coins = result.coins;
+        State.game.levels.multitap = result.levels?.multitap ?? State.game.levels.multitap;
+        State.game.levels.profit = result.levels?.profit ?? State.game.levels.profit;
+        State.game.levels.energy = result.levels?.energy ?? State.game.levels.energy;
+        State.game.prices = { ...State.game.prices, ...(result.prices || {}) };
+        State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
+        State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
+        State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
+        State.game.energy = result.energy ?? State.game.maxEnergy;
+        trackAchievementProgress('upgrades', 3);
+        playUpgradeCelebration();
+        updateUI();
+        checkAchievements();
+    } catch (err) {
+        if (err.status === 429) {
+            if (internal || queuedUpgradeAllCount > 0) {
+                queuedUpgradeAllCount = Math.min(queuedUpgradeAllCount + 1, 25);
+                return;
+            }
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Not enough coins') {
+            if (!internal) {
+                showToast(tr('toasts.fullUpgradeNoCoins'), true);
+            }
+            queuedUpgradeAllCount = 0;
+            return;
+        }
+        if (err.status === 400 && err.detail === 'Max level reached') {
+            if (!internal) {
+                showToast(tr('toasts.fullUpgradeMax'), true);
+            }
+            queuedUpgradeAllCount = 0;
+            return;
+        }
+        showToast(`${tr('toasts.serverError')}${err.status ? ' ' + err.status : ''}`, true);
+    } finally {
+        upgradeInProgress = false;
+        if (queuedUpgradeAllCount > 0) {
+            queuedUpgradeAllCount -= 1;
+            const delay = Math.max(40, nextUpgradeRequestAt - Date.now());
+            setTimeout(() => upgradeAll(true), delay);
+        }
+    }
+}
+
+function playUpgradeSound() {
+    if (!State.settings.sound) return;
+    try {
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        const now = window.audioCtx.currentTime;
+        for (let i = 0; i < 3; i++) {
+            const osc = window.audioCtx.createOscillator();
+            const gain = window.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(window.audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400 + i * 200, now + i * 0.1);
+            gain.gain.setValueAtTime(0.2, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.3);
+        }
+    } catch (err) {}
+}
+
+// ==================== ВИДЕО-ЗАДАНИЯ ====================
+const VIDEO_TASKS = [
+    {
+        id: 'energy_full',
+        title: 'Полная энергия',
+        description: 'Восстанови запас энергии до 100%',
+        reward: '⚡ FULL',
+        icon: '⚡',
+        type: 'energy_full',
+        cooldown: 10,
+        lastUsed: null,
+        category: 'energy',
+        tag: 'энергия',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'coins_rush',
+        title: 'Монетный дождь',
+        description: 'Сразу получи +1 500 монет',
+        reward: 1500,
+        icon: '💰',
+        type: 'coins',
+        cooldown: 8,
+        lastUsed: null,
+        category: 'coins',
+        tag: 'коины',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'coins_jackpot',
+        title: 'Джекпот',
+        description: '+8 000 монет раз в 45 минут',
+        reward: 8000,
+        icon: '🏆',
+        type: 'coins',
+        cooldown: 45,
+        lastUsed: null,
+        category: 'coins',
+        tag: 'джекпот',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'boost_combo',
+        title: 'Комбо-ускорение',
+        description: 'x2 доход на 7 минут после просмотра',
+        reward: 'x2 • 7 мин',
+        icon: '🚀',
+        type: 'boost',
+        boost_multiplier: 2,
+        boost_minutes: 7,
+        cooldown: 30,
+        lastUsed: null,
+        category: 'boost',
+        tag: 'баф',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'skin_drop',
+        title: 'Дроп скина',
+        description: 'Редкий скин за просмотр (1 раз в час)',
+        reward: '🎁 Rare drop',
+        icon: '🎁',
+        type: 'skin',
+        skin_rarity: 'rare',
+        cooldown: 60,
+        lastUsed: null,
+        category: 'skins',
+        tag: 'скин',
+        completed: false,
+        available: true
+    }
+];
+
+const SOCIAL_TASKS_STORAGE_KEY = 'socialTaskState';
+const SOCIAL_TASKS = [
+    { id: 'telegram_sub', link: 'https://t.me/your_channel', skinId: 'telega.pngSP', icon: '📣' },
+    { id: 'tiktok_sub', link: 'https://www.tiktok.com/@your_account', skinId: 'tiktok.pngSP', icon: '🎵' },
+    { id: 'instagram_sub', link: 'https://www.instagram.com/your_account/', skinId: 'insta.pngSP', icon: '📸' }
+];
+
+const TASKS_STORAGE_KEY = 'videoTasksState';
+
+function persistSocialTasksState() {
+    localStorage.setItem(SOCIAL_TASKS_STORAGE_KEY, JSON.stringify(State.tasks.social || {}));
+}
+
+async function loadSocialTasksStatus() {
+    if (!userId) return;
+    try {
+        const tasks = await API.get(`/api/tasks/${userId}`);
+        const socialMap = { ...(State.tasks.social || {}) };
+
+        SOCIAL_TASKS.forEach((task) => {
+            const backendTask = Array.isArray(tasks) ? tasks.find((item) => item.id === task.id) : null;
+            if (!socialMap[task.id]) socialMap[task.id] = {};
+            socialMap[task.id].completed = Boolean(backendTask?.completed);
+            if (socialMap[task.id].completed) {
+                socialMap[task.id].pending = false;
+            }
+        });
+
+        State.tasks.social = socialMap;
+        persistSocialTasksState();
+    } catch (err) {
+        console.error('Social tasks load failed:', err);
+    }
+}
+
+function renderSocialTasksMarkup() {
+    return SOCIAL_TASKS.map((task) => {
+        const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
+        const state = State.tasks.social?.[task.id] || {};
+        const completed = Boolean(state.completed);
+        const pending = Boolean(state.pending) && !completed;
+        const actionLabel = completed
+            ? (UI_LANG === 'ru' ? 'Получено' : 'Claimed')
+            : pending
+                ? (UI_LANG === 'ru' ? 'Получить' : 'Claim')
+                : (UI_LANG === 'ru' ? 'Подписаться' : 'Subscribe');
+        const noteLabel = completed
+            ? (UI_LANG === 'ru' ? 'Награда уже получена' : 'Reward already claimed')
+            : pending
+                ? (UI_LANG === 'ru' ? 'Вернись и забери награду' : 'Come back and claim your reward')
+                : (UI_LANG === 'ru' ? 'Откроется ссылка на соцсеть' : 'Opens the social page');
+        const handler = completed
+            ? ''
+            : pending
+                ? `claimSocialTask('${task.id}')`
+                : `startSocialTask('${task.id}')`;
+
+        return `
+            <div class="task-card task-card-simple social-task-card social-task-${task.id} ${completed ? 'completed' : 'ready'}" data-category="social">
+                <div class="social-task-head">
+                    <div class="social-task-icon-wrap">
+                        <span class="social-task-icon">${task.icon}</span>
+                        <span class="social-task-live-dot"></span>
+                    </div>
+                    <span class="social-task-badge">${UI_LANG === 'ru' ? 'соцсеть' : 'social'}</span>
+                </div>
+                <div class="task-copy-simple">
+                    <div class="task-title">${taskCopy.title || task.id}</div>
+                    <div class="task-desc">${taskCopy.description || ''}</div>
+                </div>
+                <div class="task-actions-simple">
+                    <span class="task-reward-pill task-reward-pill-simple">${taskCopy.reward || '+20000 + skin'}</span>
+                    <button class="task-action task-action-simple" onclick="${handler}" ${completed ? 'disabled' : ''}>
+                        ${actionLabel}
+                    </button>
+                </div>
+                <div class="task-note-simple">${noteLabel}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function checkTaskCooldown(task) {
+    if (!task.lastUsed) return true; // Никогда не использовалось
+    
+    const now = Date.now();
+    const cooldownMs = task.cooldown * 60 * 1000; // минуты в миллисекунды
+    const timePassed = now - task.lastUsed;
+    
+    return timePassed >= cooldownMs;
+}
+
+function getTaskTimeLeft(task) {
+    if (!task.lastUsed) return 0;
+    
+    const now = Date.now();
+    const cooldownMs = task.cooldown * 60 * 1000;
+    const timePassed = now - task.lastUsed;
+    const timeLeft = Math.max(0, cooldownMs - timePassed);
+    
+    return Math.ceil(timeLeft / 1000 / 60); // минуты
+}
+
+async function loadVideoTasks() {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    
+    const now = new Date();
+    const lastReset = localStorage.getItem('videoTasksReset');
+    const saved = localStorage.getItem(TASKS_STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            VIDEO_TASKS.forEach(t => {
+                if (parsed[t.id]?.lastUsed) t.lastUsed = parsed[t.id].lastUsed;
+            });
+        } catch (e) {
+            console.warn('task state load failed', e);
+        }
+    }
+    
+    if (!lastReset || new Date(lastReset).getDate() !== now.getDate()) {
+        VIDEO_TASKS.forEach(task => {
+            task.completed = false;
+            task.available = true;
+            task.lastUsed = null;
+        });
+        localStorage.setItem('videoTasksReset', now.toISOString());
+        localStorage.removeItem(TASKS_STORAGE_KEY);
+    }
+
+    await loadSocialTasksStatus();
+    renderVideoTasks();
+}
+
+function persistTasksState() {
+    const payload = {};
+    VIDEO_TASKS.forEach(t => payload[t.id] = { lastUsed: t.lastUsed || null });
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(payload));
+}
+
+function renderVideoTasks() {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+
+    // обновляем доступность заданий по кулдауну
+    VIDEO_TASKS.forEach(task => {
+        if (task.lastUsed) {
+            task.available = checkTaskCooldown(task);
+        }
+    });
+    persistTasksState();
+
+    const socialTasksMarkup = renderSocialTasksMarkup();
+    const videoTasksMarkup = VIDEO_TASKS.map(task => {
+        const available = task.available;
+        const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
+        const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
+        const rewardValue = taskCopy.reward || task.reward;
+        const rewardLabel = typeof rewardValue === 'number'
+            ? `+${rewardValue.toLocaleString(UI_LANG === 'ru' ? 'ru-RU' : 'en-US')} ${t('tasks.coinsSuffix')}`
+            : rewardValue;
+
+        const actionLabel = available ? t('tasks.watch') : t('tasks.locked');
+        const stateText = available
+            ? `${taskCopy.description || task.description} • ${rewardLabel}`
+            : `${t('tasks.refreshIn', { time: timeLeft })} • ${rewardLabel}`;
+
+        return `
+            <div class="task-card task-card-simple ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
+                <div class="task-copy-simple">
+                    <div class="task-title">${taskCopy.title || task.title}</div>
+                    <div class="task-desc">${stateText}</div>
+                </div>
+                <div class="task-actions-simple">
+                    <span class="task-reward-pill task-reward-pill-simple">${rewardLabel}</span>
+                    <button class="task-action task-action-simple ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
+                        ${available ? `📺 ${actionLabel}` : `⏳ ${actionLabel}`}
+                    </button>
+                </div>
+                ${!available && timeLeft > 0 ? `
+                    <div class="task-note-simple">⏳ ${t('tasks.refreshIn', { time: timeLeft })}</div>
+                ` : ''}
+                ${available ? `
+                    <div class="task-note-simple">${t('tasks.launchReward')}</div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = socialTasksMarkup + videoTasksMarkup;
+}
+
+function startSocialTask(taskId) {
+    const task = SOCIAL_TASKS.find((item) => item.id === taskId);
+    if (!task) return;
+
+    if (!State.tasks.social[taskId]) State.tasks.social[taskId] = {};
+    State.tasks.social[taskId].pending = true;
+    persistSocialTasksState();
+    renderVideoTasks();
+    window.open(task.link, '_blank');
+}
+
+async function claimSocialTask(taskId) {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return;
+    }
+
+    try {
+        const res = await API.post('/api/complete-task', { user_id: userId, task_id: taskId });
+        if (!State.tasks.social[taskId]) State.tasks.social[taskId] = {};
+        State.tasks.social[taskId].completed = true;
+        State.tasks.social[taskId].pending = false;
+        persistSocialTasksState();
+        await loadUserData();
+        renderVideoTasks();
+        updateCollectionProgress();
+        showToast(res?.message || (UI_LANG === 'ru' ? '✅ Награда получена!' : '✅ Reward received!'));
+    } catch (err) {
+        showToast(err?.detail || tr('toasts.serverError'), true);
+    }
+}
+
+async function handleVideoTask(taskId) {
+    const task = VIDEO_TASKS.find(t => t.id === taskId);
+    if (!task || !task.available) return;
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast(tr('toasts.adUnavailable'), true);
+        return;
+    }
+    
+    showToast(tr('toasts.videoLoading'));
+    
+    try {
+        await window.show_10655027();
+        trackAchievementProgress('adsWatched', 1);
+        
+        // Начисляем награду
+        switch(task.type) {
+            case 'energy_full':
+                State.game.energy = State.game.maxEnergy;
+                showToast(tr('toasts.energyFull'));
+                break;
+                
+            case 'coins':
+                State.game.coins += task.reward;
+                showToast(`💰 +${task.reward} ${tr('tasks.coinsSuffix')}`);
+                break;
+                
+            case 'skin':
+                await unlockRandomSkin(task.skin_rarity);
+                break;
+                
+            case 'boost':
+                activateCustomBoost(task.boost_multiplier, task.boost_minutes);
+                break;
+
+            case 'random':
+                giveRandomReward();
+                break;
+
+            case 'refresh':
+                VIDEO_TASKS.forEach(t => { t.completed = false; t.available = true; t.lastUsed = null; });
+                task.lastUsed = Date.now();
+                task.available = false;
+                renderVideoTasks();
+                showToast(tr('toasts.cooldownsReset'));
+                break;
+        }
+        
+        // Устанавливаем кулдаун
+        if (task.type !== 'refresh') {
+            task.lastUsed = Date.now();
+            task.available = false;
+        }
+        
+        updateUI();
+        renderVideoTasks();
+        createConfetti();
+        persistTasksState();
+        
+    } catch (error) {
+        console.error('Video error:', error);
+        showToast(tr('toasts.watchError'), true);
+    }
+}
+
+function giveRandomReward() {
+    const rewards = [
+        { type: 'coins', value: 1000 },
+        { type: 'coins', value: 2000 },
+        { type: 'coins', value: 5000 },
+        { type: 'energy', value: 50 },
+        { type: 'boost', multiplier: 2, minutes: 5 },
+        { type: 'skin_chance', rarity: 'common' }
+    ];
+    
+    const random = rewards[Math.floor(Math.random() * rewards.length)];
+    
+    switch(random.type) {
+        case 'coins':
+            State.game.coins += random.value;
+            showToast(`🎁 +${random.value} ${tr('tasks.coinsSuffix')}`);
+            break;
+        case 'energy':
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
+            showToast(UI_LANG === 'ru' ? `🎁 +${random.value} энергии!` : `🎁 +${random.value} energy!`);
+            break;
+        case 'boost':
+            activateCustomBoost(random.multiplier, random.minutes);
+            break;
+        case 'skin_chance':
+            unlockRandomSkin('common');
+            break;
+    }
+}
+function activateCustomBoost(multiplier, minutes) {
+    // Сохраняем оригинальный доход
+    if (!State.temp.originalProfit) {
+        State.temp.originalProfit = State.game.profitPerTap;
+    }
+    
+    // Увеличиваем доход
+    State.game.profitPerTap *= multiplier;
+    showToast(UI_LANG === 'ru' ? `🔥 x${multiplier} на ${minutes} минут!` : `🔥 x${multiplier} for ${minutes} min!`);
+    
+    // Возвращаем обратно через N минут
+    setTimeout(() => {
+        State.game.profitPerTap = State.temp.originalProfit;
+        State.temp.originalProfit = null;
+        updateUI();
+        showToast(tr('toasts.boostFinished'));
+    }, minutes * 60 * 1000);
+    
+    updateUI();
+}
+
+async function watchVideoForTask(taskId) {
+    const task = VIDEO_TASKS.find(t => t.id === taskId);
+    if (!task || task.completed || !task.available) return;
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast(tr('toasts.adUnavailableTemp'), true);
+        return;
+    }
+    
+    showToast(tr('toasts.videoLoading'));
+    
+    try {
+        await window.show_10655027();
+        await claimVideoReward(task);
+        
+        task.completed = true;
+        
+        setTimeout(() => {
+            task.available = true;
+            task.completed = false;
+            renderVideoTasks();
+        }, 24 * 60 * 60 * 1000);
+        
+        renderVideoTasks();
+        showToast(tr('toasts.rewardReceived'));
+        createConfetti();
+        
+    } catch (error) {
+        console.error('Video error:', error);
+        showToast(tr('toasts.watchError'), true);
+    }
+}
+
+async function claimVideoReward(task) {
+    switch(task.type) {
+        case 'coins':
+            State.game.coins += task.reward;
+            break;
+        case 'energy':
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
+            break;
+        case 'boost':
+            activateMegaBoost();
+            break;
+        case 'chest':
+            const randomReward = Math.floor(Math.random() * 4500) + 500;
+            State.game.coins += randomReward;
+            showToast(`🎁 +${randomReward} ${tr('tasks.coinsSuffix')}`);
+            break;
+        case 'refresh':
+            VIDEO_TASKS.forEach(t => {
+                t.completed = false;
+                t.available = true;
+            });
+            break;
+    }
+    
+    updateUI();
+    
+    if (userId) {
+        await fetch(`${CONFIG.API_URL}/api/ad-watched`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, reward_type: task.type })
+        }).catch(() => {});
+    }
+}
+
+// ==================== РЕФЕРАЛЫ ====================
+async function loadReferralData() {
+    if (!userId) return;
+    try {
+        const link = `https://t.me/Ryoho_bot?start=ref_${userId}`;
+        const linkEl = document.getElementById('referral-link');
+        if (linkEl) linkEl.textContent = link;
+
+        const data = await API.get(`/api/referral-data/${userId}`);
+        
+        document.getElementById('referral-count').textContent = data.count || 0;
+        document.getElementById('referral-earnings').textContent = data.earnings || 0;
+        
+        State.skins.friendsInvited = data.count || 0;
+        checkAchievements();
+    } catch (err) {
+        console.error('Referral error:', err);
+    }
+}
+
+function copyReferralLink() {
+    const linkEl = document.getElementById('referral-link');
+    const linkText = linkEl?.textContent?.trim();
+    if (!linkText || linkText === 'loading...' || linkText === t('common.loading')) {
+        showToast(tr('toasts.linkNotLoaded'), true);
+        return;
+    }
+    navigator.clipboard?.writeText(linkText)
+        .then(() => showToast(tr('toasts.linkCopied')))
+        .catch(() => showToast(tr('toasts.copyError'), true));
+}
+
+function shareReferral() {
+    const linkEl = document.getElementById('referral-link');
+    const linkText = linkEl?.textContent?.trim();
+    if (!linkText || linkText === 'loading...' || linkText === t('common.loading')) {
+        showToast(tr('toasts.linkNotLoaded'), true);
+        return;
+    }
+    const shareText = UI_LANG === 'ru' ? '🎮 Присоединяйся к Spirit Clicker!' : '🎮 Join Spirit Clicker!';
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(linkText)}&text=${encodeURIComponent(shareText)}`, '_blank');
+}
+
+// ==================== НАСТРОЙКИ ====================
+function loadSettings() {
+    applyTheme();
+    updateSettingsUI();
+}
+
+function saveSettings() {
+    localStorage.setItem('ryohoSettings', JSON.stringify(State.settings));
+    const bgm = State.temp.bgm.audio;
+    if (bgm) {
+        State.temp.bgm.enabled = State.settings.music;
+        if (State.settings.music) bgm.play().catch(() => {});
+        else bgm.pause();
+    }
+}
+
+function applyTheme() {
+    if (State.settings.theme === 'night') document.body.classList.add('night-mode');
+    else document.body.classList.remove('night-mode');
+}
+
+function toggleTheme() {
+    State.settings.theme = State.settings.theme === 'day' ? 'night' : 'day';
+    saveSettings();
+    applyTheme();
+    updateSettingsUI();
+}
+
+function toggleSound() {
+    State.settings.sound = !State.settings.sound;
+    saveSettings();
+    updateSettingsUI();
+}
+
+function toggleMusic() {
+    State.settings.music = !State.settings.music;
+    saveSettings();
+    updateSettingsUI();
+}
+
+function toggleVibration() {
+    State.settings.vibration = !State.settings.vibration;
+    saveSettings();
+    updateSettingsUI();
+    if (State.settings.vibration && navigator.vibrate) navigator.vibrate(50);
+}
+
+function updateSettingsUI() {
+    const isNight = State.settings.theme === 'night';
+    const soundOn = State.settings.sound;
+    const musicOn = State.settings.music;
+    const vibOn = State.settings.vibration;
+    
+    setToggle('themeTrack', isNight);
+    setIcon('themeIcon', isNight ? '🌙' : '☀️');
+    setLabel('themeLabel', isNight ? t('common.night') : t('common.day'));
+    
+    setToggle('soundTrack', soundOn);
+    setIcon('soundIcon', soundOn ? '🔊' : '🔇');
+    setLabel('soundLabel', soundOn ? t('common.on') : t('common.off'));
+
+    setToggle('musicTrack', musicOn);
+    setIcon('musicIcon', musicOn ? '🎵' : '🔕');
+    setLabel('musicLabel', musicOn ? t('common.on') : t('common.off'));
+    
+    setToggle('vibTrack', vibOn);
+    setIcon('vibIcon', vibOn ? '📳' : '📴');
+    setLabel('vibLabel', vibOn ? t('common.on') : t('common.off'));
+}
+
+function setToggle(id, active) {
+    const el = document.getElementById(id);
+    if (el) active ? el.classList.add('active') : el.classList.remove('active');
+}
+
+function setIcon(id, icon) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = icon;
+}
+
+function setLabel(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function applyStaticTranslations() {
+    const textMap = [
+        ['.header .nav-item:nth-child(1) > span:last-child', 'nav.achievements'],
+        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.tournament'],
+        ['.upgrade-panel-title', 'main.upgrade'],
+        ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
+        ['.nav-bar .nav-item:nth-child(2) > span:last-child', 'nav.friends'],
+        ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.tasks'],
+        ['.nav-bar .nav-item:nth-child(4) > span:last-child', 'nav.games'],
+        ['.nav-bar .nav-item:nth-child(5) > span:last-child', 'nav.skins'],
+        ['#tournament-screen .modal-header h2', 'tournament.title'],
+        ['#tournament-screen .tournament-prize', 'tournament.prizePool'],
+        ['#tournament-screen .online-count-label', 'common.online'],
+        ['#tournament-screen .leaderboard-header span:nth-child(2)', 'common.player'],
+        ['#tournament-screen .leaderboard-header span:nth-child(3)', 'common.score'],
+        ['#tournament-screen #leaderboard-list .loading', 'common.loading'],
+        ['#tournament-screen .player-rank .rank-info:nth-child(1) .rank-label', 'tournament.rank'],
+        ['#tournament-screen .player-rank .rank-info:nth-child(2) .rank-label', 'tournament.score'],
+        ['#friends-screen .modal-header h2', 'friends.title'],
+        ['#friends-screen .stat-small:nth-child(1) .stat-small-label', 'friends.invited'],
+        ['#friends-screen .stat-small:nth-child(2) .stat-small-label', 'friends.earned'],
+        ['#friends-screen .referral-link-label', 'friends.referralLink'],
+        ['#friends-screen .btn-primary', 'friends.copyLink'],
+        ['#friends-screen .btn-secondary', 'friends.share'],
+        ['#friends-screen .referral-rules h3', 'friends.bonuses'],
+        ['#friends-screen .referral-rules li:nth-child(1)', 'friends.bonus1'],
+        ['#friends-screen .referral-rules li:nth-child(2)', 'friends.bonus2'],
+        ['#friends-screen .referral-rules li:nth-child(3)', 'friends.bonus3'],
+        ['#friends-screen .referral-rules li:nth-child(4)', 'friends.bonus4'],
+        ['#tasks-screen .modal-kicker', 'tasks.kicker'],
+        ['#tasks-screen .modal-header-copy h2', 'tasks.title'],
+        ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
+        ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
+        ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
+        ['#tasks-screen .tasks-hero-badge-value', 'tasks.heroValue'],
+        ['#tasks-screen .tasks-list .loading', 'common.loading'],
+        ['#games-screen .modal-kicker', 'games.kicker'],
+        ['#games-screen .modal-header-copy h2', 'games.title'],
+        ['#games-screen .games-hero-title', 'games.heroTitle'],
+        ['#games-screen .games-hero-subtitle', 'games.heroSubtitle'],
+        ['#games-screen .games-hero-jackpot-label', 'games.potential'],
+        ['#games-screen .game-card:nth-child(1) .game-enter', 'games.tapToPlay'],
+        ['#games-screen .game-card:nth-child(2) .game-enter', 'games.pullReels'],
+        ['#games-screen .game-card:nth-child(3) .game-enter', 'games.rollIt'],
+        ['#games-screen .game-card:nth-child(4) .game-enter', 'games.spinNow'],
+        ['#games-screen .game-card:nth-child(5) .game-enter', 'games.openBox'],
+        ['#games-screen .game-card:nth-child(6) .game-enter', 'games.chaseMultiplier'],
+        ['#settings-screen h2', 'gameModals.settings'],
+        ['#settings-screen .settings-section:nth-of-type(1) .settings-title', 'gameModals.theme'],
+        ['#settings-screen .settings-section:nth-of-type(2) .settings-title', 'gameModals.sound'],
+        ['#settings-screen .settings-section:nth-of-type(3) .settings-title', 'gameModals.music'],
+        ['#settings-screen .settings-section:nth-of-type(4) .settings-title', 'gameModals.vibration'],
+        ['#confirm-modal-title', 'gameModals.chooseAction'],
+        ['#confirm-skin-name', 'skins.name'],
+        ['#confirm-skin-desc', 'skins.description'],
+        ['#confirm-skin-requirements .requirement-badge', 'common.claimFree'],
+        ['#confirm-skin-bonus .bonus-badge', 'common.bonusIncome'],
+        ['#confirm-modal .btn-secondary .btn-text', 'common.cancel'],
+        ['#confirm-action-text', 'common.select'],
+        ['#confirm-modal .modal-tip', 'common.closeHint'],
+        ['.skins-title', 'skins.title'],
+        ['#skin-detail-name', 'skins.name'],
+        ['#skin-detail-description', 'skins.description'],
+        ['#skin-detail-rarity', 'skins.rarity'],
+        ['#skin-detail-bonus', 'common.bonusIncome'],
+        ['#skin-action-btn', 'common.claim'],
+        ['#skin-charm-btn', 'common.equip']
+    ];
+
+    textMap.forEach(([selector, key]) => {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = t(key);
+    });
+
+    const placeholders = [
+        ['coin-bet', 'gameModals.betAmount'],
+        ['wheel-bet', 'gameModals.betAmount'],
+        ['wheel-number', 'gameModals.numberRange'],
+        ['slots-bet', 'gameModals.betAmount'],
+        ['dice-bet', 'gameModals.betAmount'],
+        ['luckybox-bet', 'gameModals.betAmount'],
+        ['crash-bet', 'gameModals.betAmount']
+    ];
+
+    placeholders.forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('placeholder', t(key));
+    });
+
+    const buttonMap = [
+        ['#game-coinflip .btn-primary', 'gameModals.flip'],
+        ['#game-wheel .btn-primary', 'gameModals.spin'],
+        ['#game-slots .btn-primary', 'gameModals.spin'],
+        ['#game-dice .btn-primary', 'gameModals.roll']
+    ];
+
+    buttonMap.forEach(([selector, key]) => {
+        const el = document.querySelector(selector);
+        if (el) el.textContent = t(key);
+    });
+
+    const referralLink = document.getElementById('referral-link');
+    if (referralLink && referralLink.textContent.trim().toLowerCase() === 'loading...') {
+        referralLink.textContent = t('common.loading');
+    }
+}
+
+// ==================== НАВИГАЦИЯ ====================
+function openModal(id) {
+    document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+function switchTab(tab, el) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if (el) el.classList.add('active');
+    
+    document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
+    document.body.classList.remove('modal-open');
+    
+    if (tab === 'main') return;
+    
+    const modalId = `${tab}-screen`;
+    openModal(modalId);
+    
+    if (tab === 'friends') loadReferralData();
+    if (tab === 'skins') openSkins();
+    if (tab === 'tournament') loadTournamentData();
+    if (tab === 'tasks') loadVideoTasks();
+}
+
+function openSettings() {
+    openModal('settings-screen');
+}
+
+function closeSettings() {
+    closeModal('settings-screen');
+}
+
+function closeSettingsOutside(e) {
+    const box = document.getElementById('settings-modal-box');
+    if (box && !box.contains(e.target)) closeSettings();
+}
+
+// ==================== ТУРНИР ====================
+let tournamentTimer = null;
+let onlineHeartbeatTimer = null;
+let onlineCountTimer = null;
+
+function setOnlineCount(count) {
+    const countEl = document.getElementById('tournament-online-count');
+    if (countEl) countEl.textContent = formatNumber(Math.max(0, Number(count) || 0));
+}
+
+async function sendOnlineHeartbeat() {
+    if (!userId) return;
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/online/heartbeat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(tg?.initData ? { 'X-Telegram-Init-Data': tg.initData } : {})
+            },
+            body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (data.success) setOnlineCount(data.online_now);
+    } catch (err) {
+        console.warn('Online heartbeat failed:', err);
+    }
+}
+
+async function refreshOnlineCount() {
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/online/count`);
+        const data = await res.json();
+        if (data.success) setOnlineCount(data.online_now);
+    } catch (err) {
+        console.warn('Online count failed:', err);
+    }
+}
+
+function startOnlinePresence() {
+    if (!userId) return;
+    if (!onlineHeartbeatTimer) {
+        sendOnlineHeartbeat();
+        onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, 25000);
+    }
+    if (!onlineCountTimer) {
+        refreshOnlineCount();
+        onlineCountTimer = setInterval(refreshOnlineCount, 15000);
+    }
+}
+
+async function loadTournamentData() {
+    try {
+        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/tournament/leaderboard`);
+        const leaderboardData = await leaderboardRes.json();
+        
+        const rankRes = await fetch(`${CONFIG.API_URL}/api/tournament/player-rank/${userId}`);
+        const rankData = await rankRes.json();
+        
+        if (leaderboardData.success) {
+            setOnlineCount(leaderboardData.online_now);
+            renderLeaderboard({
+                players: leaderboardData.players,
+                playerRank: rankData.rank,
+                playerScore: rankData.score,
+                timeLeft: leaderboardData.time_left
+            });
+            startTournamentTimer(leaderboardData.time_left);
+        }
+    } catch (err) {
+        console.error('Tournament error:', err);
+    }
+}
+
+function renderLeaderboard(data) {
+    const list = document.getElementById('leaderboard-list');
+    const playerRankEl = document.getElementById('player-rank');
+    const playerScoreEl = document.getElementById('player-score');
+    
+    if (list) {
+        list.innerHTML = data.players.map(p => `
+            <div class="leaderboard-item">
+                <span class="player-rank">${p.rank}</span>
+                <div class="player-avatar">
+                    <img src="${p.avatar || '/imgg/default_avatar.png'}" 
+                         alt="avatar"
+                         onerror="this.src='/imgg/default_avatar.png'"
+                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                </div>
+                <span class="player-name">${p.name || 'Player'}</span>
+                <span class="player-score">${formatNumber(p.score)}</span>
+            </div>
+        `).join('');
+    }
+    
+    if (playerRankEl) playerRankEl.textContent = `#${data.playerRank || 0}`;
+    if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore || 0);
+}
+
+function startTournamentTimer(seconds) {
+    if (tournamentTimer) clearInterval(tournamentTimer);
+    
+    const timerEl = document.getElementById('tournament-timer');
+    if (!timerEl) return;
+    
+    let remaining = seconds;
+    
+    tournamentTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(tournamentTimer);
+            timerEl.textContent = t('tournament.finished');
+            loadTournamentData();
+            return;
+        }
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const secs = remaining % 60;
+        timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+// ==================== ЭНЕРГИЯ - МОДАЛКА ====================
+function showEnergyRecoveryModal() {
+    if (document.querySelector('.energy-recovery-modal')) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'energy-recovery-modal';
+    modal.innerHTML = `
+        <div class="modal-content glass">
+            <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
+            <h3>${UI_LANG === 'ru' ? '⚡ Энергия закончилась!' : '⚡ Energy is empty!'}</h3>
+            <p>${UI_LANG === 'ru' ? `Посмотри рекламу и восстанови энергию до максимума (${State.game.maxEnergy})` : `Watch an ad and restore energy to max (${State.game.maxEnergy})`}</p>
+            <button class="btn-primary" onclick="recoverEnergyWithAd()">
+                ${UI_LANG === 'ru' ? '📺 Восстановить максимум' : '📺 Restore to max'}
+            </button>
+            <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
+                ${UI_LANG === 'ru' ? '⏳ Подождать' : '⏳ Wait'}
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function recoverEnergyWithAd() {
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+
+    if (typeof window.show_10655027 !== 'function') {
+        showToast(tr('toasts.adUnavailable'), true);
+        return;
+    }
+
+    try {
+        showToast(tr('toasts.adLoading'));
+        await window.show_10655027();
+
+        const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        applyServerEnergySnapshot(data);
+        updateUI();
+        showToast(tr('toasts.energyFull'));
+    } catch (err) {
+        console.error('Energy recover error:', err);
+        showToast(tr('toasts.serverError'), true);
+    }
+}
+
+// ==================== MEGA BOOST ====================
+let boostEndTime = null;
+let boostInterval = null;
+
+function activateMegaBoost() {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return;
+    }
+    
+    const boostBtn = document.getElementById('mega-boost-btn');
+    if (boostBtn?.classList.contains('active')) {
+        showToast(tr('toasts.boostActive'), true);
+        return;
+    }
+    
+    if (typeof window.show_10655027 !== 'function') {
+        showToast(tr('toasts.adUnavailable'), true);
+        return;
+    }
+    
+    showToast(tr('toasts.adLoading'));
+    
+    window.show_10655027()
+        .then(async () => {
+            const activation = await API.post('/api/activate-mega-boost', {
+                user_id: userId
+            });
+
+            if (activation?.already_active && activation.expires_at) {
+                boostEndTime = parseServerDate(activation.expires_at);
+            } else {
+                boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + 5 * 60 * 1000);
+            }
+            
+            if (boostBtn) boostBtn.classList.add('active');
+            
+            const timerEl = document.getElementById('mega-boost-timer');
+            if (timerEl) {
+                timerEl.style.display = 'block';
+                const initialDiff = Math.max(0, boostEndTime - new Date());
+                const initialMins = Math.floor(initialDiff / 60000);
+                const initialSecs = Math.floor((initialDiff % 60000) / 1000);
+                timerEl.textContent = `${initialMins}:${initialSecs.toString().padStart(2, '0')}`;
+            }
+            
+            showBoostIndicator();
+            
+            const energyBar = document.querySelector('.energy-bar-bg');
+            if (energyBar) energyBar.classList.add('boost-active');
+            
+            if (boostInterval) clearInterval(boostInterval);
+            boostInterval = setInterval(() => {
+                const now = new Date();
+                const diff = boostEndTime - now;
+                
+                if (diff <= 0) {
+                    clearInterval(boostInterval);
+                    if (boostBtn) boostBtn.classList.remove('active');
+                    if (timerEl) timerEl.style.display = 'none';
+                    document.querySelector('.mega-boost-indicator')?.remove();
+                    if (energyBar) energyBar.classList.remove('boost-active');
+                    showToast(tr('toasts.boostFinished'));
+                    return;
+                }
+                
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+            showToast(tr('toasts.megaBoostActivated'));
+        })
+        .catch(() => showToast(tr('toasts.watchError'), true));
+}
+
+function showBoostIndicator() {
+    const oldIndicator = document.querySelector('.mega-boost-indicator');
+    if (oldIndicator) oldIndicator.remove();
+    
+    const energyContainer = document.querySelector('.energy-bar-container');
+    if (energyContainer) {
+        const indicator = document.createElement('div');
+        indicator.className = 'mega-boost-indicator';
+        indicator.innerHTML = UI_LANG === 'ru' ? '🔥 МЕГА БУСТ АКТИВЕН 🔥' : '🔥 MEGA BOOST ACTIVE 🔥';
+        energyContainer.appendChild(indicator);
+    }
+}
+
+async function checkBoostStatus() {
+    if (!userId) return;
+    
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.active) {
+                boostEndTime = parseServerDate(data.expires_at);
+                const boostBtn = document.getElementById('mega-boost-btn');
+                if (boostBtn) boostBtn.classList.add('active');
+                
+                const timerEl = document.getElementById('mega-boost-timer');
+                if (timerEl) timerEl.style.display = 'block';
+                
+                showBoostIndicator();
+                
+                const energyBar = document.querySelector('.energy-bar-bg');
+                if (energyBar) energyBar.classList.add('boost-active');
+                
+                if (boostInterval) clearInterval(boostInterval);
+                boostInterval = setInterval(() => {
+                    const now = new Date();
+                    const diff = boostEndTime - now;
+                    
+                    if (diff <= 0) {
+                        clearInterval(boostInterval);
+                        if (boostBtn) boostBtn.classList.remove('active');
+                        if (timerEl) timerEl.style.display = 'none';
+                        document.querySelector('.mega-boost-indicator')?.remove();
+                        if (energyBar) energyBar.classList.remove('boost-active');
+                        return;
+                    }
+                    
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                }, 200);
+            }
+        }
+    } catch (err) {
+        console.error('Boost status error:', err);
+    }
+}
+
+// ==================== МИНИ-ИГРЫ ====================
+const ROULETTE_RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+const ROULETTE_WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+let rouletteWheelRotation = 0;
+let rouletteBallRotation = 0;
+let rouletteAnimationFrame = null;
+const miniGameLocks = {
+    coinflip: false,
+    slots: false,
+    dice: false,
+    wheel: false
+};
+
+async function postMiniGameRequest(endpoint, payload) {
+    const res = await fetch(`${CONFIG.API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === false) {
+        throw new Error(data.detail || data.message || 'Server error');
+    }
+    return data;
+}
+
+function openGame(game) {
+    document.querySelectorAll('.game-modal').forEach(m => m.classList.remove('active'));
+    const modal = document.getElementById(`game-${game}`);
+    if (game === 'wheel') initRouletteVisuals();
+    if (game === 'luckybox') resetLuckyBoxBoard();
+    if (game === 'crash') resetCrashGhostUI();
+    if (modal) modal.classList.add('active');
+}
+
+function closeGame(game) {
+    const modal = document.getElementById(`game-${game}`);
+    if (game === 'crash' && crashGhostState.active) {
+        endCrashGhostRound(false, true);
+    }
+    if (game === 'wheel') {
+        cancelAnimationFrame(rouletteAnimationFrame);
+        rouletteAnimationFrame = null;
+        document.getElementById('roulette-plate')?.classList.remove('spinning');
+        miniGameLocks.wheel = false;
+    }
+    if (modal) modal.classList.remove('active');
+}
+
+function toggleNumberInput() {
+    const betType = document.getElementById('wheel-color')?.value;
+    const numberInput = document.getElementById('wheel-number');
+    if (numberInput) numberInput.style.display = betType === 'number' ? 'block' : 'none';
+}
+
+function initRouletteVisuals() {
+    const plate = document.getElementById('roulette-plate');
+    if (!plate || plate.querySelector('.roulette-labels')) return;
+
+    const sectorAngle = 360 / 37;
+    const pocketGradient = ROULETTE_WHEEL_ORDER.map((num, index) => {
+        const start = (index * sectorAngle).toFixed(4);
+        const end = ((index + 1) * sectorAngle).toFixed(4);
+        const color = num === 0
+            ? '#1f9b58'
+            : ROULETTE_RED_NUMBERS.includes(num)
+                ? '#d7332f'
+                : '#17181e';
+        return `${color} ${start}deg ${end}deg`;
+    }).join(', ');
+
+    plate.style.background = `conic-gradient(from -90deg, ${pocketGradient})`;
+
+    const labelsWrap = document.createElement('div');
+    labelsWrap.className = 'roulette-labels';
+
+    ROULETTE_WHEEL_ORDER.forEach((num, index) => {
+        const label = document.createElement('span');
+        const angle = ((index + 0.5) * sectorAngle) - 90;
+        label.className = 'roulette-label';
+        if (num === 0) label.classList.add('green');
+        else if (ROULETTE_RED_NUMBERS.includes(num)) label.classList.add('red');
+        else label.classList.add('dark');
+        label.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translate(0, -110px) rotate(${-angle}deg)`;
+        label.textContent = String(num);
+        labelsWrap.appendChild(label);
+    });
+
+    const pointer = document.createElement('div');
+    pointer.className = 'roulette-pointer';
+    plate.appendChild(labelsWrap);
+    plate.appendChild(pointer);
+}
+
+function setRouletteVisualResult(resultNumber) {
+    const wheel = document.getElementById('wheel');
+    const plate = document.getElementById('roulette-plate');
+    const ball = document.getElementById('roulette-ball');
+    if (!wheel || !ball || !plate) return;
+
+    const sectorAngle = 360 / 37;
+    const wheelIndex = ROULETTE_WHEEL_ORDER.indexOf(resultNumber);
+    const targetCenter = (wheelIndex + 0.5) * sectorAngle;
+    const normalizedWheel = ((rouletteWheelRotation % 360) + 360) % 360;
+    const targetWheelNormalized = (360 - targetCenter) % 360;
+    const delta = (targetWheelNormalized - normalizedWheel + 360) % 360;
+    rouletteWheelRotation += delta;
+    rouletteBallRotation = 0;
+
+    plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+    ball.style.transform = `translate(-50%, -126px) rotate(${rouletteBallRotation}deg)`;
+    wheel.textContent = resultNumber;
+
+    if (resultNumber === 0) wheel.style.color = '#b8aa8a';
+    else if (ROULETTE_RED_NUMBERS.includes(resultNumber)) wheel.style.color = '#9a7477';
+    else wheel.style.color = '#4c4b57';
+}
+
+function getRouletteNumberFromState(wheelRotation, ballRotation) {
+    const sectorAngle = 360 / 37;
+    const wheelNormalized = ((wheelRotation % 360) + 360) % 360;
+    const ballNormalized = ((ballRotation % 360) + 360) % 360;
+    const relative = ((ballNormalized - wheelNormalized) % 360 + 360) % 360;
+    const centered = (relative + sectorAngle / 2) % 360;
+    const wheelIndex = Math.floor(centered / sectorAngle) % 37;
+    return ROULETTE_WHEEL_ORDER[wheelIndex];
+}
+
+function animateRouletteToResult(resultNumber, duration = 8600) {
+    const wheel = document.getElementById('wheel');
+    const plate = document.getElementById('roulette-plate');
+    const ball = document.getElementById('roulette-ball');
+    if (!wheel || !ball || !plate) {
+        setRouletteVisualResult(resultNumber);
+        return Promise.resolve(resultNumber);
+    }
+
+    const sectorAngle = 360 / 37;
+    const targetIndex = ROULETTE_WHEEL_ORDER.indexOf(resultNumber);
+    const targetCenter = (targetIndex + 0.5) * sectorAngle;
+    const currentWheelNormalized = ((rouletteWheelRotation % 360) + 360) % 360;
+    const targetWheelNormalized = (360 - targetCenter) % 360;
+    const wheelDelta = (targetWheelNormalized - currentWheelNormalized + 360) % 360;
+
+    const startWheel = rouletteWheelRotation;
+    const startBall = rouletteBallRotation;
+    const finalWheel = startWheel + 1980 + wheelDelta;
+    const fastBallTarget = startBall - 3240;
+    const settleBallTarget = 0;
+
+    cancelAnimationFrame(rouletteAnimationFrame);
+    const startTime = performance.now();
+
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+    const easeOutExpo = t => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+
+    return new Promise(resolve => {
+        const step = now => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const wheelPhase = 0.92;
+            const ballFastPhase = 0.72;
+
+            if (progress < wheelPhase) {
+                const local = progress / wheelPhase;
+                rouletteWheelRotation = startWheel + (finalWheel - startWheel) * easeOutExpo(local);
+            } else {
+                rouletteWheelRotation = finalWheel;
+            }
+
+            if (progress < ballFastPhase) {
+                const local = progress / ballFastPhase;
+                rouletteBallRotation = startBall + (fastBallTarget - startBall) * easeOutQuart(local);
+            } else {
+                const local = (progress - ballFastPhase) / (1 - ballFastPhase);
+                rouletteBallRotation = fastBallTarget + (settleBallTarget - fastBallTarget) * easeOutCubic(local);
+            }
+
+            plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+            ball.style.transform = `translate(-50%, -126px) rotate(${rouletteBallRotation}deg)`;
+            wheel.textContent = String(getRouletteNumberFromState(rouletteWheelRotation, rouletteBallRotation));
+
+            if (progress < 1) {
+                rouletteAnimationFrame = requestAnimationFrame(step);
+                return;
+            }
+
+            rouletteAnimationFrame = null;
+            rouletteWheelRotation = finalWheel;
+            rouletteBallRotation = 0;
+            plate.style.transform = `rotate(${rouletteWheelRotation}deg)`;
+            ball.style.transform = `translate(-50%, -126px) rotate(0deg)`;
+            const landedNumber = getRouletteNumberFromState(rouletteWheelRotation, rouletteBallRotation);
+            wheel.textContent = String(landedNumber);
+            if (landedNumber === 0) wheel.style.color = '#b8aa8a';
+            else if (ROULETTE_RED_NUMBERS.includes(landedNumber)) wheel.style.color = '#9a7477';
+            else wheel.style.color = '#4c4b57';
+            resolve(landedNumber);
+        };
+
+        rouletteAnimationFrame = requestAnimationFrame(step);
+    });
+}
+
+async function playCoinflip() {
+    if (miniGameLocks.coinflip) return;
+    const betInput = document.getElementById('coin-bet');
+    if (!betInput) return;
+    
+    const bet = parseInt(betInput.value);
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
+
+    const resultEl = document.getElementById('coin-result');
+    const coin = document.getElementById('coin');
+    
+    resultEl.textContent = tr('minigames.coinflipSpinning');
+    coin.classList.add('flipping');
+    playSound('coinflip');
+    miniGameLocks.coinflip = true;
+    
+    setTimeout(async () => {
+        try {
+            if (userId) {
+                const data = await postMiniGameRequest('/api/game/coinflip', { user_id: userId, bet });
+                coin.classList.remove('flipping');
+                
+                if ((data.message || '').toLowerCase().includes('won')) {
+                    coin.classList.add('win');
+                    setTimeout(() => coin.classList.remove('win'), 1000);
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
+                    playSound('win');
+                } else {
+                    shakeGameModal('coinflip');
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
+                    playSound('lose');
+                }
+                
+                resultEl.textContent = data.message || tr('minigames.coinflipPlayed');
+                State.game.coins = data.coins;
+                trackAchievementProgress('games', 1);
+                checkAchievements();
+                updateUI();
+                
+            } else {
+                const win = Math.random() < 0.5;
+                coin.classList.remove('flipping');
+                if (win) {
+                    State.game.coins += bet;
+                    coin.classList.add('win');
+                    setTimeout(() => coin.classList.remove('win'), 1000);
+                    resultEl.textContent = tr('minigames.coinflipWin', { bet });
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
+                    playSound('win');
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = tr('minigames.coinflipLose');
+                    shakeGameModal('coinflip');
+                    spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
+                    playSound('lose');
+                }
+                updateUI();
+            }
+        } catch (err) {
+            coin.classList.remove('flipping');
+            resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
+            playSound('lose');
+            showToast(`❌ ${err.message || tr('toasts.serverError')}`, true);
+        } finally {
+            miniGameLocks.coinflip = false;
+        }
+    }, 1500);
+}
+
+async function playSlots() {
+    if (miniGameLocks.slots) return;
+    const betInput = document.getElementById('slots-bet');
+    if (!betInput) return;
+    
+    const bet = parseInt(betInput.value);
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
+
+    const resultEl = document.getElementById('slots-result');
+    const slot1 = document.getElementById('slot1');
+    const slot2 = document.getElementById('slot2');
+    const slot3 = document.getElementById('slot3');
+    
+    const symbols = ['CH', 'LM', 'OR', '77', 'DM', 'ST'];
+    
+    resultEl.textContent = tr('minigames.slotsSpinning');
+    playSound('spin');
+    [slot1, slot2, slot3].forEach(el => el?.classList.add('spinning'));
+    miniGameLocks.slots = true;
+    
+    let spins = 0;
+    const maxSpins = 15;
+    const spinInterval = setInterval(() => {
+        setSlotSymbol(slot1, symbols[Math.floor(Math.random() * symbols.length)]);
+        setSlotSymbol(slot2, symbols[Math.floor(Math.random() * symbols.length)]);
+        setSlotSymbol(slot3, symbols[Math.floor(Math.random() * symbols.length)]);
+        spins++;
+        
+        if (spins >= maxSpins) {
+            clearInterval(spinInterval);
+            
+            if (userId) {
+                postMiniGameRequest('/api/game/slots', { user_id: userId, bet })
+                .then(data => {
+                    setSlotSymbol(slot1, data.slots?.[0]);
+                    setSlotSymbol(slot2, data.slots?.[1]);
+                    setSlotSymbol(slot3, data.slots?.[2]);
+                    [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
+                    resultEl.textContent = data.message;
+                    
+                    if (data.message.includes('JACKPOT') || data.message.includes('won')) {
+                        playSound('win');
+                        createConfetti();
+                        spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
+                    } else {
+                        shakeGameModal('slots');
+                        spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
+                        playSound('lose');
+                    }
+                    
+                    State.game.coins = data.coins;
+                    updateUI();
+                })
+                .catch(err => {
+                    [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
+                    resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
+                    playSound('lose');
+                })
+                .finally(() => {
+                    miniGameLocks.slots = false;
+                });
+            } else {
+                const s1 = symbols[Math.floor(Math.random() * symbols.length)];
+                const s2 = symbols[Math.floor(Math.random() * symbols.length)];
+                const s3 = symbols[Math.floor(Math.random() * symbols.length)];
+                
+                setSlotSymbol(slot1, s1);
+                setSlotSymbol(slot2, s2);
+                setSlotSymbol(slot3, s3);
+                [slot1, slot2, slot3].forEach(el => el?.classList.remove('spinning'));
+                
+                if (s1 === s2 && s2 === s3) {
+                    const win = bet * 5;
+                    State.game.coins += win;
+                    trackAchievementProgress('games', 1);
+                    resultEl.textContent = tr('minigames.slotsJackpot', { win });
+                    playSound('win');
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
+                    checkAchievements();
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = tr('minigames.slotsLose');
+                    shakeGameModal('slots');
+                    spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
+                    playSound('lose');
+                }
+                updateUI();
+                miniGameLocks.slots = false;
+            }
+        }
+    }, 100);
+}
+
+async function playDice() {
+    if (miniGameLocks.dice) return;
+    const betInput = document.getElementById('dice-bet');
+    const predSelect = document.getElementById('dice-prediction');
+    
+    if (!betInput || !predSelect) return;
+    
+    const bet = parseInt(betInput.value);
+    const pred = predSelect.value;
+    
+    if (Number.isNaN(bet)) return showToast(tr('toasts.betRequired'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+    if (bet < 10) return showToast(tr('toasts.minBet'), true);
+
+    const resultEl = document.getElementById('dice-result');
+    const dice1 = document.getElementById('dice1');
+    const dice2 = document.getElementById('dice2');
+    
+    const diceFaces = ['1', '2', '3', '4', '5', '6'];
+    
+    resultEl.textContent = tr('minigames.diceRolling');
+    playSound('dice');
+    dice1?.classList.add('roll');
+    dice2?.classList.add('roll');
+    miniGameLocks.dice = true;
+    
+    let spins = 0;
+    const maxSpins = 12;
+    
+    const spinInterval = setInterval(() => {
+        setDiceSymbol(dice1, diceFaces[Math.floor(Math.random() * 6)]);
+        setDiceSymbol(dice2, diceFaces[Math.floor(Math.random() * 6)]);
+        spins++;
+        
+        if (spins >= maxSpins) {
+            clearInterval(spinInterval);
+            
+            if (userId) {
+                postMiniGameRequest('/api/game/dice', { user_id: userId, bet, prediction: pred })
+                .then(data => {
+                    setDiceSymbol(dice1, diceFaces[data.dice1 - 1]);
+                    setDiceSymbol(dice2, diceFaces[data.dice2 - 1]);
+                    dice1?.classList.remove('roll');
+                    dice2?.classList.remove('roll');
+                    resultEl.textContent = data.message;
+                    
+                    if (data.message.includes('won')) {
+                        createConfetti();
+                        spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
+                        playSound('win');
+                    } else {
+                        shakeGameModal('dice');
+                        spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
+                        playSound('lose');
+                    }
+                    
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
+                    State.game.coins = data.coins;
+                    updateUI();
+                })
+                .catch(err => {
+                    dice1?.classList.remove('roll');
+                    dice2?.classList.remove('roll');
+                    resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
+                    playSound('lose');
+                })
+                .finally(() => {
+                    miniGameLocks.dice = false;
+                });
+            } else {
+                const d1 = Math.floor(Math.random() * 6) + 1;
+                const d2 = Math.floor(Math.random() * 6) + 1;
+                const sum = d1 + d2;
+                
+                setDiceSymbol(dice1, diceFaces[d1 - 1]);
+                setDiceSymbol(dice2, diceFaces[d2 - 1]);
+                dice1?.classList.remove('roll');
+                dice2?.classList.remove('roll');
+                
+                let win = false;
+                if (pred === '7' && sum === 7) win = true;
+                if (pred === 'even' && sum % 2 === 0) win = true;
+                if (pred === 'odd' && sum % 2 === 1) win = true;
+                
+                if (win) {
+                    const multiplier = pred === '7' ? 5 : 2;
+                    State.game.coins += bet * multiplier;
+                    resultEl.textContent = tr('minigames.diceWin', { multiplier });
+                    playSound('win');
+                    spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = tr('minigames.diceLose');
+                    shakeGameModal('dice');
+                    spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
+                    playSound('lose');
+                }
+                updateUI();
+                miniGameLocks.dice = false;
+            }
+        }
+    }, 70);
+}
+
+async function playWheel() {
+    if (miniGameLocks.wheel) return;
+    try {
+        const betInput = document.getElementById('wheel-bet');
+        if (!betInput) return showToast(tr('toasts.uiError'), true);
+        
+        const bet = parseInt(betInput.value);
+        const betType = document.getElementById('wheel-color')?.value;
+        const betNumber = document.getElementById('wheel-number')?.value;
+        
+        if (isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+        if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+        if (betType === 'number') {
+            const parsedNumber = parseInt(betNumber, 10);
+            if (Number.isNaN(parsedNumber) || parsedNumber < 0 || parsedNumber > 36) {
+                return showToast(tr('toasts.rouletteNumber'), true);
+            }
+        }
+
+        const resultEl = document.getElementById('wheel-result');
+        const wheel = document.getElementById('wheel');
+        const plate = document.getElementById('roulette-plate');
+        
+        if (!resultEl || !wheel) return showToast(tr('toasts.uiError'), true);
+        
+        resultEl.textContent = tr('minigames.rouletteSpinning');
+        playSound('spin');
+        
+        plate?.classList.add('spinning');
+        miniGameLocks.wheel = true;
+        
+        if (userId) {
+            postMiniGameRequest('/api/game/roulette', {
+                    user_id: userId,
+                    bet: bet,
+                    bet_type: betType,
+                    bet_value: betType === 'number' ? parseInt(betNumber) : null
+                })
+            .then(async data => {
+                const landedNumber = await animateRouletteToResult(data.result_number);
+                plate?.classList.remove('spinning');
+                const isWinMessage = data.message?.includes('won');
+                
+                resultEl.textContent = isWinMessage
+                    ? `🎡 Landed on ${landedNumber}. ${data.message || 'You won'}`
+                    : `🎡 Landed on ${landedNumber}. ${data.message || 'You lost'}`;
+                
+                if (isWinMessage) {
+                    createConfetti();
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
+                    playSound('win');
+                } else {
+                    shakeGameModal('wheel');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
+                    playSound('lose');
+                }
+                
+                State.game.coins = data.coins;
+                trackAchievementProgress('games', 1);
+                checkAchievements();
+                updateUI();
+            })
+            .catch(err => {
+                plate?.classList.remove('spinning');
+                console.error('Roulette error:', err);
+                resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
+                playSound('lose');
+            })
+            .finally(() => {
+                miniGameLocks.wheel = false;
+            });
+        } else {
+            const visualIndex = Math.floor(Math.random() * 37);
+            const result = ROULETTE_WHEEL_ORDER[visualIndex];
+            
+            animateRouletteToResult(result).then(landedNumber => {
+                plate?.classList.remove('spinning');
+                
+                let win = false;
+                if (betType === 'red' && ROULETTE_RED_NUMBERS.includes(landedNumber)) win = true;
+                if (betType === 'black' && landedNumber !== 0 && !ROULETTE_RED_NUMBERS.includes(landedNumber)) win = true;
+                if (betType === 'green' && landedNumber === 0) win = true;
+                if (betType === 'number' && landedNumber === parseInt(betNumber)) win = true;
+                
+                if (win) {
+                    const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
+                    State.game.coins += bet * multiplier;
+                    resultEl.textContent = tr('minigames.rouletteWin', { number: landedNumber, multiplier });
+                    playSound('win');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
+                    trackAchievementProgress('games', 1);
+                    checkAchievements();
+                } else {
+                    State.game.coins -= bet;
+                    resultEl.textContent = tr('minigames.rouletteLose', { number: landedNumber });
+                    shakeGameModal('wheel');
+                    spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
+                    playSound('lose');
+                }
+                updateUI();
+            }).catch(err => {
+                plate?.classList.remove('spinning');
+                resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
+                playSound('lose');
+            }).finally(() => {
+                miniGameLocks.wheel = false;
+            });
+        }
+        
+    } catch (err) {
+        miniGameLocks.wheel = false;
+        console.error('Roulette error:', err);
+        showToast(tr('toasts.serverError'), true);
+    }
+}
+
+let luckyBoxBusy = false;
+const crashGhostState = {
+    active: false,
+    bet: 0,
+    multiplier: 1,
+    crashAt: 1.5,
+    interval: null,
+    settled: false
+};
+
+function spawnGameParticles(target, tone = 'soft') {
+    if (!target || isLitePerformanceMode()) return;
+
+    const burst = document.createElement('div');
+    burst.className = 'game-particle-burst';
+    const palette = {
+        win: ['rgba(255,255,255,0.9)', 'rgba(224,217,207,0.95)', 'rgba(180,171,193,0.9)'],
+        soft: ['rgba(255,255,255,0.72)', 'rgba(208,201,189,0.74)', 'rgba(180,171,193,0.72)'],
+        lose: ['rgba(214,208,201,0.54)', 'rgba(180,171,193,0.48)', 'rgba(255,255,255,0.4)']
+    }[tone] || ['rgba(255,255,255,0.72)'];
+
+    for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('span');
+        particle.className = 'game-particle';
+        particle.style.left = `${46 + Math.random() * 8}%`;
+        particle.style.top = `${42 + Math.random() * 12}%`;
+        particle.style.setProperty('--tx', `${(Math.random() - 0.5) * 120}px`);
+        particle.style.setProperty('--ty', `${(Math.random() - 0.7) * 110}px`);
+        particle.style.background = palette[Math.floor(Math.random() * palette.length)];
+        particle.style.animationDelay = `${Math.random() * 0.12}s`;
+        burst.appendChild(particle);
+    }
+
+    target.appendChild(burst);
+    setTimeout(() => burst.remove(), 1000);
+}
+
+function shakeGameModal(game) {
+    const modal = document.querySelector(`#game-${game} .game-modal-content`);
+    if (!modal) return;
+    modal.classList.remove('shake-loss');
+    void modal.offsetWidth;
+    modal.classList.add('shake-loss');
+    setTimeout(() => modal.classList.remove('shake-loss'), 450);
+}
+
+function setSlotSymbol(slotEl, value) {
+    if (!slotEl) return;
+    const symbolEl = slotEl.querySelector('.slot-symbol');
+    const symbolMap = {
+        CH: '🍒',
+        LM: '🍋',
+        OR: '🍊',
+        '77': '7️⃣',
+        DM: '💎',
+        ST: '⭐',
+        '🍒': '🍒',
+        '🍋': '🍋',
+        '🍊': '🍊',
+        '7️⃣': '7️⃣',
+        '💎': '💎',
+        '⭐': '⭐'
+    };
+    const resolved = symbolMap[value] || value;
+    if (symbolEl) symbolEl.textContent = resolved;
+    else slotEl.textContent = resolved;
+}
+
+function setDiceSymbol(diceEl, value) {
+    if (!diceEl) return;
+    const face = Math.max(1, Math.min(6, parseInt(value, 10) || 1));
+    diceEl.dataset.face = String(face);
+    diceEl.innerHTML = '';
+
+    const pipLayouts = {
+        1: ['pip-center'],
+        2: ['pip-top-left', 'pip-bottom-right'],
+        3: ['pip-top-left', 'pip-center', 'pip-bottom-right'],
+        4: ['pip-top-left', 'pip-top-right', 'pip-bottom-left', 'pip-bottom-right'],
+        5: ['pip-top-left', 'pip-top-right', 'pip-center', 'pip-bottom-left', 'pip-bottom-right'],
+        6: ['pip-top-left', 'pip-top-right', 'pip-middle-left', 'pip-middle-right', 'pip-bottom-left', 'pip-bottom-right']
+    };
+
+    pipLayouts[face].forEach(cls => {
+        const pip = document.createElement('span');
+        pip.className = `dice-pip ${cls}`;
+        diceEl.appendChild(pip);
+    });
+}
+
+function resetLuckyBoxBoard() {
+    document.querySelectorAll('.lucky-box-card').forEach((card, index) => {
+        card.disabled = false;
+        card.classList.remove('opened', 'winning', 'losing', 'refund');
+        card.dataset.multiplier = '';
+        const label = card.querySelector('.lucky-box-label');
+        if (label) label.textContent = `Box ${index + 1}`;
+    });
+    const resultEl = document.getElementById('luckybox-result');
+    if (resultEl) resultEl.textContent = tr('minigames.luckyPick');
+}
+
+function playLuckyBox(boxIndex) {
+    if (luckyBoxBusy) return;
+
+    const betInput = document.getElementById('luckybox-bet');
+    const resultEl = document.getElementById('luckybox-result');
+    const cards = Array.from(document.querySelectorAll('.lucky-box-card'));
+    if (!betInput || !resultEl || !cards.length) return;
+
+    const bet = parseInt(betInput.value, 10);
+    if (Number.isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+
+    luckyBoxBusy = true;
+    cards.forEach(card => card.disabled = true);
+    resultEl.textContent = tr('minigames.luckyOpening');
+    playSound('spin');
+
+    const outcomes = [0, 0.8, 1.6, 3.5];
+    const shuffled = outcomes.sort(() => Math.random() - 0.5);
+
+    cards.forEach((card, index) => {
+        card.classList.add('opened');
+        card.dataset.multiplier = String(shuffled[index]);
+    });
+
+    setTimeout(() => {
+        cards.forEach((card, index) => {
+            const mult = shuffled[index];
+            const label = card.querySelector('.lucky-box-label');
+        if (label) {
+            label.textContent = mult === 0 ? tr('minigames.luckyBust') : mult === 0.8 ? tr('minigames.luckySave') : `x${mult}`;
+        }
+        });
+
+        const selectedCard = cards[boxIndex];
+        const multiplier = shuffled[boxIndex];
+        const payout = Math.floor(bet * multiplier);
+        State.game.coins -= bet;
+
+        if (multiplier > 1) {
+            State.game.coins += payout;
+            selectedCard.classList.add('winning');
+            resultEl.textContent = tr('minigames.luckyHit', { multiplier, profit: payout - bet });
+            createConfetti(selectedCard);
+            spawnGameParticles(selectedCard, 'win');
+            playSound('win');
+        } else if (multiplier === 0.8) {
+            State.game.coins += payout;
+            selectedCard.classList.add('refund');
+            resultEl.textContent = tr('minigames.luckySoft', { payout });
+            spawnGameParticles(selectedCard, 'soft');
+            playSound('coinflip');
+        } else {
+            selectedCard.classList.add('losing');
+            resultEl.textContent = tr('minigames.luckyLost', { bet });
+            shakeGameModal('luckybox');
+            spawnGameParticles(selectedCard, 'lose');
+            playSound('lose');
+        }
+
+        trackAchievementProgress('games', 1);
+        checkAchievements();
+        updateUI();
+
+        setTimeout(() => {
+            luckyBoxBusy = false;
+            resetLuckyBoxBoard();
+        }, 2200);
+    }, 850);
+}
+
+function resetCrashGhostUI() {
+    const multiplierEl = document.getElementById('crash-multiplier');
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const fillEl = document.getElementById('crash-track-fill');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+
+    if (multiplierEl) multiplierEl.textContent = '1.00x';
+    if (statusEl) statusEl.textContent = tr('minigames.crashStart');
+    if (resultEl) resultEl.textContent = tr('minigames.crashHint');
+    if (fillEl) fillEl.style.width = '0%';
+    if (runnerEl) runnerEl.style.left = '0%';
+    document.querySelector('#game-crash .crash-track')?.classList.remove('danger');
+    if (startBtn) startBtn.disabled = false;
+    if (cashBtn) cashBtn.disabled = true;
+}
+
+function startCrashGhost() {
+    if (crashGhostState.active) return;
+
+    const betInput = document.getElementById('crash-bet');
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+    if (!betInput || !statusEl || !resultEl) return;
+
+    const bet = parseInt(betInput.value, 10);
+    if (Number.isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
+    if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
+
+    State.game.coins -= bet;
+    updateUI();
+
+    crashGhostState.active = true;
+    crashGhostState.settled = false;
+    crashGhostState.bet = bet;
+    crashGhostState.multiplier = 1;
+    crashGhostState.crashAt = Number((1.18 + Math.random() * 4.4).toFixed(2));
+
+    if (Math.random() < 0.12) crashGhostState.crashAt = Number((5.5 + Math.random() * 2.8).toFixed(2));
+
+    if (startBtn) startBtn.disabled = true;
+    if (cashBtn) cashBtn.disabled = false;
+    statusEl.textContent = tr('minigames.crashRunning');
+    resultEl.textContent = tr('minigames.crashStake', { bet });
+    playSound('spin');
+
+    crashGhostState.interval = setInterval(() => {
+        crashGhostState.multiplier = Number((crashGhostState.multiplier + 0.04 + Math.random() * 0.05).toFixed(2));
+        updateCrashGhostVisuals();
+
+        if (crashGhostState.multiplier >= crashGhostState.crashAt) {
+            endCrashGhostRound(false, false);
+        }
+    }, 90);
+}
+
+function updateCrashGhostVisuals() {
+    const multiplierEl = document.getElementById('crash-multiplier');
+    const fillEl = document.getElementById('crash-track-fill');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+    const trackEl = document.querySelector('#game-crash .crash-track');
+    const percent = Math.min(((crashGhostState.multiplier - 1) / 5) * 100, 100);
+
+    if (multiplierEl) multiplierEl.textContent = `${crashGhostState.multiplier.toFixed(2)}x`;
+    if (fillEl) fillEl.style.width = `${percent}%`;
+    if (runnerEl) runnerEl.style.left = `${percent}%`;
+    if (trackEl) {
+        trackEl.classList.toggle('danger', crashGhostState.crashAt - crashGhostState.multiplier <= 0.6);
+    }
+}
+
+function cashOutCrashGhost() {
+    if (!crashGhostState.active || crashGhostState.settled) return;
+    endCrashGhostRound(true, false);
+}
+
+function endCrashGhostRound(cashedOut, silentClose) {
+    if (!crashGhostState.active && !crashGhostState.interval) return;
+
+    clearInterval(crashGhostState.interval);
+    crashGhostState.interval = null;
+
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+
+    crashGhostState.settled = true;
+
+    if (cashedOut) {
+        const payout = Math.floor(crashGhostState.bet * crashGhostState.multiplier);
+        State.game.coins += payout;
+        if (statusEl) statusEl.textContent = tr('minigames.crashCashout', { multiplier: crashGhostState.multiplier.toFixed(2) });
+        if (resultEl) resultEl.textContent = tr('minigames.crashCashoutResult', { payout, profit: payout - crashGhostState.bet });
+        if (runnerEl) runnerEl.classList.add('ghost-safe');
+        createConfetti(document.getElementById('game-crash'));
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'win');
+        playSound('win');
+    } else if (!silentClose) {
+        if (statusEl) statusEl.textContent = tr('minigames.crashAt', { multiplier: crashGhostState.crashAt.toFixed(2) });
+        if (resultEl) resultEl.textContent = tr('minigames.crashLost', { bet: crashGhostState.bet });
+        if (runnerEl) runnerEl.classList.add('ghost-crashed');
+        shakeGameModal('crash');
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'lose');
+        playSound('lose');
+    }
+
+    if (!silentClose) {
+        trackAchievementProgress('games', 1);
+        checkAchievements();
+    }
+
+    updateUI();
+    crashGhostState.active = false;
+
+    if (startBtn) startBtn.disabled = false;
+    if (cashBtn) cashBtn.disabled = true;
+
+    setTimeout(() => {
+        runnerEl?.classList.remove('ghost-safe', 'ghost-crashed');
+        resetCrashGhostUI();
+    }, silentClose ? 0 : 1800);
+}
+
+// ==================== КОНФЕТТИ ====================
+function createConfetti(container = document.body) {
+    if (isLitePerformanceMode()) return;
+
+    const targetContainer = container || document.body;
+    const rect = targetContainer.getBoundingClientRect();
+    
+    for (let i = 0; i < 24; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            const left = rect.left + Math.random() * rect.width;
+            const top = rect.top - 10;
+            
+            confetti.style.cssText = `
+                position: fixed;
+                left: ${left}px;
+                top: ${top}px;
+                width: 8px;
+                height: 8px;
+                background: ${['#7F49B4', '#FFD700', '#FF6B6B', '#4ECDC4'][Math.floor(Math.random() * 4)]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 20000;
+                animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
+                box-shadow: 0 0 10px currentColor;
+            `;
+            document.body.appendChild(confetti);
+            setTimeout(() => confetti.remove(), 3000);
+        }, i * 50);
+    }
+}
+
+const confettiStyle = document.createElement('style');
+confettiStyle.textContent = `
+    @keyframes confettiFall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+        }
+    }
+`;
+document.head.appendChild(confettiStyle);
+
+// ==================== ЗВУКИ ====================
+function playSound(type) {
+    if (!State.settings.sound) return;
+    
+    try {
+        if (!window.audioCtx) window.audioCtx = new AudioContext();
+        const now = window.audioCtx.currentTime;
+        const osc = window.audioCtx.createOscillator();
+        const gain = window.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(window.audioCtx.destination);
+        
+        switch(type) {
+            case 'win':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                break;
+            case 'lose':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                break;
+            case 'spin':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.5);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                break;
+            case 'dice':
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                for (let i = 0; i < 5; i++) {
+                    osc.frequency.setValueAtTime(200 + i * 100, now + i * 0.1);
+                }
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                break;
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.6);
+    } catch (err) {}
+}
+
+// ==================== АЧИВКИ ====================
+function openAchievements() {
+    renderAchievements();
+    openModal('achievements-screen');
+}
+
+function renderAchievements() {
+    const list = document.getElementById('achievements-list');
+    if (!list) return;
+    
+    const stats = {
+        clicks: State.achievements.clicks || 0,
+        upgrades: State.achievements.upgrades || 0,
+        games: State.achievements.games || 0,
+        referrals: State.skins.friendsInvited || 0,
+        adsWatched: State.skins.adsWatched || 0
+    };
+
+    const targetFromId = (id) => {
+        if (id.includes('click')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('upgrade_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('games_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('referral_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('ads_')) return parseInt(id.split('_')[1]);
+        return 0;
+    };
+    
+    list.innerHTML = ACHIEVEMENTS.map(achievement => {
+        const completed = State.achievements.completed.includes(achievement.id);
+
+        const current = achievement.id.startsWith('click') ? stats.clicks :
+                        achievement.id.startsWith('upgrade') ? stats.upgrades :
+                        achievement.id.startsWith('games') ? stats.games :
+                        achievement.id.startsWith('referral') ? stats.referrals :
+                        achievement.id.startsWith('ads') ? stats.adsWatched : 0;
+        const total = achievement.target || targetFromId(achievement.id);
+        const percent = total ? Math.min(100, (current / total) * 100) : 100;
+        
+        return `
+            <div class="achievement-item ${completed ? 'completed' : ''}">
+                <div class="achievement-icon ${completed ? 'completed' : ''}">${achievement.icon}</div>
+                <div class="achievement-info">
+                    <h3>${achievement.title}</h3>
+                    <p>${achievement.description}</p>
+                    ${!completed ? `
+                        <div class="achievement-progress-bar">
+                            <div class="achievement-progress-fill" style="width: ${percent}%"></div>
+                        </div>
+                        <div class="achievement-progress-text">${current}/${total}</div>
+                    ` : `<div class="achievement-reward">✅ +${achievement.reward}</div>`}
+                </div>
+                ${completed ? '<div class="achievement-check">✓</div>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    updateAchievementsProgress();
+}
+
+function updateAchievementsProgress() {
+    const completed = State.achievements.completed.length;
+    const total = ACHIEVEMENTS.length;
+    const percent = (completed / total) * 100;
+    
+    document.getElementById('achievements-completed').textContent = completed;
+    document.getElementById('achievements-total').textContent = total;
+    document.getElementById('achievements-progress-fill').style.width = percent + '%';
+}
+
+// ==================== ОБРАБОТЧИК КЛИКОВ ====================
+function setupGlobalClickHandler() {
+    document.removeEventListener('click', handleTap);
+    document.removeEventListener('touchstart', handleTap);
+    
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
+        handleTap(e);
+    });
+    
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
+            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
+        handleTap(e);
+    }, { passive: false });
+}
+
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Spirit Clicker starting...');
+
+    applyPerformanceMode();
+    applyStaticTranslations();
+    loadAchievementsFromStorage();
+    loadSettings();
+    initBgm();
+    initAutoClicker();
+    initBadgePhysics();
+
+    if (userId) {
+        await loadUserData();
+        await checkOfflinePassiveIncome();
+        startOnlinePresence();
+        setInterval(sendClickBatch, 1500);
+    } else {
+        const saved = localStorage.getItem('ryohoGame');
+        if (saved) Object.assign(State.game, JSON.parse(saved));
+        updateUI();
+    }
+
+    setupGlobalClickHandler();
+    setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
+    setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
+    applySavedSkin();
+    window.addEventListener('resize', applyPerformanceMode);
+
+    console.log('✅ Spirit Clicker ready');
+});
+
+// ==================== ENERGY CHARM (GYRO) ====================
+function initEnergyCharm() {
+    const charm = document.getElementById('energyCharm');
+    const chain = document.querySelector('.energy-chain');
+    if (!charm) return;
+
+    let idleTimer = null;
+    let lastMotion = Date.now();
+    let allowTilt = true;
+    let dragging = false;
+    let dragStart = { x: 0, y: 0 };
+
+    const tilt = { x: 0, y: 0, r: 0 };
+    const dragOffset = { x: 0, y: 0 };
+
+    const physics = {
+        pos: { x: 0, y: 0 },
+        vel: { x: 0, y: 0 },
+        baseLen: 60
+    };
+    let renderRot = 0;
+    let lastTs = performance.now();
+
+    const setIdle = () => {
+        if (Date.now() - lastMotion > 2000) {
+            charm.classList.add('idle');
+        }
+    };
+
+    const handleTilt = (ax = 0, ay = 0) => {
+        if (!allowTilt) return;
+        lastMotion = Date.now();
+        charm.classList.remove('idle');
+        const clamp = (v, m) => Math.max(-m, Math.min(m, v));
+        tilt.r = clamp(ax * 7, 18);
+        tilt.x = clamp(ax * 6, 24);
+        tilt.y = clamp(-ay * 8, 22);
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(setIdle, 1500);
+    };
+
+    let motionAttached = false;
+    const attachMotion = () => {
+        if (motionAttached) return;
+        window.addEventListener('devicemotion', (e) => {
+            const acc = e.accelerationIncludingGravity || e.acceleration || {};
+            handleTilt(acc.x || 0, acc.y || 0);
+        });
+        motionAttached = true;
+    };
+
+    const requestMotionPermission = async () => {
+        if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const p = await DeviceMotionEvent.requestPermission();
+                if (p === 'granted') attachMotion();
+            } catch (e) {}
+        } else if (window.DeviceMotionEvent) {
+            attachMotion();
+        }
+    };
+
+    const clamp = (v, m) => Math.max(-m, Math.min(m, v));
+    charm.addEventListener('pointerdown', async (e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        await requestMotionPermission();
+        dragging = true;
+        State.temp.charmDragging = true;
+        allowTilt = false;
+        charm.classList.remove('idle');
+        dragStart = { x: e.clientX, y: e.clientY };
+        physics.vel.x = physics.vel.y = 0;
+        dragOffset.x = dragOffset.y = 0;
+        charm.setPointerCapture(e.pointerId);
+    });
+    charm.addEventListener('pointermove', (e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        if (!dragging) return;
+        let dx = e.clientX - dragStart.x;
+        let dy = e.clientY - dragStart.y;
+        const max = 140;
+        const len = Math.hypot(dx, dy);
+        if (len > max) {
+            dx = dx / len * max;
+            dy = dy / len * max;
+        }
+        dragOffset.x = clamp(dx, 48);
+        dragOffset.y = clamp(dy, 64);
+        tilt.r = clamp(dx * 0.4, 18);
+    });
+    const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        State.temp.charmDragging = false;
+        allowTilt = true;
+        charm.classList.add('idle');
+        dragOffset.x = dragOffset.y = 0;
+        tilt.r = 0;
+    };
+    charm.addEventListener('pointerup', endDrag);
+    charm.addEventListener('pointercancel', endDrag);
+    ['click','touchstart','touchend','pointerup'].forEach(ev => {
+        charm.addEventListener(ev, (e) => {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+        }, true);
+    });
+
+    // start motion if available
+    requestMotionPermission();
+    charm.classList.add('idle');
+
+    // плавная анимация/инерция
+    const animate = (ts) => {
+        const dt = Math.min(0.04, (ts - lastTs) / 1000 || 0.016);
+        lastTs = ts || performance.now();
+
+        const targetX = tilt.x + dragOffset.x;
+        const targetY = tilt.y + dragOffset.y + 6; // лёгкое провисание
+
+        const stiffness = 18;
+        const damping = 5.2;
+        const gravity = 18;
+
+        const ax = (targetX - physics.pos.x) * stiffness - physics.vel.x * damping;
+        const ay = (targetY - physics.pos.y) * stiffness - physics.vel.y * damping + gravity;
+
+        physics.vel.x += ax * dt;
+        physics.vel.y += ay * dt;
+        physics.pos.x += physics.vel.x * dt;
+        physics.pos.y += physics.vel.y * dt;
+
+        // ограничиваем растяжение, чтобы цепь не вылетала
+        const ropeX = physics.pos.x;
+        const ropeY = physics.baseLen + physics.pos.y;
+        const ropeLen = Math.max(30, Math.hypot(ropeX, ropeY));
+        const angleRad = Math.atan2(ropeX, ropeY);
+        const angleDeg = angleRad * 180 / Math.PI;
+
+        // визуальный поворот брелка
+        const targetRot = angleDeg * 0.6 + tilt.r * 0.4;
+        renderRot += (targetRot - renderRot) * 0.18;
+
+        // деформация: растягиваем по вертикали при натяжении, немного плющим при возврате
+        const stretchY = Math.max(0.7, Math.min(1.5, 1 + (ropeLen - physics.baseLen) / 160));
+        const stretchX = 1 / stretchY;
+        const tiltX = Math.max(-6, Math.min(6, physics.vel.y * -0.08));
+
+        charm.style.transform = `translate(calc(-50% + ${ropeX}px), ${ropeY}px) rotate(${renderRot}deg) rotateX(${tiltX}deg) scale(${stretchX}, ${stretchY})`;
+        if (chain) {
+            const scaleY = ropeLen / physics.baseLen;
+            chain.style.transform = `rotate(${angleDeg}deg) scaleY(${scaleY})`;
+        }
+        requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+}
+
+function setCharmImageFromSkin(skinId) {
+    const skin = State.skins.data.find(s => s.id === skinId);
+    const img = document.querySelector('.energy-ghost-img');
+    if (skin?.image && img) img.src = skin.image;
+}
+
+function setCharmFromDetail() {
+    const currentId = document.getElementById('skin-detail-img')?.dataset.skinId || State.skins.selected;
+    if (!currentId) return;
+    setCharmImageFromSkin(currentId);
+    showToast(tr('toasts.charmUpdated'));
+}
+
+// ==================== BGM ====================
+function initBgm() {
+    const bgmState = State.temp.bgm;
+    if (bgmState.audio) return;
+    const audio = new Audio('audio/bgm.mp3');
+    audio.loop = true;
+    audio.volume = 0.12;
+    audio.preload = 'auto';
+    bgmState.audio = audio;
+    bgmState.enabled = State.settings.music;
+
+    const playBgm = () => {
+        if (!bgmState.enabled || !bgmState.audio) return;
+        bgmState.audio.play().catch(() => {});
+    };
+
+    document.addEventListener('pointerdown', playBgm, { once: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') playBgm();
+        else bgmState.audio?.pause();
+    });
+}
+
+// ==================== AUTO CLICKER ====================
+function initAutoClicker() {
+    const autoBtn = document.getElementById('auto-boost-btn');
+    if (!autoBtn) return;
+
+    const autoState = State.temp.auto;
+
+    const ensureEffect = () => {
+        if (autoState.effect) return autoState.effect;
+        const el = document.createElement('div');
+        el.className = 'auto-pointer-effect';
+        document.body.appendChild(el);
+        autoState.effect = el;
+        return el;
+    };
+
+    const updateEffect = () => {
+        if (isLitePerformanceMode()) {
+            if (autoState.effect) autoState.effect.style.display = 'none';
+            return;
+        }
+        const el = ensureEffect();
+        el.style.left = autoState.point.x + 'px';
+        el.style.top = autoState.point.y + 'px';
+        el.style.display = autoState.fingerDown && autoState.enabledUntil > Date.now() ? 'block' : 'none';
+    };
+
+    const loop = () => {
+        if (autoState.timer) clearInterval(autoState.timer);
+        autoState.timer = setInterval(() => {
+            if (Date.now() > autoState.enabledUntil) {
+                autoBtn.classList.remove('active');
+                document.getElementById('auto-boost-timer').textContent = 'OFF';
+                autoState.enabledUntil = 0;
+                updateEffect();
+                return;
+            }
+            const remaining = Math.max(0, autoState.enabledUntil - Date.now());
+            const sec = Math.ceil(remaining / 1000);
+            document.getElementById('auto-boost-timer').textContent = sec + 's';
+            if (autoState.fingerDown) {
+                handleTap({
+                    clientX: autoState.point.x,
+                    clientY: autoState.point.y,
+                    preventDefault: () => {},
+                    syntheticAuto: true
+                });
+                updateEffect();
+            }
+        }, isLitePerformanceMode() ? 140 : 100);
+    };
+
+    const enableAuto = (ms) => {
+        autoState.enabledUntil = Date.now() + ms;
+        autoBtn.classList.add('active');
+        loop();
+    };
+
+    window.toggleAutoClick = async function toggleAutoClick() {
+        if (!autoBtn) return;
+        if (autoState.enabledUntil > Date.now()) return; // уже активен
+
+        const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(120000); };
+
+        if (typeof window.show_10655027 !== 'function') {
+            showToast(tr('toasts.autoTapFallback'));
+            enableAuto(30000);
+            return;
+        }
+        showToast(tr('toasts.adLoading'));
+        try {
+            await window.show_10655027();
+            enable();
+        } catch (e) {
+            showToast(tr('toasts.autoTapError'), true);
+        }
+    };
+
+    const pointerDown = (e) => {
+        autoState.fingerDown = true;
+        autoState.point = { x: e.clientX || e.touches?.[0]?.clientX || 0, y: e.clientY || e.touches?.[0]?.clientY || 0 };
+        updateEffect();
+    };
+    const pointerMove = (e) => {
+        if (!autoState.fingerDown) return;
+        autoState.point = { x: e.clientX || e.touches?.[0]?.clientX || autoState.point.x, y: e.clientY || e.touches?.[0]?.clientY || autoState.point.y };
+        updateEffect();
+    };
+    const pointerUp = () => {
+        autoState.fingerDown = false;
+        updateEffect();
+    };
+
+    document.addEventListener('pointerdown', pointerDown);
+    document.addEventListener('pointermove', pointerMove);
+    document.addEventListener('pointerup', pointerUp);
+    document.addEventListener('pointercancel', pointerUp);
+}
+
+// ==================== ПОДВЕСКА БРЕЛКА ====================
+function initBadgePhysics() {
+    const card = document.getElementById('badgeCard');
+    const ropeCanvas = document.getElementById('badgeRope');
+    const wrap = document.querySelector('.badge-wrap');
+    const bar = document.querySelector('.energy-bar-container');
+    // временно отключаем отображение брелка, но оставляем код на месте
+    if (wrap) wrap.style.display = 'none';
+    return;
+
+    // (оставлено для будущего включения)
+    if (!card || !ropeCanvas || !wrap || !bar) return;
+
+    const ctx = ropeCanvas.getContext('2d');
+
+    const params = {
+        ropeLength: 110,
+        maxStretch: 100,
+        stiffness: 120,
+        damping: 2.4,
+        gravity: 2000, // px/s^2
+        mass: 2.0,
+        angularDamping: 6.0,
+        dragFollow: 60,
+    };
+
+    const state = {
+        pos: { x: 0, y: params.ropeLength },
+        vel: { x: 0, y: 0 },
+        rot: 0,
+        rotVel: 0,
+        tiltX: 0,
+        tiltY: 0,
+        dragging: false,
+        dragTarget: { x: 0, y: 0 },
+        lastTs: performance.now(),
+        anchor: { x: 0, y: 0 }
+    };
+
+    const resizeCanvas = () => {
+        const dpr = window.devicePixelRatio || 1;
+        ropeCanvas.width = Math.round(window.innerWidth * dpr);
+        ropeCanvas.height = Math.round(window.innerHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const updateAnchor = () => {
+        const br = bar.getBoundingClientRect();
+        state.anchor.x = br.right - 24;
+        state.anchor.y = br.top + 4;
+    };
+
+    const updateWrap = () => {
+        resizeCanvas();
+        updateAnchor();
+    };
+
+    updateWrap();
+    window.addEventListener('resize', updateWrap);
+    window.addEventListener('scroll', updateAnchor, { passive: true });
+
+    const pointerToLocal = (e) => {
+        const rect = ropeCanvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        return { x: x, y: y };
+    };
+
+    const startDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        state.dragging = true;
+        const p = pointerToLocal(e);
+        state.dragTarget = { x: p.x - state.anchor.x, y: p.y - state.anchor.y };
+    };
+    const moveDrag = (e) => {
+        if (!state.dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const p = pointerToLocal(e);
+        state.dragTarget = { x: p.x - state.anchor.x, y: p.y - state.anchor.y };
+    };
+    const endDrag = (e) => {
+        if (!state.dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        state.dragging = false;
+    };
+
+    ['pointerdown', 'touchstart'].forEach(ev => card.addEventListener(ev, startDrag, { passive: false }));
+    ['pointermove', 'touchmove'].forEach(ev => card.addEventListener(ev, moveDrag, { passive: false }));
+    ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(ev => window.addEventListener(ev, endDrag, { passive: false }));
+
+    const integrate = (dt) => {
+        // drag force towards target while dragging
+        if (state.dragging) {
+            const dx = state.dragTarget.x - state.pos.x;
+            const dy = state.dragTarget.y - state.pos.y;
+            state.vel.x += dx * params.dragFollow * dt;
+            state.vel.y += dy * params.dragFollow * dt;
+        } else {
+            // gravity
+            state.vel.y += params.gravity * dt;
+        }
+
+        // spring to limit rope length (soft constraint)
+        const len = Math.hypot(state.pos.x, state.pos.y);
+        const maxLen = params.ropeLength + params.maxStretch;
+        const over = len - params.ropeLength;
+        if (over > 0) {
+            const stretch = Math.min(over, params.maxStretch);
+            const k = params.stiffness / params.mass;
+            const nx = state.pos.x / (len || 1);
+            const ny = state.pos.y / (len || 1);
+            state.vel.x -= nx * k * stretch * dt;
+            state.vel.y -= ny * k * stretch * dt;
+        }
+
+        // damping
+        const damp = Math.exp(-params.damping * dt);
+        state.vel.x *= damp;
+        state.vel.y *= damp;
+
+        state.pos.x += state.vel.x * dt;
+        state.pos.y += state.vel.y * dt;
+
+        // rotation from velocity change
+        const targetRot = Math.atan2(state.pos.x, state.pos.y) * 0.6 + state.vel.x * 0.0008;
+        const rotDamp = Math.exp(-params.angularDamping * dt);
+        state.rotVel += (targetRot - state.rot) * 18 * dt;
+        state.rotVel *= rotDamp;
+        state.rot += state.rotVel * dt;
+
+        // slight 3D tilt from velocity
+        state.tiltX += ((-state.vel.y * 0.003) - state.tiltX) * 8 * dt;
+        state.tiltY += ((state.vel.x * 0.003) - state.tiltY) * 8 * dt;
+    };
+
+    const render = () => {
+        ctx.clearRect(0, 0, ropeCanvas.width, ropeCanvas.height);
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        const grad = ctx.createLinearGradient(state.anchor.x, state.anchor.y, state.anchor.x + state.pos.x, state.anchor.y + state.pos.y);
+        grad.addColorStop(0, '#d9cff8');
+        grad.addColorStop(1, '#6c5ce7');
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(state.anchor.x, state.anchor.y);
+        ctx.quadraticCurveTo(
+            state.anchor.x + state.pos.x * 0.25,
+            state.anchor.y + state.pos.y * 0.35,
+            state.anchor.x + state.pos.x,
+            state.anchor.y + state.pos.y
+        );
+        ctx.stroke();
+    };
+
+    const loop = (ts) => {
+        const dt = Math.min(0.033, (ts - state.lastTs) / 1000 || 0.016);
+        state.lastTs = ts || performance.now();
+        integrate(dt);
+        render();
+        const tx = state.anchor.x + state.pos.x - card.offsetWidth / 2;
+        const ty = state.anchor.y + state.pos.y - card.offsetHeight / 2;
+        const rz = state.rot;
+        const rx = state.tiltX;
+        const ry = state.tiltY;
+        card.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotateZ(${rz}rad) rotateX(${rx}rad) rotateY(${ry}rad)`;
+        requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+}
+
+// ==================== ПАССИВНЫЙ ДОХОД ====================
+const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
+    if (!userId) return;
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.income > 0) {
+                State.game.coins = data.coins;
+                updateUI();
+                if (!silent) {
+                    showToast(data.message || `+${formatNumber(data.income)} passive income`);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Passive income error:', e);
+    }
+};
+
+
+async function testReferral() {
+    if (!userId) {
+        console.log('❌ Нет userId');
+        return;
+    }
+    
+    const testReferrerId = 123456789; // Чужой тестовый ID
+    console.log('🧪 Тест: отправляем регистрацию с referrer_id=', testReferrerId);
+    
+    try {
+        const res = await API.post('/api/register', {
+            user_id: userId,
+            username: username + '_test',
+            referrer_id: testReferrerId
+        });
+        console.log('✅ Результат теста:', res);
+        
+        // Проверяем, обновились ли данные реферера
+        const referrerData = await API.get(`/api/user/${testReferrerId}`);
+        console.log('📊 Данные тестового реферера:', referrerData);
+        
+    } catch (err) {
+        console.error('❌ Ошибка теста:', err);
+    }
+}
+
+// 👇 ВАЖНО: Делаем функцию глобальной
+window.testReferral = testReferral;
+
+// ==================== ЭКСПОРТ ====================
+window.handleTap = handleTap;
+window.upgradeBoost = upgradeBoost;
+window.upgradeAll = upgradeAll;
+window.openGame = openGame;
+window.closeGame = closeGame;
+window.toggleNumberInput = toggleNumberInput;
+window.switchTab = switchTab;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.openDailyRewards = openDailyRewards;
+window.claimDailyReward = claimDailyReward;
+window.copyReferralLink = copyReferralLink;
+window.shareReferral = shareReferral;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.closeSettingsOutside = closeSettingsOutside;
+window.toggleTheme = toggleTheme;
+window.toggleSound = toggleSound;
+window.toggleMusic = toggleMusic;
+window.toggleVibration = toggleVibration;
+window.activateMegaBoost = activateMegaBoost;
+window.selectSkin = selectSkin;
+window.filterSkins = filterSkins;
+window.openSkins = openSkins;
+window.showToast = showToast;
+window.playCoinflip = playCoinflip;
+window.playSlots = playSlots;
+window.playDice = playDice;
+window.playWheel = playWheel;
+window.playLuckyBox = playLuckyBox;
+window.startCrashGhost = startCrashGhost;
+window.cashOutCrashGhost = cashOutCrashGhost;
+window.State = State;
+window.state = State;
+window.startPerfectEnergySystem = startPerfectEnergySystem;
+window.forceSync = forceSync;
+window.sendClickBatch = sendClickBatch;
+window.syncEnergyWithServer = syncEnergyWithServer;
+window.fullSyncWithServer = fullSyncWithServer;
+window.recoverEnergyWithAd = recoverEnergyWithAd;
+window.openAchievements = openAchievements;
+window.watchVideoForTask = watchVideoForTask;
+window.recoverEnergyWithAd = recoverEnergyWithAd;
+window.checkBoostStatus = checkBoostStatus;
+window.closeSkinDetail = closeSkinDetail;
+window.openSkinDetail = openSkinDetail;
+window.unlockSkinFromDetail = unlockSkinFromDetail;
+window.selectSkinFromDetail = selectSkinFromDetail;
+
+console.log('✅ Все функции определены');
+
+
+
+
