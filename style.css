@@ -186,6 +186,39 @@ body:not(.night-mode) #stars-canvas {
     opacity: 1;
 }
 
+body.lite-performance #stars-canvas {
+    opacity: 0.35;
+}
+
+body.lite-performance .auto-pointer-effect,
+body.lite-performance .mega-boost-indicator,
+body.lite-performance .upgrade-burst-layer,
+body.lite-performance .tap-effect-global {
+    display: none !important;
+}
+
+body.lite-performance .mini-boost-button.active::after,
+body.lite-performance .auto-boost-button.active::after,
+body.lite-performance .energy-fill::after,
+body.lite-performance .online-dot,
+body.lite-performance .game-icon-wrap-wheel .game-icon,
+body.lite-performance .game-icon-wrap-coinflip .game-icon,
+body.lite-performance .game-icon-wrap-slots .game-icon,
+body.lite-performance .game-icon-wrap-dice .game-icon,
+body.lite-performance .game-icon-wrap-luckybox .game-icon,
+body.lite-performance .game-icon-wrap-crash .game-icon {
+    animation: none !important;
+}
+
+body.lite-performance .header,
+body.lite-performance .stat-card,
+body.lite-performance .upgrade-panel,
+body.lite-performance .nav-bar,
+body.lite-performance .click-button {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
 /* ==================== GAME CONTAINER ==================== */
 .game-container {
     width: 100%;
@@ -584,14 +617,17 @@ body.modal-open .badge-wrap {
     box-shadow:
         0 0 0 12px var(--accent-dim),
         0 20px 34px var(--accent-glow);
-    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
+    transition: none;
+    transform: none !important;
 }
 
 .click-button:active {
-    transform: scale(0.92);
-    border-color: var(--text-primary);
-    box-shadow: 0 0 0 12px var(--accent-dim), 0 0 60px var(--accent-glow);
+    transform: none !important;
+    border-color: var(--accent);
+    box-shadow:
+        0 0 0 12px var(--accent-dim),
+        0 20px 34px var(--accent-glow);
 }
 
 .click-image {
@@ -599,7 +635,7 @@ body.modal-open .badge-wrap {
     height: 115%;
     object-fit: contain;
     pointer-events: none;
-    transition: transform 0.08s ease;
+    transition: none;
     transform: translateY(-10px) translateZ(0);
     filter: drop-shadow(0 18px 22px rgba(0,0,0,0.35));
     position: relative;
@@ -607,7 +643,7 @@ body.modal-open .badge-wrap {
 }
 
 .click-button:active .click-image {
-    transform: scale(0.85);
+    transform: translateY(-10px) translateZ(0);
 }
 
 .click-button::before {
@@ -620,6 +656,7 @@ body.modal-open .badge-wrap {
     inset: 0;
     border-radius: 50%;
     pointer-events: none;
+    display: none;
 }
 
 /* ==================== BOOST BUTTON ==================== */

@@ -501,6 +501,8 @@ const State = {
     temp: {
         tapAnimation: null,
         clickBuffer: 0,
+        clickValueBuffer: 0,
+        clickBatchInFlight: false,
         animationTimer: null,
         syncTimer: null,
         bgm: {
@@ -531,6 +533,27 @@ window.State = State;
 window.state = State;
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+function detectLitePerformanceMode() {
+    try {
+        const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        const lowCpu = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+        const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 4;
+        const smallViewport = Math.min(window.innerWidth, window.innerHeight) <= 430;
+        return Boolean(prefersReducedMotion || lowCpu || lowMemory || smallViewport);
+    } catch (err) {
+        return false;
+    }
+}
+
+function isLitePerformanceMode() {
+    return !!State.temp.performanceLite;
+}
+
+function applyPerformanceMode() {
+    State.temp.performanceLite = detectLitePerformanceMode();
+    document.body.classList.toggle('lite-performance', State.temp.performanceLite);
+}
+
 const formatNumber = (num) => {
     num = Math.floor(num);
     if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
@@ -946,13 +969,13 @@ function startPerfectEnergySystem() {
     // Плавное обновление UI
     State.temp.energyUiTimer = setInterval(() => {
         refreshEnergyUIOnly();
-    }, 250);
+    }, isLitePerformanceMode() ? 400 : 250);
 
     // Редкий sync с сервером
     State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
-    }, 15000);
+    }, isLitePerformanceMode() ? 20000 : 15000);
 }
 
 async function syncEnergyWithServer() {
@@ -989,7 +1012,7 @@ async function fullSyncWithServer() {
 
         const data = await res.json();
 
-        State.game.coins = data.coins;
+        State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
         State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
         State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
 
@@ -1006,9 +1029,12 @@ let lastBatchTime = 0;
 async function sendClickBatch() {
     const clicks = State.temp.clickBuffer;
 
-    if (clicks === 0 || !userId) return;
+    if (clicks === 0 || !userId || State.temp.clickBatchInFlight) return;
 
+    const optimisticGain = State.temp.clickValueBuffer;
     State.temp.clickBuffer = 0;
+    State.temp.clickValueBuffer = 0;
+    State.temp.clickBatchInFlight = true;
 
     try {
         const batchId = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
@@ -1030,7 +1056,7 @@ async function sendClickBatch() {
         const data = await res.json();
 
         if (data.success) {
-            State.game.coins = data.coins;
+            State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
 
@@ -1040,10 +1066,14 @@ async function sendClickBatch() {
     } catch (err) {
         console.error('Click batch error:', err);
         State.temp.clickBuffer += clicks;
+        State.temp.clickValueBuffer += optimisticGain;
+    } finally {
+        State.temp.clickBatchInFlight = false;
     }
 }
 
 function handleTap(e) {
+    const isAutoTap = !!e?.syntheticAuto;
     const target = (e && e.target && e.target.closest) ? e.target : null;
     if (target && target.closest(
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
@@ -1099,45 +1129,47 @@ function handleTap(e) {
 
     // И только потом считаем клик успешным
     State.temp.clickBuffer += 1;
+    State.temp.clickValueBuffer += previewGain;
     State.game.coins += previewGain;
 
     trackAchievementProgress('clicks', 1);
     checkAchievements();
     updateUI();
 
-    // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
-    if (!State.temp.tapPool) {
-        State.temp.tapPool = Array.from({ length: 12 }, () => {
-            const el = document.createElement('div');
-            el.className = 'tap-effect-global';
-            el.style.position = 'fixed';
-            el.style.pointerEvents = 'none';
-            el.style.zIndex = '9999';
-            el.style.whiteSpace = 'nowrap';
-            document.body.appendChild(el);
-            return el;
-        });
-        State.temp.tapPoolIdx = 0;
+    if (!isAutoTap) {
+        // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
+        if (!State.temp.tapPool) {
+            State.temp.tapPool = Array.from({ length: 8 }, () => {
+                const el = document.createElement('div');
+                el.className = 'tap-effect-global';
+                el.style.position = 'fixed';
+                el.style.pointerEvents = 'none';
+                el.style.zIndex = '9999';
+                el.style.whiteSpace = 'nowrap';
+                document.body.appendChild(el);
+                return el;
+            });
+            State.temp.tapPoolIdx = 0;
+        }
+        const pool = State.temp.tapPool;
+        const idx = State.temp.tapPoolIdx % pool.length;
+        State.temp.tapPoolIdx++;
+        const effect = pool[idx];
+        effect.style.left = `${clientX}px`;
+        effect.style.top = `${clientY}px`;
+        effect.style.transform = 'translate(-50%, -50%)';
+        effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
+        effect.style.fontSize = '28px';
+        effect.style.fontWeight = 'bold';
+        effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
+        effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
+        effect.style.animation = 'none';
+        effect.style.opacity = '1';
+        effect.offsetWidth;
+        effect.style.animation = 'tapFloat 0.55s ease-out forwards';
     }
-    const pool = State.temp.tapPool;
-    const idx = State.temp.tapPoolIdx % pool.length;
-    State.temp.tapPoolIdx++;
-    const effect = pool[idx];
-    effect.style.left = `${clientX}px`;
-    effect.style.top = `${clientY}px`;
-    effect.style.transform = 'translate(-50%, -50%)';
-    effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
-    effect.style.fontSize = '28px';
-    effect.style.fontWeight = 'bold';
-    effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
-    effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
-    // сброс анимации для реюза
-    effect.style.animation = 'none';
-    effect.style.opacity = '1';
-    effect.offsetWidth; // reflow
-    effect.style.animation = 'tapFloat 0.55s ease-out forwards';
 
-    if (State.settings.sound) {
+    if (!isAutoTap && State.settings.sound) {
         try {
             if (!window.audioCtx) window.audioCtx = new AudioContext();
             const now = window.audioCtx.currentTime;
@@ -1155,7 +1187,7 @@ function handleTap(e) {
         } catch (err) {}
     }
 
-    if (State.settings.vibration) {
+    if (!isAutoTap && State.settings.vibration) {
         try {
             if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             else if (navigator.vibrate) navigator.vibrate(20);
@@ -1570,6 +1602,8 @@ function triggerUpgradeHaptics() {
 }
 
 function triggerUpgradeBurst() {
+    if (isLitePerformanceMode()) return;
+
     const wrapper = document.querySelector('.click-button-wrapper');
     if (!wrapper) return;
 
@@ -2641,15 +2675,26 @@ function activateMegaBoost() {
     showToast(tr('toasts.adLoading'));
     
     window.show_10655027()
-        .then(() => {
-            const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+        .then(async () => {
+            const activation = await API.post('/api/activate-mega-boost', {
+                user_id: userId
+            });
+
+            if (activation?.already_active && activation.expires_at) {
+                boostEndTime = new Date(activation.expires_at);
+            } else {
+                boostEndTime = new Date(activation?.expires_at || (Date.now() + 5 * 60 * 1000));
+            }
             
             if (boostBtn) boostBtn.classList.add('active');
             
             const timerEl = document.getElementById('mega-boost-timer');
             if (timerEl) {
                 timerEl.style.display = 'block';
-                timerEl.textContent = '3:00';
+                const initialDiff = Math.max(0, boostEndTime - new Date());
+                const initialMins = Math.floor(initialDiff / 60000);
+                const initialSecs = Math.floor((initialDiff % 60000) / 1000);
+                timerEl.textContent = `${initialMins}:${initialSecs.toString().padStart(2, '0')}`;
             }
             
             showBoostIndicator();
@@ -2660,7 +2705,7 @@ function activateMegaBoost() {
             if (boostInterval) clearInterval(boostInterval);
             boostInterval = setInterval(() => {
                 const now = new Date();
-                const diff = expiresAt - now;
+                const diff = boostEndTime - now;
                 
                 if (diff <= 0) {
                     clearInterval(boostInterval);
@@ -2678,12 +2723,6 @@ function activateMegaBoost() {
             }, 1000);
             
             showToast(tr('toasts.megaBoostActivated'));
-            
-            fetch(`${CONFIG.API_URL}/api/activate-mega-boost`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId })
-            }).catch(() => {});
         })
         .catch(() => showToast(tr('toasts.watchError'), true));
 }
@@ -3354,7 +3393,7 @@ const crashGhostState = {
 };
 
 function spawnGameParticles(target, tone = 'soft') {
-    if (!target) return;
+    if (!target || isLitePerformanceMode()) return;
 
     const burst = document.createElement('div');
     burst.className = 'game-particle-burst';
@@ -3364,7 +3403,7 @@ function spawnGameParticles(target, tone = 'soft') {
         lose: ['rgba(214,208,201,0.54)', 'rgba(180,171,193,0.48)', 'rgba(255,255,255,0.4)']
     }[tone] || ['rgba(255,255,255,0.72)'];
 
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 10; i++) {
         const particle = document.createElement('span');
         particle.className = 'game-particle';
         particle.style.left = `${46 + Math.random() * 8}%`;
@@ -3647,10 +3686,12 @@ function endCrashGhostRound(cashedOut, silentClose) {
 
 // ==================== КОНФЕТТИ ====================
 function createConfetti(container = document.body) {
+    if (isLitePerformanceMode()) return;
+
     const targetContainer = container || document.body;
     const rect = targetContainer.getBoundingClientRect();
     
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 24; i++) {
         setTimeout(() => {
             const confetti = document.createElement('div');
             const left = rect.left + Math.random() * rect.width;
@@ -3830,6 +3871,7 @@ function setupGlobalClickHandler() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Spirit Clicker starting...');
 
+    applyPerformanceMode();
     applyStaticTranslations();
     loadAchievementsFromStorage();
     loadSettings();
@@ -3852,6 +3894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
     setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
     applySavedSkin();
+    window.addEventListener('resize', applyPerformanceMode);
 
     console.log('✅ Spirit Clicker ready');
 });
@@ -4069,6 +4112,10 @@ function initAutoClicker() {
     };
 
     const updateEffect = () => {
+        if (isLitePerformanceMode()) {
+            if (autoState.effect) autoState.effect.style.display = 'none';
+            return;
+        }
         const el = ensureEffect();
         el.style.left = autoState.point.x + 'px';
         el.style.top = autoState.point.y + 'px';
@@ -4089,10 +4136,15 @@ function initAutoClicker() {
             const sec = Math.ceil(remaining / 1000);
             document.getElementById('auto-boost-timer').textContent = sec + 's';
             if (autoState.fingerDown) {
-                handleTap({ clientX: autoState.point.x, clientY: autoState.point.y, preventDefault: () => {} });
+                handleTap({
+                    clientX: autoState.point.x,
+                    clientY: autoState.point.y,
+                    preventDefault: () => {},
+                    syntheticAuto: true
+                });
                 updateEffect();
             }
-        }, 100);
+        }, isLitePerformanceMode() ? 140 : 100);
     };
 
     const enableAuto = (ms) => {

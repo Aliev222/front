@@ -795,9 +795,20 @@
     (function() {
         const canvas = document.getElementById('stars-canvas');
         const ctx = canvas.getContext('2d');
-        const STAR_COUNT = 260;
+        const litePerformance =
+            window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ||
+            (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+            (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+            Math.min(window.innerWidth, window.innerHeight) <= 430;
+
+        if (litePerformance) {
+            document.body.classList.add('lite-performance');
+        }
+
+        const STAR_COUNT = litePerformance ? 90 : 260;
         const stars = [];
         const shooting = [];
+        let frameId = 0;
 
         function resize() {
             canvas.width  = window.innerWidth;
@@ -826,10 +837,21 @@
         }
 
         function draw() {
+            if (document.hidden) {
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            frameId += 1;
+            if (litePerformance && frameId % 2 !== 0) {
+                requestAnimationFrame(draw);
+                return;
+            }
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const cx = canvas.width  / 2;
             const cy = canvas.height / 2;
-            const baseSpeed = 4;
+            const baseSpeed = litePerformance ? 3 : 4;
 
             for (let s of stars) {
                 s.pz = s.z;
@@ -888,7 +910,7 @@
             }
 
             // РџР°РґР°СЋС‰РёРµ Р·РІС‘Р·РґС‹
-            if (Math.random() < 0.008 && shooting.length < 4) {
+            if (!litePerformance && Math.random() < 0.008 && shooting.length < 4) {
                 shooting.push({
                     x: Math.random() * canvas.width * 0.7,
                     y: Math.random() * canvas.height * 0.2,
