@@ -192,8 +192,7 @@ body.lite-performance #stars-canvas {
 
 body.lite-performance .auto-pointer-effect,
 body.lite-performance .mega-boost-indicator,
-body.lite-performance .upgrade-burst-layer,
-body.lite-performance .tap-effect-global {
+body.lite-performance .upgrade-burst-layer {
     display: none !important;
 }
 
@@ -837,6 +836,13 @@ body.modal-open .badge-wrap {
     16%  { opacity: 1; transform: translate(-50%, -65%) scale(1); }
     72%  { opacity: 1; transform: translate(-50%, -148%) scale(1.08); }
     100% { opacity: 0; transform: translate(-50%, -205%) scale(0.96); }
+}
+
+@keyframes tapFloatAuto {
+    0%   { opacity: 0; transform: translate(-50%, -42%) scale(0.84); }
+    18%  { opacity: 0.92; transform: translate(-50%, -62%) scale(0.96); }
+    72%  { opacity: 0.9; transform: translate(-50%, -118%) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -152%) scale(0.94); }
 }
 
 .auto-pointer-effect {

@@ -503,6 +503,8 @@ const State = {
         clickBuffer: 0,
         clickValueBuffer: 0,
         clickBatchInFlight: false,
+        lastAutoSoundAt: 0,
+        lastAutoVibrationAt: 0,
         animationTimer: null,
         syncTimer: null,
         bgm: {
@@ -1145,40 +1147,41 @@ function handleTap(e) {
     checkAchievements();
     updateUI();
 
-    if (!isAutoTap) {
-        // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
-        if (!State.temp.tapPool) {
-            State.temp.tapPool = Array.from({ length: 8 }, () => {
-                const el = document.createElement('div');
-                el.className = 'tap-effect-global';
-                el.style.position = 'fixed';
-                el.style.pointerEvents = 'none';
-                el.style.zIndex = '9999';
-                el.style.whiteSpace = 'nowrap';
-                document.body.appendChild(el);
-                return el;
-            });
-            State.temp.tapPoolIdx = 0;
-        }
-        const pool = State.temp.tapPool;
-        const idx = State.temp.tapPoolIdx % pool.length;
-        State.temp.tapPoolIdx++;
-        const effect = pool[idx];
-        effect.style.left = `${clientX}px`;
-        effect.style.top = `${clientY}px`;
-        effect.style.transform = 'translate(-50%, -50%)';
-        effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
-        effect.style.fontSize = '28px';
-        effect.style.fontWeight = 'bold';
-        effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
-        effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
-        effect.style.animation = 'none';
-        effect.style.opacity = '1';
-        effect.offsetWidth;
-        effect.style.animation = 'tapFloat 0.55s ease-out forwards';
+    // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
+    if (!State.temp.tapPool) {
+        State.temp.tapPool = Array.from({ length: isLitePerformanceMode() ? 6 : 10 }, () => {
+            const el = document.createElement('div');
+            el.className = 'tap-effect-global';
+            el.style.position = 'fixed';
+            el.style.pointerEvents = 'none';
+            el.style.zIndex = '9999';
+            el.style.whiteSpace = 'nowrap';
+            document.body.appendChild(el);
+            return el;
+        });
+        State.temp.tapPoolIdx = 0;
     }
+    const pool = State.temp.tapPool;
+    const idx = State.temp.tapPoolIdx % pool.length;
+    State.temp.tapPoolIdx++;
+    const effect = pool[idx];
+    effect.style.left = `${clientX}px`;
+    effect.style.top = `${clientY}px`;
+    effect.style.transform = 'translate(-50%, -50%)';
+    effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
+    effect.style.fontSize = isAutoTap ? '22px' : '28px';
+    effect.style.fontWeight = isAutoTap ? '700' : 'bold';
+    effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
+    effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
+    effect.style.animation = 'none';
+    effect.style.opacity = '1';
+    effect.offsetWidth;
+    effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
 
-    if (!isAutoTap && State.settings.sound) {
+    const allowAutoSound = !isAutoTap || (Date.now() - State.temp.lastAutoSoundAt >= 220);
+    const allowAutoVibration = !isAutoTap || (Date.now() - State.temp.lastAutoVibrationAt >= 260);
+
+    if (State.settings.sound && allowAutoSound) {
         try {
             if (!window.audioCtx) window.audioCtx = new AudioContext();
             const now = window.audioCtx.currentTime;
@@ -1187,19 +1190,21 @@ function handleTap(e) {
             osc.connect(gainNode);
             gainNode.connect(window.audioCtx.destination);
             osc.type = megaBoostActive ? 'sawtooth' : 'sine';
-            osc.frequency.setValueAtTime(megaBoostActive ? 800 : 650, now);
-            osc.frequency.exponentialRampToValueAtTime(megaBoostActive ? 400 : 450, now + 0.1);
-            gainNode.gain.setValueAtTime(0.2, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.frequency.setValueAtTime(megaBoostActive ? 800 : (isAutoTap ? 560 : 650), now);
+            osc.frequency.exponentialRampToValueAtTime(megaBoostActive ? 400 : (isAutoTap ? 420 : 450), now + (isAutoTap ? 0.08 : 0.1));
+            gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
             osc.start(now);
-            osc.stop(now + 0.2);
+            osc.stop(now + (isAutoTap ? 0.12 : 0.2));
+            if (isAutoTap) State.temp.lastAutoSoundAt = Date.now();
         } catch (err) {}
     }
 
-    if (!isAutoTap && State.settings.vibration) {
+    if (State.settings.vibration && allowAutoVibration) {
         try {
-            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            else if (navigator.vibrate) navigator.vibrate(20);
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
+            else if (navigator.vibrate) navigator.vibrate(isAutoTap ? 12 : 20);
+            if (isAutoTap) State.temp.lastAutoVibrationAt = Date.now();
         } catch (err) {}
     }
 }
