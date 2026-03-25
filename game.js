@@ -11,7 +11,7 @@ const CONFIG = {
     API_URL: window.API_URL,
     CLICK_BATCH_INTERVAL: 1000,
     ENERGY_RECHARGE_INTERVAL: 1000,
-    PASSIVE_INCOME_INTERVAL: 3600000,
+    PASSIVE_INCOME_INTERVAL: 60000,
     CACHE_TTL: 30000
 };
 
@@ -3748,6 +3748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userId) {
         await loadUserData();
+        await checkOfflinePassiveIncome();
         startOnlinePresence();
         setInterval(sendClickBatch, 1500);
     } else {
@@ -3758,7 +3759,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupGlobalClickHandler();
     setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
-    setInterval(checkOfflinePassiveIncome, CONFIG.PASSIVE_INCOME_INTERVAL);
+    setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
     applySavedSkin();
 
     console.log('✅ Spirit Clicker ready');
@@ -4224,7 +4225,7 @@ function initBadgePhysics() {
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
-const checkOfflinePassiveIncome = async () => {
+const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
     if (!userId) return;
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
@@ -4237,7 +4238,9 @@ const checkOfflinePassiveIncome = async () => {
             if (data.income > 0) {
                 State.game.coins = data.coins;
                 updateUI();
-                showToast(data.message);
+                if (!silent) {
+                    showToast(data.message || `+${formatNumber(data.income)} passive income`);
+                }
             }
         }
     } catch (e) {
