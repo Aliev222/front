@@ -1542,6 +1542,72 @@ function updateCollectionProgress() {
 
 // ==================== УЛУЧШЕНИЯ ====================
 let upgradeInProgress = false;
+let queuedUpgradeAllCount = 0;
+let nextUpgradeRequestAt = 0;
+const UPGRADE_REQUEST_GAP_MS = 380;
+
+function getUpgradeAllPrice() {
+    return (State.game.prices.multitap || 0) + (State.game.prices.profit || 0) + (State.game.prices.energy || 0);
+}
+
+function triggerUpgradeHaptics() {
+    if (!State.settings.vibration) return;
+
+    try {
+        if (tg?.HapticFeedback) {
+            let pulses = 0;
+            const interval = setInterval(() => {
+                try {
+                    tg.HapticFeedback.impactOccurred(pulses > 4 ? 'heavy' : 'medium');
+                } catch (err) {}
+                pulses += 1;
+                if (pulses >= 7) clearInterval(interval);
+            }, 320);
+        } else if (navigator.vibrate) {
+            navigator.vibrate([180, 80, 220, 90, 260, 100, 320, 120, 360]);
+        }
+    } catch (err) {}
+}
+
+function triggerUpgradeBurst() {
+    const wrapper = document.querySelector('.click-button-wrapper');
+    if (!wrapper) return;
+
+    let layer = wrapper.querySelector('.upgrade-burst-layer');
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'upgrade-burst-layer';
+        wrapper.prepend(layer);
+    }
+
+    layer.innerHTML = '';
+    layer.classList.remove('is-active');
+    layer.offsetWidth;
+
+    for (let i = 0; i < 16; i += 1) {
+        const spark = document.createElement('span');
+        spark.className = 'upgrade-spark';
+        spark.style.setProperty('--spark-angle', `${(360 / 16) * i + (Math.random() * 16 - 8)}deg`);
+        spark.style.setProperty('--spark-distance', `${150 + Math.random() * 75}px`);
+        spark.style.setProperty('--spark-delay', `${Math.random() * 0.7}s`);
+        spark.style.setProperty('--spark-duration', `${1.6 + Math.random() * 0.8}s`);
+        spark.style.setProperty('--spark-scale', `${0.8 + Math.random() * 0.6}`);
+        layer.appendChild(spark);
+    }
+
+    layer.classList.add('is-active');
+    clearTimeout(layer.cleanupTimer);
+    layer.cleanupTimer = setTimeout(() => {
+        layer.classList.remove('is-active');
+        layer.innerHTML = '';
+    }, 4000);
+}
+
+function playUpgradeCelebration() {
+    playUpgradeSound();
+    triggerUpgradeHaptics();
+    triggerUpgradeBurst();
+}
 
 async function upgradeBoost(type, internal = false) {
     if (upgradeInProgress && !internal) return;
@@ -1573,6 +1639,7 @@ async function upgradeBoost(type, internal = false) {
             State.game.maxEnergy = result.max_energy;
             State.game.energy = result.max_energy;
         }
+        playUpgradeCelebration();
         updateUI();
         checkAchievements();
     }
@@ -1595,17 +1662,26 @@ async function upgradeBoost(type, internal = false) {
     }
 }
 
-async function upgradeAll() {
-    if (upgradeInProgress || !userId) return;
+async function upgradeAll(internal = false) {
+    if (!userId) return;
+
+    if (upgradeInProgress) {
+        queuedUpgradeAllCount = Math.min(queuedUpgradeAllCount + 1, 25);
+        return;
+    }
 
     upgradeInProgress = true;
     try {
-        const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
+        const total = getUpgradeAllPrice();
         if (State.game.coins < total) {
-            showToast(tr('toasts.notEnoughCoins', { amount: formatNumber(total) }), true);
+            if (!internal) {
+                showToast(tr('toasts.notEnoughCoins', { amount: formatNumber(total) }), true);
+            }
+            queuedUpgradeAllCount = 0;
             return;
         }
 
+        nextUpgradeRequestAt = Date.now() + UPGRADE_REQUEST_GAP_MS;
         const result = await API.post('/api/upgrade-all', {
             user_id: userId
         });
@@ -1625,24 +1701,39 @@ async function upgradeAll() {
         State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
         State.game.energy = result.energy ?? State.game.maxEnergy;
         trackAchievementProgress('upgrades', 3);
+        playUpgradeCelebration();
         updateUI();
         checkAchievements();
     } catch (err) {
         if (err.status === 429) {
-            showToast(tr('toasts.upgradeBusy'), true);
+            if (internal || queuedUpgradeAllCount > 0) {
+                queuedUpgradeAllCount = Math.min(queuedUpgradeAllCount + 1, 25);
+                return;
+            }
             return;
         }
         if (err.status === 400 && err.detail === 'Not enough coins') {
-            showToast(tr('toasts.fullUpgradeNoCoins'), true);
+            if (!internal) {
+                showToast(tr('toasts.fullUpgradeNoCoins'), true);
+            }
+            queuedUpgradeAllCount = 0;
             return;
         }
         if (err.status === 400 && err.detail === 'Max level reached') {
-            showToast(tr('toasts.fullUpgradeMax'), true);
+            if (!internal) {
+                showToast(tr('toasts.fullUpgradeMax'), true);
+            }
+            queuedUpgradeAllCount = 0;
             return;
         }
         showToast(`${tr('toasts.serverError')}${err.status ? ' ' + err.status : ''}`, true);
     } finally {
         upgradeInProgress = false;
+        if (queuedUpgradeAllCount > 0) {
+            queuedUpgradeAllCount -= 1;
+            const delay = Math.max(40, nextUpgradeRequestAt - Date.now());
+            setTimeout(() => upgradeAll(true), delay);
+        }
     }
 }
 
