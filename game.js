@@ -62,10 +62,10 @@ const I18N = {
             copyLink: 'Copy link',
             share: 'Share',
             bonuses: 'Bonuses',
-            bonus1: 'Invite 1 friend — +1000 coins',
-            bonus2: '5% of your friend income — forever',
-            bonus3: 'Invite 3 friends — +100 energy',
-            bonus4: 'Invite 10 friends — +5% luck'
+            bonus1: 'Invite 1 friend — +25000 coins',
+            bonus2: 'Friend income share — 5% forever',
+            bonus3: 'First invited friend — special skin',
+            bonus4: 'Referral income limit — 50000 per day'
         },
         tasks: {
             title: 'Tasks',
@@ -254,10 +254,10 @@ const I18N = {
             copyLink: 'Копировать',
             share: 'Поделиться',
             bonuses: 'Бонусы',
-            bonus1: 'Пригласи 1 друга — +1000 монет',
-            bonus2: '5% от дохода друга — навсегда',
-            bonus3: 'Пригласи 3 друзей — +100 энергии',
-            bonus4: 'Пригласи 10 друзей — +5% удачи'
+            bonus1: 'Пригласи 1 друга — +25000 монет',
+            bonus2: 'Доход с друга — 5% навсегда',
+            bonus3: 'Первый приглашённый друг — специальный скин',
+            bonus4: 'Лимит дохода с рефералов — 50000 в день'
         },
         tasks: {
             title: 'Задания',
@@ -865,6 +865,7 @@ function getLocalSkins() {
     return [
         // Default
         { id: "default.pngSP", name: "Default", image: "imgg/skins/default.png", rarity: "common", bonus: { type: "multiplier", value: 1.0 }, requirement: null },
+        { id: "referral-special.pngSP", name: "Referral Special", image: "imgg/skins/referral-special.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.8 }, requirement: { type: "friends", value: 1 } },
 
         // Level skins (common, x1.2)
         { id: "10lvl.pngSP", name: "Level 10", image: "imgg/skins/10lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 10 } },
@@ -1165,13 +1166,16 @@ function handleTap(e) {
     const idx = State.temp.tapPoolIdx % pool.length;
     State.temp.tapPoolIdx++;
     const effect = pool[idx];
+    const isNightMode = document.body.classList.contains('night-mode');
+    const tapColor = megaBoostActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4');
+    const tapGlow = megaBoostActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4');
     effect.style.left = `${clientX}px`;
     effect.style.top = `${clientY}px`;
     effect.style.transform = 'translate(-50%, -50%)';
-    effect.style.color = megaBoostActive ? '#FFD700' : '#7F49B4';
+    effect.style.color = tapColor;
     effect.style.fontSize = isAutoTap ? '22px' : '28px';
     effect.style.fontWeight = isAutoTap ? '700' : 'bold';
-    effect.style.textShadow = `0 0 10px ${megaBoostActive ? '#FFD700' : '#7F49B4'}`;
+    effect.style.textShadow = `0 0 10px ${tapGlow}`;
     effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
     effect.style.animation = 'none';
     effect.style.opacity = '1';

@@ -204,18 +204,20 @@
     <div class="modal-screen" id="tournament-screen">
         <div class="glass">
             <div class="modal-header">
-                <button class="modal-close" onclick="closeModal('tournament-screen')">×</button>
                 <h2>Tournament</h2>
+                <div class="modal-header-actions">
+                    <div class="tournament-online-indicator tournament-online-indicator-top" id="tournament-online-indicator">
+                        <span class="online-dot"></span>
+                        <span class="online-count-label">Online</span>
+                        <span class="online-count-value" id="tournament-online-count">0</span>
+                    </div>
+                    <button class="modal-close" onclick="closeModal('tournament-screen')">×</button>
+                </div>
             </div>
             <div class="modal-content">
                 <div class="tournament-header">
                     <div class="tournament-timer" id="tournament-timer">23:59:59</div>
                     <div class="tournament-prize">Prize Pool: 100,000 coins</div>
-                    <div class="tournament-online-indicator" id="tournament-online-indicator">
-                        <span class="online-dot"></span>
-                        <span class="online-count-label">Online</span>
-                        <span class="online-count-value" id="tournament-online-count">0</span>
-                    </div>
                 </div>
                 
                 <div class="leaderboard">
@@ -272,10 +274,10 @@
                 <div class="referral-rules glass">
                     <h3>Bonuses</h3>
                     <ul>
-                        <li><span class="rule-icon">🤝</span> Invite 1 friend — <span class="highlight">+1000 coins</span></li>
-                        <li><span class="rule-icon">💎</span> 5% of your friend income — <span class="highlight">forever</span></li>
-                        <li><span class="rule-icon">🔥</span> Invite 3 friends — <span class="highlight">+100 energy</span></li>
-                        <li><span class="rule-icon">🎯</span> Invite 10 friends — <span class="highlight">+5% luck</span></li>
+                        <li><span class="rule-icon">🤝</span> Invite 1 friend — <span class="highlight">+25000 coins</span></li>
+                        <li><span class="rule-icon">💎</span> Friend income share — <span class="highlight">5% forever</span></li>
+                        <li><span class="rule-icon">👻</span> First invited friend — <span class="highlight">special skin</span></li>
+                        <li><span class="rule-icon">🛡️</span> Referral income limit — <span class="highlight">50000 per day</span></li>
                     </ul>
                 </div>
             </div>
