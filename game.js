@@ -451,11 +451,14 @@ function t(key, vars = {}) {
 const DAILY_REWARD_MAX_DAYS = 30;
 const DAILY_REWARD_BASE_COINS = 500;
 const DAILY_REWARD_SKIN_ID = 'retro.pngSP';
-const GHOST_SPAWN_CHANCE = 0.02;
-const GHOST_SPAWN_COOLDOWN_MIN_MS = 3 * 60 * 1000;
-const GHOST_SPAWN_COOLDOWN_MAX_MS = 5 * 60 * 1000;
+const GHOST_SPAWN_CHANCE = 0.003;
+const GHOST_SPAWN_COOLDOWN_MIN_MS = 8 * 60 * 1000;
+const GHOST_SPAWN_COOLDOWN_MAX_MS = 12 * 60 * 1000;
 const GHOST_BOOST_MULTIPLIER = 5;
 const GHOST_BOOST_DURATION_MS = 60 * 1000;
+const MEGA_BOOST_DURATION_MS = 60 * 1000;
+const AUTO_CLICK_DURATION_MS = 60 * 1000;
+const AUTO_CLICK_INTERVAL_MS = 55;
 const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
 const LEGACY_SKIN_ID_MAP = {
     'referral-special.pngSP': 'refferal.pngSP',
@@ -3619,7 +3622,7 @@ function activateMegaBoost() {
             if (activation?.already_active && activation.expires_at) {
                 boostEndTime = parseServerDate(activation.expires_at);
             } else {
-                boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + 5 * 60 * 1000);
+                boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
             }
             
             if (boostBtn) boostBtn.classList.add('active');
@@ -5089,7 +5092,7 @@ function initAutoClicker() {
                 });
                 updateEffect();
             }
-        }, isLitePerformanceMode() ? 140 : 100);
+        }, AUTO_CLICK_INTERVAL_MS);
     };
 
     const enableAuto = (ms) => {
@@ -5102,11 +5105,11 @@ function initAutoClicker() {
         if (!autoBtn) return;
         if (autoState.enabledUntil > Date.now()) return; // уже активен
 
-        const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(120000); };
+        const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(AUTO_CLICK_DURATION_MS); };
 
         if (typeof window.show_10655027 !== 'function') {
             showToast(tr('toasts.autoTapFallback'));
-            enableAuto(30000);
+            enableAuto(AUTO_CLICK_DURATION_MS);
             return;
         }
         showToast(tr('toasts.adLoading'));
