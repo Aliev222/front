@@ -451,6 +451,11 @@ function t(key, vars = {}) {
 const DAILY_REWARD_MAX_DAYS = 30;
 const DAILY_REWARD_BASE_COINS = 500;
 const DAILY_REWARD_SKIN_ID = 'retro.pngSP';
+const GHOST_SPAWN_CHANCE = 0.02;
+const GHOST_SPAWN_COOLDOWN_MIN_MS = 3 * 60 * 1000;
+const GHOST_SPAWN_COOLDOWN_MAX_MS = 5 * 60 * 1000;
+const GHOST_BOOST_MULTIPLIER = 5;
+const GHOST_BOOST_DURATION_MS = 60 * 1000;
 const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
 const LEGACY_SKIN_ID_MAP = {
     'referral-special.pngSP': 'refferal.pngSP',
@@ -623,6 +628,22 @@ const State = {
         serverEnergySyncedAtMs: 0,
         energyRegenMs: 5000,
         lastTapAt: 0,
+        toastLayerReady: false,
+        toastContextTimer: null,
+        toastCooldowns: {},
+        toastReferralCount: null,
+        toastAmbientLastAt: 0,
+        idleToastTimer: null,
+        idleToastShown: false,
+        rapidTapWindow: [],
+        ghostBoostActive: false,
+        ghostBoostExpiresAt: null,
+        ghostBoostInterval: null,
+        ghostSpawnVisible: false,
+        ghostNextSpawnAt: 0,
+        tournamentLastRank: null,
+        tournamentLastTopLimit: 0,
+        tournamentDropWarned: false
 
     },
     cache: new Map()
@@ -670,33 +691,369 @@ const formatNumber = (num) => {
     return num.toString();
 };
 
-const showToast = (msg, isError = false) => {
-    const oldToast = document.querySelector('.toast-message');
-    if (oldToast) oldToast.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast-message';
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: ${isError ? '#e74c3c' : '#7F49B4'};
-        color: white;
-        padding: 12px 24px;
-        border-radius: 40px;
-        font-size: 14px;
-        font-weight: 600;
-        z-index: 20000;
-        animation: toastFade 2s forwards;
-        box-shadow: 0 4px 15px rgba(127, 73, 180, 0.5);
-        white-space: nowrap;
-        border: 1px solid rgba(255,255,255,0.3);
+const AMBIENT_TOAST_VARIANTS = [
+    {
+        icon: '✨',
+        title: 'Spirit pulse',
+        body: () => `${formatNumber(State.game.profitPerHour || 0)} per hour and still climbing.`,
+        side: 'left',
+        variant: 'info'
+    },
+    {
+        icon: '⚡',
+        title: 'Charge check',
+        body: () => State.game.energy < State.game.maxEnergy * 0.28
+            ? 'Energy is running thin. One refill and the combo wakes up again.'
+            : 'Energy flow feels stable. Keep the tempo alive.',
+        side: 'left',
+        variant: 'warning'
+    },
+    {
+        icon: '🤝',
+        title: 'Crew pressure',
+        body: () => State.skins.friendsInvited > 0
+            ? `Your ${State.skins.friendsInvited} friend${State.skins.friendsInvited > 1 ? 's are' : ' is'} boosting the run.`
+            : 'Invite one friend and the squad buffs begin.',
+        side: 'right',
+        variant: 'reward'
+    },
+    {
+        icon: '👻',
+        title: 'Strange signal',
+        body: () => 'A ghost just audited your taps and said nothing. Bad sign. Good omen.',
+        side: 'right',
+        variant: 'weird',
+        rare: true
+    },
+    {
+        icon: '🫧',
+        title: 'Soft static',
+        body: () => 'The screen whispered back. Tap slower and it whispers louder.',
+        side: 'left',
+        variant: 'weird',
+        rare: true
+    },
+    {
+        icon: '🎯',
+        title: 'Focus line',
+        body: () => State.game.level > 0
+            ? `Level ${State.game.level} already looks dangerous. Keep stacking clean taps.`
+            : 'The first levels come fast. Build momentum before the grind settles.',
+        side: 'right',
+        variant: 'info'
+    }
+];
+
+const IDLE_TOAST_VARIANTS = [
+    {
+        icon: '🌙',
+        title: 'Quiet mode',
+        body: 'You went silent for a minute. The spirit is waiting for the next combo.',
+        side: 'left',
+        variant: 'info'
+    },
+    {
+        icon: '🫧',
+        title: 'Stillness',
+        body: 'No taps for 60 seconds. Even ghosts started wondering if you left.',
+        side: 'right',
+        variant: 'weird'
+    },
+    {
+        icon: '⚡',
+        title: 'Wake the run',
+        body: 'One clean tap and the whole loop starts breathing again.',
+        side: 'left',
+        variant: 'warning'
+    }
+];
+
+const FAST_TAP_TOAST_VARIANTS = [
+    {
+        icon: '⚡',
+        title: 'Fast hands',
+        body: 'Whoa. You are tapping way faster than normal.',
+        side: 'right',
+        variant: 'reward'
+    },
+    {
+        icon: '🔥',
+        title: 'Combo pace',
+        body: 'That speed is nasty. Keep that rhythm alive.',
+        side: 'left',
+        variant: 'reward'
+    },
+    {
+        icon: '💥',
+        title: 'Tap burst',
+        body: 'You just spiked the tempo hard.',
+        side: 'right',
+        variant: 'info'
+    }
+];
+
+function ensureToastLayer() {
+    if (State.temp.toastLayerReady && document.getElementById('toast-hud')) {
+        return;
+    }
+
+    const hud = document.createElement('div');
+    hud.id = 'toast-hud';
+    hud.innerHTML = `
+        <div class="toast-stack toast-stack-left" data-side="left"></div>
+        <div class="toast-stack toast-stack-right" data-side="right"></div>
     `;
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-};
+    document.body.appendChild(hud);
+    State.temp.toastLayerReady = true;
+    updateToastViewportOffset();
+}
+
+function updateToastViewportOffset() {
+    const header = document.querySelector('.header');
+    const hud = document.getElementById('toast-hud');
+    if (!hud || !header) return;
+
+    const headerRect = header.getBoundingClientRect();
+    const topOffset = Math.max(64, Math.round(headerRect.bottom + 8));
+    document.documentElement.style.setProperty('--toast-top-offset', `${topOffset}px`);
+}
+
+function escapeToastText(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function buildToastMarkup({
+    title = '',
+    body = '',
+    icon = '✨',
+    actionLabel = '',
+    variant = 'info',
+    side = 'left'
+}) {
+    return `
+        <div class="spirit-toast__ink spirit-toast__ink-${variant}"></div>
+        <div class="spirit-toast__icon">${escapeToastText(icon)}</div>
+        <div class="spirit-toast__body">
+            ${title ? `<div class="spirit-toast__title">${escapeToastText(title)}</div>` : ''}
+            <div class="spirit-toast__text">${escapeToastText(body)}</div>
+        </div>
+        ${actionLabel ? `<button class="spirit-toast__action">${escapeToastText(actionLabel)}</button>` : ''}
+        <div class="spirit-toast__tail spirit-toast__tail-${side}"></div>
+    `;
+}
+
+function clearToastCooldown(key) {
+    if (!key) return;
+    delete State.temp.toastCooldowns[key];
+}
+
+function showToast(msg, isError = false, options = {}) {
+    ensureToastLayer();
+    updateToastViewportOffset();
+
+    const normalized = typeof options === 'string' ? { title: options } : (options || {});
+    const side = normalized.side === 'right' ? 'right' : 'left';
+    const variant = normalized.variant || (isError ? 'error' : 'info');
+    const duration = normalized.duration ?? 3200;
+    const cooldownMs = normalized.cooldownMs ?? 0;
+    const cooldownKey = normalized.key || normalized.cooldownKey || null;
+    const now = Date.now();
+
+    if (cooldownKey && State.temp.toastCooldowns[cooldownKey] && State.temp.toastCooldowns[cooldownKey] > now) {
+        return null;
+    }
+    if (cooldownKey && cooldownMs > 0) {
+        State.temp.toastCooldowns[cooldownKey] = now + cooldownMs;
+    }
+
+    const stack = document.querySelector(`.toast-stack-${side}`);
+    if (!stack) return null;
+
+    const toast = document.createElement('article');
+    toast.className = `spirit-toast toast-message spirit-toast--${side} spirit-toast--${variant}`;
+    toast.innerHTML = buildToastMarkup({
+        title: normalized.title || '',
+        body: msg,
+        icon: normalized.icon || (isError ? '⚠️' : '✨'),
+        actionLabel: normalized.actionLabel || '',
+        variant,
+        side
+    });
+
+    const actionButton = toast.querySelector('.spirit-toast__action');
+    if (actionButton && typeof normalized.onAction === 'function') {
+        actionButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            normalized.onAction();
+            toast.classList.add('is-leaving');
+            setTimeout(() => toast.remove(), 240);
+        });
+    }
+
+    stack.prepend(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+
+    const removeToast = () => {
+        toast.classList.add('is-leaving');
+        setTimeout(() => {
+            toast.remove();
+            if (cooldownKey && cooldownMs <= 0) {
+                clearToastCooldown(cooldownKey);
+            }
+        }, 260);
+    };
+
+    const timer = setTimeout(removeToast, duration);
+
+    return toast;
+}
+
+function showContextToast(options) {
+    const body = typeof options.body === 'function' ? options.body() : options.body;
+    return showToast(body, false, options);
+}
+
+function maybeShowAmbientToast() {
+    if (document.hidden) return;
+    if (document.body.classList.contains('modal-open')) return;
+    if (Date.now() - State.temp.toastAmbientLastAt < 45000) return;
+
+    const rareRoll = Math.random() < 0.22;
+    const pool = AMBIENT_TOAST_VARIANTS.filter((item) => rareRoll ? item.rare : !item.rare);
+    const candidate = pool[Math.floor(Math.random() * pool.length)] || AMBIENT_TOAST_VARIANTS[0];
+    if (!candidate) return;
+
+    State.temp.toastAmbientLastAt = Date.now();
+    showContextToast({
+        ...candidate,
+        key: `ambient:${candidate.title}`,
+        cooldownMs: candidate.rare ? 120000 : 70000,
+        duration: candidate.rare ? 5200 : 4200
+    });
+}
+
+function startAmbientToastLoop() {
+    if (State.temp.toastContextTimer) {
+        clearInterval(State.temp.toastContextTimer);
+    }
+    State.temp.toastContextTimer = setInterval(maybeShowAmbientToast, 18000);
+}
+
+function maybeShowIdleToast() {
+    if (document.hidden) return;
+    if (document.body.classList.contains('modal-open')) return;
+    if (State.temp.idleToastShown) return;
+    if (!State.temp.lastTapAt) return;
+
+    const idleForMs = Date.now() - State.temp.lastTapAt;
+    if (idleForMs < 60000) return;
+
+    const variant = IDLE_TOAST_VARIANTS[Math.floor(Math.random() * IDLE_TOAST_VARIANTS.length)];
+    State.temp.idleToastShown = true;
+    showContextToast({
+        ...variant,
+        key: 'idle:minute',
+        cooldownMs: 30000,
+        duration: 4600
+    });
+}
+
+function startIdleToastLoop() {
+    if (State.temp.idleToastTimer) {
+        clearInterval(State.temp.idleToastTimer);
+    }
+    State.temp.idleToastTimer = setInterval(maybeShowIdleToast, 5000);
+}
+
+function registerTapRhythm(now, isAutoTap = false) {
+    if (isAutoTap) return;
+
+    State.temp.idleToastShown = false;
+    const windowMs = 2600;
+    const threshold = 12;
+    const taps = State.temp.rapidTapWindow || [];
+    taps.push(now);
+
+    while (taps.length && now - taps[0] > windowMs) {
+        taps.shift();
+    }
+
+    State.temp.rapidTapWindow = taps;
+
+    if (taps.length >= threshold) {
+        const variant = FAST_TAP_TOAST_VARIANTS[Math.floor(Math.random() * FAST_TAP_TOAST_VARIANTS.length)];
+        showContextToast({
+            ...variant,
+            key: 'tap:fast',
+            cooldownMs: 25000,
+            duration: 3600
+        });
+        State.temp.rapidTapWindow = [];
+    }
+}
+
+function handleReferralToast(nextCount) {
+    const previousCount = State.temp.toastReferralCount;
+    State.temp.toastReferralCount = nextCount;
+
+    if (!nextCount) return;
+    if (previousCount === null) {
+        showToast('Friends make you stronger. Their income pressure is already feeding your run.', false, {
+            title: 'Squad buff',
+            icon: '🤝',
+            side: 'left',
+            variant: 'reward',
+            key: 'friends:intro',
+            cooldownMs: 180000,
+            duration: 4200
+        });
+        return;
+    }
+    if (nextCount > previousCount) {
+        showToast(`Your crew grew to ${nextCount}. The referral flow just got louder.`, false, {
+            title: 'New friend joined',
+            icon: '💜',
+            side: 'left',
+            variant: 'reward',
+            key: 'friends:joined',
+            cooldownMs: 10000,
+            duration: 4600
+        });
+    }
+}
+
+function trackTournamentToastState(rank, topLimit) {
+    const numericRank = Number(rank) || 0;
+    const wasInTop = State.temp.tournamentLastRank > 0 &&
+        State.temp.tournamentLastTopLimit > 0 &&
+        State.temp.tournamentLastRank <= State.temp.tournamentLastTopLimit;
+    const isInTop = numericRank > 0 && topLimit > 0 && numericRank <= topLimit;
+
+    if (wasInTop && !isInTop && !State.temp.tournamentDropWarned) {
+        showToast(`You slipped out of the Top ${topLimit}. Push back in before the pool locks tighter.`, false, {
+            title: 'Tournament alert',
+            icon: '🏁',
+            side: 'right',
+            variant: 'warning',
+            key: 'tournament:drop',
+            cooldownMs: 30000,
+            duration: 5200
+        });
+        State.temp.tournamentDropWarned = true;
+    }
+
+    if (isInTop) {
+        State.temp.tournamentDropWarned = false;
+    }
+
+    State.temp.tournamentLastRank = numericRank;
+    State.temp.tournamentLastTopLimit = topLimit;
+}
 
 // ==================== ДОСТИЖЕНИЯ ====================
 const ACHIEVEMENTS_KEY = 'ryohoAchievements';
@@ -822,26 +1179,15 @@ function checkAchievements() {
 }
 
 function showAchievementNotification(achievement) {
-    const toast = document.createElement('div');
-    toast.className = 'achievement-toast';
-    toast.innerHTML = `
-        <div class="achievement-toast-icon">${achievement.icon}</div>
-        <div class="achievement-toast-info">
-            <div class="achievement-toast-title">🏆 Achievement!</div>
-            <div class="achievement-toast-name">${achievement.title}</div>
-            <div class="achievement-toast-reward">+${achievement.reward} 🪙</div>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.classList.add('show'), 100);
+    showToast(`${achievement.title} • +${formatNumber(achievement.reward)} coins`, false, {
+        title: 'Achievement unlocked',
+        icon: achievement.icon || '🏆',
+        side: 'right',
+        variant: 'reward',
+        duration: 5000
+    });
     createConfetti();
     playAchievementSound();
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
 }
 
 function playAchievementSound() {
@@ -929,6 +1275,10 @@ async function loadUserData() {
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
         State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
         State.skins.adsWatched = data.ads_watched || 0;
+        setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
+        if (data.daily_infinite_energy_expires_at) {
+            State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
+        }
         
         await loadPrices();
         await loadSkinsList();
@@ -1033,6 +1383,200 @@ function isDailyInfiniteEnergyActive() {
     const expiresAt = parseServerDate(State.daily.infiniteEnergyExpiresAt);
     if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
     return expiresAt.getTime() > Date.now();
+}
+
+function isGhostBoostActive() {
+    if (!State.temp.ghostBoostExpiresAt) return false;
+    const expiresAt = parseServerDate(State.temp.ghostBoostExpiresAt);
+    if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
+    return expiresAt.getTime() > Date.now();
+}
+
+function getRandomGhostCooldownMs() {
+    return GHOST_SPAWN_COOLDOWN_MIN_MS + Math.floor(Math.random() * (GHOST_SPAWN_COOLDOWN_MAX_MS - GHOST_SPAWN_COOLDOWN_MIN_MS + 1));
+}
+
+function scheduleNextGhostSpawn() {
+    State.temp.ghostNextSpawnAt = Date.now() + getRandomGhostCooldownMs();
+}
+
+function clearGhostBoostIndicator() {
+    document.querySelector('.ghost-boost-indicator')?.remove();
+    document.body.classList.remove('ghost-boost-active');
+    document.querySelector('.energy-bar-bg')?.classList.remove('ghost-boost-active');
+}
+
+function renderGhostBoostIndicator(expiresAt) {
+    const energyContainer = document.querySelector('.energy-bar-container');
+    if (!energyContainer) return;
+
+    let indicator = document.querySelector('.ghost-boost-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'ghost-boost-indicator';
+        energyContainer.appendChild(indicator);
+    }
+
+    const diff = Math.max(0, parseServerDate(expiresAt) - new Date());
+    const secs = Math.floor(diff / 1000);
+    indicator.textContent = `👻 x${GHOST_BOOST_MULTIPLIER} ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+}
+
+function setGhostBoostState(active, expiresAt = null) {
+    State.temp.ghostBoostActive = !!active;
+    State.temp.ghostBoostExpiresAt = active ? expiresAt : null;
+
+    if (State.temp.ghostBoostInterval) {
+        clearInterval(State.temp.ghostBoostInterval);
+        State.temp.ghostBoostInterval = null;
+    }
+
+    if (!active || !expiresAt) {
+        clearGhostBoostIndicator();
+        return;
+    }
+
+    document.body.classList.add('ghost-boost-active');
+    document.querySelector('.energy-bar-bg')?.classList.add('ghost-boost-active');
+    renderGhostBoostIndicator(expiresAt);
+
+    State.temp.ghostBoostInterval = setInterval(() => {
+        const diff = parseServerDate(State.temp.ghostBoostExpiresAt) - new Date();
+        if (diff <= 0) {
+            clearInterval(State.temp.ghostBoostInterval);
+            State.temp.ghostBoostInterval = null;
+            State.temp.ghostBoostActive = false;
+            State.temp.ghostBoostExpiresAt = null;
+            clearGhostBoostIndicator();
+            showToast('The ghost bonus faded. The screen feels normal again.', false, {
+                title: 'Ghost boost ended',
+                icon: '🌫️',
+                side: 'right',
+                variant: 'info',
+                duration: 3600
+            });
+            return;
+        }
+        renderGhostBoostIndicator(State.temp.ghostBoostExpiresAt);
+    }, 1000);
+}
+
+async function syncGhostBoostStatus() {
+    if (!userId) return;
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/ghost-boost-status/${userId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setGhostBoostState(!!data.active, data.expires_at || null);
+    } catch (err) {
+        console.error('Ghost boost status error:', err);
+    }
+}
+
+function removeLuckyGhost() {
+    document.querySelector('.lucky-ghost-event')?.remove();
+    State.temp.ghostSpawnVisible = false;
+}
+
+async function claimLuckyGhost(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const ghost = document.querySelector('.lucky-ghost-event');
+    if (ghost?.dataset.claiming === '1') return;
+    if (ghost) ghost.dataset.claiming = '1';
+
+    if (typeof window.show_10655027 !== 'function') {
+        removeLuckyGhost();
+        showToast(tr('toasts.adUnavailable'), true, {
+            title: 'Ghost escaped',
+            icon: '👻',
+            side: 'right',
+            variant: 'error'
+        });
+        return;
+    }
+
+    try {
+        showToast('Catch the ad and the ghost pays back with x5 taps and infinite energy.', false, {
+            title: 'Lucky ghost',
+            icon: '👻',
+            side: 'right',
+            variant: 'weird',
+            duration: 3200
+        });
+        await window.show_10655027();
+        const activation = await API.post('/api/activate-ghost-boost', { user_id: userId });
+        const expiresAt = activation?.expires_at || new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
+        setGhostBoostState(true, expiresAt);
+        removeLuckyGhost();
+        showToast(`x${activation?.multiplier || GHOST_BOOST_MULTIPLIER} taps and infinite energy for 1 minute.`, false, {
+            title: 'Ghost caught',
+            icon: '💥',
+            side: 'right',
+            variant: 'reward',
+            duration: 4800
+        });
+    } catch (err) {
+        console.error('Ghost claim error:', err);
+        removeLuckyGhost();
+        showToast(tr('toasts.watchError'), true, {
+            title: 'Ghost lost',
+            icon: '👻',
+            side: 'right',
+            variant: 'error'
+        });
+    }
+}
+
+function spawnLuckyGhost() {
+    if (State.temp.ghostSpawnVisible || document.hidden || document.body.classList.contains('modal-open')) return;
+
+    scheduleNextGhostSpawn();
+    State.temp.ghostSpawnVisible = true;
+
+    const ghost = document.createElement('button');
+    ghost.type = 'button';
+    ghost.className = 'lucky-ghost-event';
+
+    const minTop = Math.max(140, parseInt(getComputedStyle(document.documentElement).getPropertyValue('--toast-top-offset') || '96', 10) + 90);
+    const maxTop = Math.max(minTop + 20, window.innerHeight - 260);
+    const top = Math.round(minTop + Math.random() * Math.max(20, maxTop - minTop));
+    const left = Math.round(window.innerWidth * (0.16 + Math.random() * 0.68));
+
+    ghost.style.left = `${left}px`;
+    ghost.style.top = `${top}px`;
+    ghost.innerHTML = `
+        <span class="lucky-ghost-event__pulse"></span>
+        <span class="lucky-ghost-event__sprite">👻</span>
+        <span class="lucky-ghost-event__label">x${GHOST_BOOST_MULTIPLIER}</span>
+    `;
+    ghost.addEventListener('click', claimLuckyGhost);
+    document.body.appendChild(ghost);
+
+    showToast('A strange ghost showed up. Tap it before it fades.', false, {
+        title: 'Rare encounter',
+        icon: '👻',
+        side: 'right',
+        variant: 'weird',
+        duration: 5000
+    });
+
+    setTimeout(() => {
+        if (document.body.contains(ghost)) {
+            ghost.classList.add('is-leaving');
+            setTimeout(removeLuckyGhost, 280);
+        }
+    }, 8000);
+}
+
+function maybeSpawnLuckyGhost(isAutoTap = false) {
+    if (isAutoTap) return;
+    if (State.temp.ghostSpawnVisible) return;
+    if (isGhostBoostActive()) return;
+    if (Date.now() < (State.temp.ghostNextSpawnAt || 0)) return;
+    if (Math.random() > GHOST_SPAWN_CHANCE) return;
+    spawnLuckyGhost();
 }
 
 function getDailyRewardMeta(day) {
@@ -1307,6 +1851,7 @@ async function sendClickBatch() {
             State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
+            setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
 
             applyServerEnergySnapshot(data);
             updateUI();
@@ -1345,6 +1890,7 @@ function handleTap(e) {
     const megaBoostActive =
         document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
     const dailyInfiniteEnergyActive = isDailyInfiniteEnergyActive();
+    const ghostBoostActive = isGhostBoostActive();
 
     let previewGain = State.game.profitPerTap;
 
@@ -1356,13 +1902,18 @@ function handleTap(e) {
     if (megaBoostActive) {
         previewGain *= 2;
     }
+    if (ghostBoostActive) {
+        previewGain *= GHOST_BOOST_MULTIPLIER;
+    }
 
     previewGain = Math.floor(previewGain) || 1;
 
-    State.temp.lastTapAt = Date.now();
+    const tapTime = Date.now();
+    State.temp.lastTapAt = tapTime;
+    registerTapRhythm(tapTime, isAutoTap);
 
     // СНАЧАЛА проверяем энергию
-    if (!megaBoostActive && !dailyInfiniteEnergyActive) {
+    if (!megaBoostActive && !dailyInfiniteEnergyActive && !ghostBoostActive) {
         const currentVisualEnergy = getVisualEnergy();
 
         if (currentVisualEnergy < 1) {
@@ -1380,6 +1931,7 @@ function handleTap(e) {
     State.temp.clickBuffer += 1;
     State.temp.clickValueBuffer += previewGain;
     State.game.coins += previewGain;
+    maybeSpawnLuckyGhost(isAutoTap);
 
     trackAchievementProgress('clicks', 1);
     checkAchievements();
@@ -1404,9 +1956,9 @@ function handleTap(e) {
     State.temp.tapPoolIdx++;
     const effect = pool[idx];
     const isNightMode = document.body.classList.contains('night-mode');
-    const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive;
-    const tapColor = boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4');
-    const tapGlow = boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4');
+    const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
+    const tapColor = ghostBoostActive ? '#9CEBFF' : (boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4'));
+    const tapGlow = ghostBoostActive ? 'rgba(156,235,255,0.95)' : (boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4'));
     effect.style.left = `${clientX}px`;
     effect.style.top = `${clientY}px`;
     effect.style.transform = 'translate(-50%, -50%)';
@@ -1414,7 +1966,7 @@ function handleTap(e) {
     effect.style.fontSize = isAutoTap ? '22px' : '28px';
     effect.style.fontWeight = isAutoTap ? '700' : 'bold';
     effect.style.textShadow = `0 0 10px ${tapGlow}`;
-    effect.textContent = boostVisualActive ? `+${previewGain} 🔥` : `+${previewGain}`;
+    effect.textContent = ghostBoostActive ? `+${previewGain} 👻` : (boostVisualActive ? `+${previewGain} 🔥` : `+${previewGain}`);
     effect.style.animation = 'none';
     effect.style.opacity = '1';
     effect.offsetWidth;
@@ -1432,8 +1984,8 @@ function handleTap(e) {
             osc.connect(gainNode);
             gainNode.connect(window.audioCtx.destination);
             osc.type = boostVisualActive ? 'sawtooth' : 'sine';
-            osc.frequency.setValueAtTime(boostVisualActive ? 800 : (isAutoTap ? 560 : 650), now);
-            osc.frequency.exponentialRampToValueAtTime(boostVisualActive ? 400 : (isAutoTap ? 420 : 450), now + (isAutoTap ? 0.08 : 0.1));
+            osc.frequency.setValueAtTime(ghostBoostActive ? 980 : (boostVisualActive ? 800 : (isAutoTap ? 560 : 650)), now);
+            osc.frequency.exponentialRampToValueAtTime(ghostBoostActive ? 540 : (boostVisualActive ? 400 : (isAutoTap ? 420 : 450)), now + (isAutoTap ? 0.08 : 0.1));
             gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
             gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
             osc.start(now);
@@ -2569,6 +3121,7 @@ async function loadReferralData() {
         document.getElementById('referral-earnings').textContent = data.earnings || 0;
         
         State.skins.friendsInvited = data.count || 0;
+        handleReferralToast(State.skins.friendsInvited);
         State.skins.data.forEach((skin) => {
             if (skin.requirement?.type === 'friends') {
                 skin.requirement.current = State.skins.friendsInvited || 0;
@@ -2911,6 +3464,7 @@ async function loadTournamentData() {
                 playerScore: rankData.score,
                 timeLeft: leaderboardData.time_left
             });
+            trackTournamentToastState(rankData.rank, Array.isArray(leaderboardData.players) ? leaderboardData.players.length : 0);
             startTournamentTimer(leaderboardData.time_left);
         }
     } catch (err) {
@@ -3151,6 +3705,7 @@ async function checkBoostStatus() {
                 }, 200);
             }
         }
+        await syncGhostBoostStatus();
     } catch (err) {
         console.error('Boost status error:', err);
     }
@@ -4244,6 +4799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     applyPerformanceMode();
     applyStaticTranslations();
+    ensureToastLayer();
+    updateToastViewportOffset();
     loadAchievementsFromStorage();
     loadSettings();
     initBgm();
@@ -4264,8 +4821,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupGlobalClickHandler();
     setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
     setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
+    startAmbientToastLoop();
+    State.temp.lastTapAt = Date.now();
+    startIdleToastLoop();
     applySavedSkin();
-    window.addEventListener('resize', applyPerformanceMode);
+    window.addEventListener('resize', () => {
+        applyPerformanceMode();
+        updateToastViewportOffset();
+    });
 
     console.log('✅ Spirit Clicker ready');
 });
