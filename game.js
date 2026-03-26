@@ -1055,11 +1055,9 @@ function renderDailyRewardButton() {
     const button = document.getElementById('dailyRewardsButton');
     if (!button) return;
     const dot = button.querySelector('.daily-gift-dot');
-    const badge = button.querySelector('.daily-gift-badge');
     button.title = State.daily.claimAvailable ? t('daily.ready') : t('daily.wait');
     button.classList.toggle('ready', !!State.daily.claimAvailable);
     if (dot) dot.style.display = State.daily.claimAvailable ? 'block' : 'none';
-    if (badge) badge.textContent = Math.min(State.daily.nextDay || 1, DAILY_REWARD_MAX_DAYS);
 }
 
 function renderDailyRewardsModal() {
@@ -2980,9 +2978,9 @@ function showEnergyRecoveryModal() {
         <div class="modal-content glass">
             <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
             <h3>${UI_LANG === 'ru' ? '⚡ Энергия закончилась!' : '⚡ Energy is empty!'}</h3>
-            <p>${UI_LANG === 'ru' ? 'Посмотри рекламу и получи +50 энергии' : 'Watch an ad and get +50 energy'}</p>
+            <p>${UI_LANG === 'ru' ? 'Посмотри рекламу и восстанови энергию до максимума' : 'Watch an ad and restore energy to maximum'}</p>
             <button class="btn-primary" onclick="recoverEnergyWithAd()">
-                ${UI_LANG === 'ru' ? '📺 Смотреть рекламу' : '📺 Watch ad'}
+                ${UI_LANG === 'ru' ? '📺 Восстановить максимум' : '📺 Restore to max'}
             </button>
             <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
                 ${UI_LANG === 'ru' ? '⏳ Подождать' : '⏳ Wait'}
