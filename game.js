@@ -24,7 +24,7 @@ let username = null;
 let referrerId = null;
 const telegramInitData = tg?.initData || '';
 const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
-const UI_LANG = telegramLanguage.startsWith('ru') ? 'ru' : 'en';
+const UI_LANG = 'en';
 
 const I18N = {
     en: {
@@ -701,24 +701,24 @@ const showToast = (msg, isError = false) => {
 // ==================== ДОСТИЖЕНИЯ ====================
 const ACHIEVEMENTS_KEY = 'ryohoAchievements';
 const ACHIEVEMENTS = [
-    { id: 'click_100',    title: 'Разогрев',           description: 'Сделай 100 кликов',     icon: '👆', condition: (s) => s.clicks >= 100,    reward: 1000 },
-    { id: 'click_500',    title: 'Ритм',               description: 'Сделай 500 кликов',     icon: '👆', condition: (s) => s.clicks >= 500,    reward: 2000 },
-    { id: 'click_1000',   title: 'Опытный кликер',     description: 'Сделай 1000 кликов',    icon: '👆', condition: (s) => s.clicks >= 1000,   reward: 5000 },
-    { id: 'click_5000',   title: 'Поток',              description: 'Сделай 5000 кликов',    icon: '🚀', condition: (s) => s.clicks >= 5000,   reward: 12000 },
-    { id: 'click_25000',  title: 'Мастер кликов',      description: 'Сделай 25000 кликов',   icon: '👑', condition: (s) => s.clicks >= 25000,  reward: 40000 },
+    { id: 'click_100',    title: 'Warm Up',            description: 'Make 100 taps',         icon: '👆', condition: (s) => s.clicks >= 100,    reward: 1000 },
+    { id: 'click_500',    title: 'Rhythm',             description: 'Make 500 taps',         icon: '👆', condition: (s) => s.clicks >= 500,    reward: 2000 },
+    { id: 'click_1000',   title: 'Experienced Clicker',description: 'Make 1000 taps',        icon: '👆', condition: (s) => s.clicks >= 1000,   reward: 5000 },
+    { id: 'click_5000',   title: 'Flow',               description: 'Make 5000 taps',        icon: '🚀', condition: (s) => s.clicks >= 5000,   reward: 12000 },
+    { id: 'click_25000',  title: 'Tap Master',         description: 'Make 25000 taps',       icon: '👑', condition: (s) => s.clicks >= 25000,  reward: 40000 },
 
-    { id: 'upgrade_5',    title: 'Инженер',            description: 'Купи 5 улучшений',      icon: '🛠️', condition: (s) => s.upgrades >= 5,   reward: 2000 },
-    { id: 'upgrade_15',   title: 'Архитектор',         description: 'Купи 15 улучшений',     icon: '🧰', condition: (s) => s.upgrades >= 15,  reward: 8000 },
-    { id: 'upgrade_30',   title: 'Системный',          description: 'Купи 30 улучшений',     icon: '⬆️', condition: (s) => s.upgrades >= 30,  reward: 20000 },
+    { id: 'upgrade_5',    title: 'Engineer',           description: 'Buy 5 upgrades',        icon: '🛠️', condition: (s) => s.upgrades >= 5,   reward: 2000 },
+    { id: 'upgrade_15',   title: 'Architect',          description: 'Buy 15 upgrades',       icon: '🧰', condition: (s) => s.upgrades >= 15,  reward: 8000 },
+    { id: 'upgrade_30',   title: 'System Builder',     description: 'Buy 30 upgrades',       icon: '⬆️', condition: (s) => s.upgrades >= 30,  reward: 20000 },
 
-    { id: 'games_10',     title: 'Игрок',              description: 'Сыграй 10 мини-игр',    icon: '🎮', condition: (s) => s.games >= 10,     reward: 3000 },
-    { id: 'games_30',     title: 'Стример',            description: 'Сыграй 30 мини-игр',    icon: '🎬', condition: (s) => s.games >= 30,     reward: 12000 },
+    { id: 'games_10',     title: 'Player',             description: 'Play 10 mini-games',    icon: '🎮', condition: (s) => s.games >= 10,     reward: 3000 },
+    { id: 'games_30',     title: 'Streamer',           description: 'Play 30 mini-games',    icon: '🎬', condition: (s) => s.games >= 30,     reward: 12000 },
 
-    { id: 'referral_1',   title: 'Первый друг',        description: 'Пригласи 1 друга',      icon: '🤝', condition: (s) => s.referrals >= 1,  reward: 2000 },
-    { id: 'referral_5',   title: 'Популярный',         description: 'Пригласи 5 друзей',     icon: '👥', condition: (s) => s.referrals >= 5,  reward: 10000 },
-    { id: 'referral_15',  title: 'Амбассадор',         description: 'Пригласи 15 друзей',    icon: '🌐', condition: (s) => s.referrals >= 15, reward: 25000 },
+    { id: 'referral_1',   title: 'First Friend',       description: 'Invite 1 friend',       icon: '🤝', condition: (s) => s.referrals >= 1,  reward: 2000 },
+    { id: 'referral_5',   title: 'Popular',            description: 'Invite 5 friends',      icon: '👥', condition: (s) => s.referrals >= 5,  reward: 10000 },
+    { id: 'referral_15',  title: 'Ambassador',         description: 'Invite 15 friends',     icon: '🌐', condition: (s) => s.referrals >= 15, reward: 25000 },
 
-    { id: 'ads_5',        title: 'Поддержал игру',     description: 'Посмотри 5 видео',      icon: '🎥', condition: (s) => s.adsWatched >= 5, reward: 5000 }
+    { id: 'ads_5',        title: 'Supporter',          description: 'Watch 5 videos',        icon: '🎥', condition: (s) => s.adsWatched >= 5, reward: 5000 }
 ];
 
 function loadAchievementsFromStorage() {
@@ -827,7 +827,7 @@ function showAchievementNotification(achievement) {
     toast.innerHTML = `
         <div class="achievement-toast-icon">${achievement.icon}</div>
         <div class="achievement-toast-info">
-            <div class="achievement-toast-title">🏆 Достижение!</div>
+            <div class="achievement-toast-title">🏆 Achievement!</div>
             <div class="achievement-toast-name">${achievement.title}</div>
             <div class="achievement-toast-reward">+${achievement.reward} 🪙</div>
         </div>
@@ -1046,8 +1046,7 @@ function getDailyRewardMeta(day) {
         isEnergyDay,
         isFinalDay,
         title: isEnergyDay ? t('daily.infiniteEnergy') : t('daily.coins'),
-        primary: isEnergyDay ? `∞ ${t('daily.infiniteEnergyDesc')}` : `+${formatNumber(coins)}`,
-        secondary: isFinalDay ? '+ skin' : `+${formatNumber(coins)}`
+        primary: isEnergyDay ? `∞ ${t('daily.infiniteEnergyDesc')}` : `+${formatNumber(coins)}`
     };
 }
 
@@ -1096,7 +1095,6 @@ function renderDailyRewardsModal() {
                 <div class="daily-card-day">${t('daily.day', { day: meta.day })}</div>
                 <div class="daily-card-title">${meta.title}</div>
                 <div class="daily-card-value">${meta.primary}</div>
-                <div class="daily-card-sub">${meta.isFinalDay ? t('daily.finalName') : meta.secondary}</div>
             </div>
         `;
     }).join('');
@@ -2054,51 +2052,51 @@ function playUpgradeSound() {
 const VIDEO_TASKS = [
     {
         id: 'energy_full',
-        title: 'Полная энергия',
-        description: 'Восстанови запас энергии до 100%',
+        title: 'Full Energy',
+        description: 'Restore energy to 100%',
         reward: '⚡ FULL',
         icon: '⚡',
         type: 'energy_full',
         cooldown: 10,
         lastUsed: null,
         category: 'energy',
-        tag: 'энергия',
+        tag: 'energy',
         completed: false,
         available: true
     },
     {
         id: 'coins_rush',
-        title: 'Монетный дождь',
-        description: 'Сразу получи +1 500 монет',
+        title: 'Coin Rush',
+        description: 'Get +1,500 coins instantly',
         reward: 1500,
         icon: '💰',
         type: 'coins',
         cooldown: 8,
         lastUsed: null,
         category: 'coins',
-        tag: 'коины',
+        tag: 'coins',
         completed: false,
         available: true
     },
     {
         id: 'coins_jackpot',
-        title: 'Джекпот',
-        description: '+8 000 монет раз в 45 минут',
+        title: 'Jackpot',
+        description: '+8,000 coins every 45 minutes',
         reward: 8000,
         icon: '🏆',
         type: 'coins',
         cooldown: 45,
         lastUsed: null,
         category: 'coins',
-        tag: 'джекпот',
+        tag: 'jackpot',
         completed: false,
         available: true
     },
     {
         id: 'boost_combo',
-        title: 'Комбо-ускорение',
-        description: 'x2 доход на 7 минут после просмотра',
-        reward: 'x2 • 7 мин',
+        title: 'Combo Boost',
+        description: 'x2 income for 7 minutes after watching',
+        reward: 'x2 • 7 min',
         icon: '🚀',
         type: 'boost',
         boost_multiplier: 2,
@@ -2106,14 +2104,14 @@ const VIDEO_TASKS = [
         cooldown: 30,
         lastUsed: null,
         category: 'boost',
-        tag: 'баф',
+        tag: 'buff',
         completed: false,
         available: true
     },
     {
         id: 'skin_drop',
-        title: 'Дроп скина',
-        description: 'Редкий скин за просмотр (1 раз в час)',
+        title: 'Skin Drop',
+        description: 'Rare skin for watching (once per hour)',
         reward: '🎁 Rare drop',
         icon: '🎁',
         type: 'skin',
@@ -2121,7 +2119,7 @@ const VIDEO_TASKS = [
         cooldown: 60,
         lastUsed: null,
         category: 'skins',
-        tag: 'скин',
+        tag: 'skin',
         completed: false,
         available: true
     }
@@ -2168,10 +2166,10 @@ function renderSocialTasksMarkup() {
         const isCompleted = state.completed;
         const canClaim = state.started && !state.completed;
         const actionLabel = isCompleted
-            ? (UI_LANG === 'ru' ? 'Получено' : 'Claimed')
+            ? 'Claimed'
             : canClaim
-                ? (UI_LANG === 'ru' ? 'Получить' : 'Claim')
-                : (UI_LANG === 'ru' ? 'Подписаться' : 'Subscribe');
+                ? 'Claim'
+                : 'Subscribe';
         const actionHandler = isCompleted
             ? ''
             : canClaim
@@ -2190,8 +2188,8 @@ function renderSocialTasksMarkup() {
                     <span class="task-reward-pill task-reward-pill-simple">+20K + Skin</span>
                 </div>
                 <div class="task-copy-simple">
-                    <div class="task-title">${UI_LANG === 'ru' ? `Подпишись на ${task.name}` : `Follow ${task.name}`}</div>
-                    <div class="task-desc">${UI_LANG === 'ru' ? '20 000 монет и эксклюзивный скин за подписку' : '20,000 coins and an exclusive skin reward'}</div>
+                    <div class="task-title">${`Follow ${task.name}`}</div>
+                    <div class="task-desc">20,000 coins and an exclusive skin reward</div>
                 </div>
                 <div class="task-actions-simple">
                     <div class="social-task-preview">
@@ -2458,7 +2456,7 @@ function giveRandomReward() {
             break;
         case 'energy':
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
-            showToast(UI_LANG === 'ru' ? `🎁 +${random.value} энергии!` : `🎁 +${random.value} energy!`);
+            showToast(`🎁 +${random.value} energy!`);
             break;
         case 'boost':
             activateCustomBoost(random.multiplier, random.minutes);
@@ -2476,7 +2474,7 @@ function activateCustomBoost(multiplier, minutes) {
     
     // Увеличиваем доход
     State.game.profitPerTap *= multiplier;
-    showToast(UI_LANG === 'ru' ? `🔥 x${multiplier} на ${minutes} минут!` : `🔥 x${multiplier} for ${minutes} min!`);
+    showToast(`🔥 x${multiplier} for ${minutes} min!`);
     
     // Возвращаем обратно через N минут
     setTimeout(() => {
@@ -2603,7 +2601,7 @@ function shareReferral() {
         showToast(tr('toasts.linkNotLoaded'), true);
         return;
     }
-    const shareText = UI_LANG === 'ru' ? '🎮 Присоединяйся к Spirit Clicker!' : '🎮 Join Spirit Clicker!';
+    const shareText = '🎮 Join Spirit Clicker!';
     window.open(`https://t.me/share/url?url=${encodeURIComponent(linkText)}&text=${encodeURIComponent(shareText)}`, '_blank');
 }
 
@@ -2740,10 +2738,10 @@ function applyStaticTranslations() {
         ['#games-screen .game-card:nth-child(5) .game-enter', 'games.openBox'],
         ['#games-screen .game-card:nth-child(6) .game-enter', 'games.chaseMultiplier'],
         ['#settings-screen h2', 'gameModals.settings'],
-        ['#settings-screen .settings-section:nth-of-type(1) .settings-title', 'gameModals.theme'],
-        ['#settings-screen .settings-section:nth-of-type(2) .settings-title', 'gameModals.sound'],
-        ['#settings-screen .settings-section:nth-of-type(3) .settings-title', 'gameModals.music'],
-        ['#settings-screen .settings-section:nth-of-type(4) .settings-title', 'gameModals.vibration'],
+        ['#settings-screen .settings-section:nth-of-type(2) .settings-title', 'gameModals.theme'],
+        ['#settings-screen .settings-section:nth-of-type(3) .settings-title', 'gameModals.sound'],
+        ['#settings-screen .settings-section:nth-of-type(4) .settings-title', 'gameModals.music'],
+        ['#settings-screen .settings-section:nth-of-type(5) .settings-title', 'gameModals.vibration'],
         ['#confirm-modal-title', 'gameModals.chooseAction'],
         ['#confirm-skin-name', 'skins.name'],
         ['#confirm-skin-desc', 'skins.description'],
@@ -2977,13 +2975,13 @@ function showEnergyRecoveryModal() {
     modal.innerHTML = `
         <div class="modal-content glass">
             <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
-            <h3>${UI_LANG === 'ru' ? '⚡ Энергия закончилась!' : '⚡ Energy is empty!'}</h3>
-            <p>${UI_LANG === 'ru' ? 'Посмотри рекламу и восстанови энергию до максимума' : 'Watch an ad and restore energy to maximum'}</p>
+            <h3>⚡ Energy is empty!</h3>
+            <p>Watch an ad and restore energy to maximum</p>
             <button class="btn-primary" onclick="recoverEnergyWithAd()">
-                ${UI_LANG === 'ru' ? '📺 Восстановить максимум' : '📺 Restore to max'}
+                📺 Restore to max
             </button>
             <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
-                ${UI_LANG === 'ru' ? '⏳ Подождать' : '⏳ Wait'}
+                ⏳ Wait
             </button>
         </div>
     `;
@@ -3108,7 +3106,7 @@ function showBoostIndicator() {
     if (energyContainer) {
         const indicator = document.createElement('div');
         indicator.className = 'mega-boost-indicator';
-        indicator.innerHTML = UI_LANG === 'ru' ? '🔥 МЕГА БУСТ АКТИВЕН 🔥' : '🔥 MEGA BOOST ACTIVE 🔥';
+        indicator.innerHTML = '🔥 MEGA BOOST ACTIVE 🔥';
         energyContainer.appendChild(indicator);
     }
 }
