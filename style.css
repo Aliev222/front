@@ -6797,8 +6797,8 @@ body.night-mode #achievements-screen .achievements-modal {
 
 .daily-modal-shell {
     width: min(96vw, 560px) !important;
-    height: min(94vh, 900px) !important;
-    max-height: min(94vh, 900px) !important;
+    height: min(92vh, 860px) !important;
+    max-height: min(92vh, 860px) !important;
     border-radius: 34px !important;
     overflow: hidden !important;
     display: flex !important;
@@ -6827,27 +6827,27 @@ body.night-mode #achievements-screen .achievements-modal {
     overflow-y: auto !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 14px !important;
-    padding-bottom: 18px !important;
+    gap: 10px !important;
+    padding-bottom: 14px !important;
 }
 
 .daily-summary-card {
     margin: 0 18px;
-    padding: 16px 18px;
-    border-radius: 20px;
+    padding: 12px 14px;
+    border-radius: 16px;
     background: rgba(127, 73, 180, 0.08);
     border: 1px solid rgba(127, 73, 180, 0.1);
 }
 
 .daily-summary-line {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
 }
 
 .daily-summary-line.subtle {
-    margin-top: 6px;
-    font-size: 14px;
+    margin-top: 4px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-dim);
 }
@@ -6855,28 +6855,28 @@ body.night-mode #achievements-screen .achievements-modal {
 .daily-claim-btn {
     width: calc(100% - 36px) !important;
     margin: 0 18px !important;
-    min-height: 52px !important;
-    border-radius: 18px !important;
+    min-height: 46px !important;
+    border-radius: 16px !important;
 }
 
 .daily-reward-track {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     padding: 0 18px;
     overflow: visible;
 }
 
 .daily-reward-card {
-    min-height: 102px;
-    padding: 16px;
-    border-radius: 22px;
+    min-height: 82px;
+    padding: 12px 13px;
+    border-radius: 18px;
     background: rgba(255, 255, 255, 0.94);
     border: 1px solid rgba(127, 73, 180, 0.12);
-    box-shadow: 0 10px 24px rgba(127, 73, 180, 0.06);
+    box-shadow: 0 8px 18px rgba(127, 73, 180, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 body.night-mode .daily-reward-card {
@@ -6893,7 +6893,7 @@ body.night-mode .daily-reward-card {
 }
 
 .daily-card-day {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
     color: #9aa0b2;
     text-transform: uppercase;
@@ -6902,32 +6902,32 @@ body.night-mode .daily-reward-card {
 
 .daily-card-title {
     font-family: 'Space Mono', monospace;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-primary);
 }
 
 .daily-card-value {
-    font-size: 30px;
+    font-size: 22px;
     font-weight: 800;
     color: #6c5ce7;
 }
 
 .daily-card-sub {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-dim);
 }
 
 .daily-skin-teaser {
     margin: 0 18px 4px;
-    padding: 12px 14px;
-    border-radius: 20px;
+    padding: 10px 12px;
+    border-radius: 16px;
     background: #ffffff;
     border: 1.5px solid rgba(127, 73, 180, 0.22);
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 92px;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) 78px;
+    gap: 8px;
     align-items: center;
     position: sticky;
     bottom: 0;
@@ -6941,7 +6941,7 @@ body.night-mode .daily-skin-teaser {
 }
 
 .daily-skin-kicker {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     color: #9aa0b2;
@@ -6949,17 +6949,17 @@ body.night-mode .daily-skin-teaser {
 }
 
 .daily-skin-title {
-    margin-top: 4px;
+    margin-top: 2px;
     font-family: 'Space Mono', monospace;
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 800;
     color: #5f5ce6;
 }
 
 .daily-skin-desc {
-    margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.35;
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.28;
     color: var(--text-dim);
 }
 
@@ -6971,11 +6971,109 @@ body.night-mode .daily-skin-teaser {
 
 .daily-skin-preview img {
     width: 100%;
-    max-width: 88px;
+    max-width: 72px;
     aspect-ratio: 1;
     object-fit: contain;
     display: block;
     filter: drop-shadow(0 10px 18px rgba(127, 73, 180, 0.22));
+}
+
+/* COMPACT TASKS MODAL HEADER */
+#tasks-screen .tasks-modal-shell {
+    max-height: min(90vh, 820px) !important;
+}
+
+#tasks-screen .modal-header-premium {
+    gap: 10px !important;
+    margin-bottom: 8px !important;
+}
+
+#tasks-screen .modal-header-copy {
+    gap: 2px !important;
+}
+
+#tasks-screen .modal-kicker {
+    font-size: 9px !important;
+    letter-spacing: 1.2px !important;
+}
+
+#tasks-screen .modal-header h2 {
+    font-size: clamp(21px, 5.2vw, 28px) !important;
+    line-height: 0.96 !important;
+}
+
+#tasks-screen .tasks-hero {
+    gap: 10px !important;
+    padding: 10px 12px 12px !important;
+    margin-bottom: 8px !important;
+    border-radius: 18px !important;
+}
+
+#tasks-screen .tasks-hero-copy {
+    gap: 4px !important;
+}
+
+#tasks-screen .tasks-hero-title {
+    font-size: 13px !important;
+    line-height: 1.12 !important;
+}
+
+#tasks-screen .tasks-hero-subtitle {
+    font-size: 11px !important;
+    line-height: 1.28 !important;
+}
+
+#tasks-screen .tasks-hero-badge {
+    min-width: 84px !important;
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+    gap: 2px !important;
+}
+
+#tasks-screen .tasks-hero-badge-label {
+    font-size: 9px !important;
+}
+
+#tasks-screen .tasks-hero-badge-value {
+    font-size: 12px !important;
+}
+
+#tasks-screen .tasks-modal-content {
+    padding-top: 0 !important;
+}
+
+#tasks-screen .tasks-list {
+    gap: 10px !important;
+}
+
+@media (max-width: 480px), (max-height: 820px) {
+    #tasks-screen .tasks-modal-shell {
+        max-height: min(89vh, 760px) !important;
+    }
+
+    #tasks-screen .modal-header-premium {
+        margin-bottom: 6px !important;
+    }
+
+    #tasks-screen .tasks-hero {
+        padding: 8px 10px 10px !important;
+        margin-bottom: 6px !important;
+        gap: 8px !important;
+    }
+
+    #tasks-screen .tasks-hero-title {
+        font-size: 12px !important;
+    }
+
+    #tasks-screen .tasks-hero-subtitle {
+        font-size: 10px !important;
+        line-height: 1.22 !important;
+    }
+
+    #tasks-screen .tasks-hero-badge {
+        min-width: 74px !important;
+        padding: 7px 8px !important;
+    }
 }
 
 .social-task-card {
