@@ -471,7 +471,8 @@ const SOCIAL_TASKS = [
         icon: '📣',
         image: 'imgg/skins/telega.png',
         colorClass: 'telegram',
-        link: 'https://t.me/your_channel'
+        link: 'https://t.me/Spirit_cliker',
+        verifyMode: 'telegram'
     },
     {
         id: 'tiktok_sub',
@@ -479,7 +480,7 @@ const SOCIAL_TASKS = [
         icon: '🎵',
         image: 'imgg/skins/tiktok.png',
         colorClass: 'tiktok',
-        link: 'https://www.tiktok.com/@your_account'
+        link: 'https://www.tiktok.com/@spirit.cliker?_r=1&_t=ZG-94zyH9Al2Fl'
     },
     {
         id: 'instagram_sub',
@@ -487,7 +488,7 @@ const SOCIAL_TASKS = [
         icon: '📸',
         image: 'imgg/skins/insta.png',
         colorClass: 'instagram',
-        link: 'https://www.instagram.com/your_account/'
+        link: 'https://www.instagram.com/spirit_cliker/'
     }
 ];
 
@@ -2717,10 +2718,11 @@ function renderSocialTasksMarkup() {
         const state = State.tasks.social[task.id] || { started: false, completed: false };
         const isCompleted = state.completed;
         const canClaim = state.started && !state.completed;
+        const requiresVerify = task.verifyMode === 'telegram';
         const actionLabel = isCompleted
             ? 'Claimed'
             : canClaim
-                ? 'Claim'
+                ? (requiresVerify ? 'Verify' : 'Claim')
                 : 'Subscribe';
         const actionHandler = isCompleted
             ? ''
@@ -2728,20 +2730,25 @@ function renderSocialTasksMarkup() {
                 ? `onclick="claimSocialTask('${task.id}')"`
                 : `onclick="startSocialTask('${task.id}')"`
         ;
+        const statusCopy = isCompleted
+            ? 'Reward received'
+            : canClaim
+                ? (requiresVerify ? 'Join the channel and tap verify' : 'Open the page, then claim the reward')
+                : '20,000 coins and an exclusive skin reward';
 
         return `
-            <div class="task-card task-card-simple social-task-card social-${task.colorClass}">
+            <div class="task-card task-card-simple social-task-card social-${task.colorClass} ${isCompleted ? 'is-claimed is-inactive' : ''}">
                 <div class="social-task-head">
                     <div class="social-task-brand">
                         <span class="social-task-icon">${task.icon}</span>
-                        <span class="social-task-dot"></span>
+                        <span class="social-task-dot ${isCompleted ? 'is-off' : ''}"></span>
                         <span class="social-task-name">${task.name}</span>
                     </div>
-                    <span class="task-reward-pill task-reward-pill-simple">+20K + Skin</span>
+                    <span class="task-reward-pill task-reward-pill-simple">${isCompleted ? 'Done' : '+20K + Skin'}</span>
                 </div>
                 <div class="task-copy-simple">
                     <div class="task-title">${`Follow ${task.name}`}</div>
-                    <div class="task-desc">20,000 coins and an exclusive skin reward</div>
+                    <div class="task-desc">${statusCopy}</div>
                 </div>
                 <div class="task-actions-simple">
                     <div class="social-task-preview">
@@ -2808,7 +2815,11 @@ async function claimSocialTask(taskId) {
 
         updateUI();
         renderVideoTasks();
-        showToast(response.message || '✅ Reward claimed!');
+        showToast(response.message || '✅ Reward claimed!', false, {
+            title: taskId === 'telegram_sub' ? 'Verified reward' : 'Reward claimed',
+            variant: 'reward',
+            side: taskId === 'telegram_sub' ? 'right' : 'left'
+        });
     } catch (err) {
         showToast(err?.detail || tr('toasts.serverError'), true);
     }

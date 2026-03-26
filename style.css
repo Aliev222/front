@@ -7079,6 +7079,16 @@ body.night-mode .daily-skin-teaser {
 .social-task-card {
     position: relative;
     overflow: hidden;
+    transition: opacity 0.22s ease, transform 0.22s ease, filter 0.22s ease;
+}
+
+.social-task-card.is-claimed {
+    opacity: 0.68;
+    filter: saturate(0.82);
+}
+
+.social-task-card.is-inactive {
+    pointer-events: none;
 }
 
 .social-task-head {
@@ -7109,6 +7119,12 @@ body.night-mode .daily-skin-teaser {
     animation: socialDotPulse 1.35s ease-in-out infinite;
 }
 
+.social-task-dot.is-off {
+    background: rgba(134, 139, 153, 0.72);
+    box-shadow: none;
+    animation: none;
+}
+
 @keyframes socialDotPulse {
     0%, 100% { opacity: 0.45; transform: scale(0.9); }
     50% { opacity: 1; transform: scale(1.12); }
@@ -7130,6 +7146,17 @@ body.night-mode .daily-skin-teaser {
     width: 78%;
     height: 78%;
     object-fit: contain;
+}
+
+.social-task-card.is-claimed .social-task-preview {
+    border-color: rgba(127, 73, 180, 0.18);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.social-task-card.is-claimed .social-action {
+    background: linear-gradient(135deg, rgba(123, 123, 131, 0.9), rgba(146, 146, 156, 0.9)) !important;
+    color: #fff !important;
+    box-shadow: none !important;
 }
 
 .social-action.social-telegram,
