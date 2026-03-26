@@ -85,6 +85,21 @@ const I18N = {
             liveReward: 'Live reward',
             coinsSuffix: 'coins'
         },
+        daily: {
+            title: 'Daily Rewards',
+            subtitle: 'Login streak',
+            ready: 'Claim reward',
+            wait: 'Come back tomorrow',
+            todayClaimed: 'Today reward has already been claimed.',
+            nextReward: 'Next reward is day {day}.',
+            day: 'Day {day}',
+            coins: 'Coins',
+            infiniteEnergy: 'Infinite energy',
+            infiniteEnergyDesc: '10 minutes',
+            finalTitle: 'Day 30 reward',
+            finalName: 'Exclusive skin',
+            finalDesc: 'Log in for all 30 days to unlock the final skin bonus.'
+        },
         games: {
             title: 'Mini-Games',
             kicker: 'Neon Casino',
@@ -185,8 +200,7 @@ const I18N = {
             coins_rush: { title: 'Coin rush', description: 'Get +1,500 coins instantly', tag: 'coins' },
             coins_jackpot: { title: 'Jackpot', description: '+8,000 coins every 45 minutes', tag: 'jackpot' },
             boost_combo: { title: 'Combo boost', description: 'x2 income for 7 minutes after watching', tag: 'buff', reward: 'x2 • 7 min' },
-            skin_drop: { title: 'Skin drop', description: 'Rare skin for watching (once per hour)', tag: 'skin', reward: '🎁 Rare drop' },
-            reset_tasks: { title: 'Task reset', description: 'Refreshes cooldowns for all tasks', tag: 'utility', reward: '♻ reset' }
+            skin_drop: { title: 'Skin drop', description: 'Rare skin for watching (once per hour)', tag: 'skin', reward: '🎁 Rare drop' }
         },
         minigames: {
             coinflipSpinning: '🪙 Flipping...',
@@ -276,6 +290,21 @@ const I18N = {
             rechargeRunning: 'Идёт перезарядка',
             liveReward: 'Живая награда',
             coinsSuffix: 'монет'
+        },
+        daily: {
+            title: 'Daily Rewards',
+            subtitle: 'Login streak',
+            ready: 'Забрать награду',
+            wait: 'Жди завтра',
+            todayClaimed: 'Сегодня награда уже получена.',
+            nextReward: 'Следующая — день {day}.',
+            day: 'День {day}',
+            coins: 'Монеты',
+            infiniteEnergy: 'Бесконечная энергия',
+            infiniteEnergyDesc: '10 минут',
+            finalTitle: 'Награда за 30 день',
+            finalName: 'Эксклюзивный скин',
+            finalDesc: 'Заходи все 30 дней, чтобы открыть финальный бонусный скин.'
         },
         games: {
             title: 'Мини-игры',
@@ -376,8 +405,7 @@ const I18N = {
             coins_rush: { title: 'Монетный дождь', description: 'Сразу получи +1 500 монет', tag: 'коины' },
             coins_jackpot: { title: 'Джекпот', description: '+8 000 монет раз в 45 минут', tag: 'джекпот' },
             boost_combo: { title: 'Комбо-ускорение', description: 'x2 доход на 7 минут после просмотра', tag: 'баф', reward: 'x2 • 7 мин' },
-            skin_drop: { title: 'Дроп скина', description: 'Редкий скин за просмотр (1 раз в час)', tag: 'скин', reward: '🎁 Rare drop' },
-            reset_tasks: { title: 'Сброс заданий', description: 'Обновляет кулдауны всех заданий', tag: 'utility', reward: '♻ reset' }
+            skin_drop: { title: 'Дроп скина', description: 'Редкий скин за просмотр (1 раз в час)', tag: 'скин', reward: '🎁 Rare drop' }
         },
         minigames: {
             coinflipSpinning: '🪙 Подбрасываем...',
@@ -418,6 +446,65 @@ function t(key, vars = {}) {
         key.split('.').reduce((acc, part) => acc?.[part], I18N.en) ??
         key;
     return String(value).replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? `{${name}}`);
+}
+
+const DAILY_REWARD_MAX_DAYS = 30;
+const DAILY_REWARD_BASE_COINS = 500;
+const DAILY_REWARD_SKIN_ID = 'retro.pngSP';
+const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
+const LEGACY_SKIN_ID_MAP = {
+    'referral-special.pngSP': 'refferal.pngSP',
+    'daily30.pngSP': 'retro.pngSP',
+    'telegram-social.pngSP': 'telega.pngSP',
+    'instagram-social.pngSP': 'insta.pngSP',
+    'tiktok-social.pngSP': 'tiktok.pngSP'
+};
+const SOCIAL_TASKS = [
+    {
+        id: 'telegram_sub',
+        name: 'Telegram',
+        icon: '📣',
+        image: 'imgg/skins/telega.png',
+        colorClass: 'telegram',
+        link: 'https://t.me/your_channel'
+    },
+    {
+        id: 'tiktok_sub',
+        name: 'TikTok',
+        icon: '🎵',
+        image: 'imgg/skins/tiktok.png',
+        colorClass: 'tiktok',
+        link: 'https://www.tiktok.com/@your_account'
+    },
+    {
+        id: 'instagram_sub',
+        name: 'Instagram',
+        icon: '📸',
+        image: 'imgg/skins/insta.png',
+        colorClass: 'instagram',
+        link: 'https://www.instagram.com/your_account/'
+    }
+];
+
+function normalizeOwnedSkinIds(owned = []) {
+    const validIds = new Set(getLocalSkins().map((skin) => skin.id));
+    const normalized = [];
+    const seen = new Set();
+    (Array.isArray(owned) ? owned : []).forEach((id) => {
+        const mapped = LEGACY_SKIN_ID_MAP[id] || id;
+        if (!validIds.has(mapped) || seen.has(mapped)) return;
+        seen.add(mapped);
+        normalized.push(mapped);
+    });
+    if (!seen.has('default.pngSP')) {
+        normalized.unshift('default.pngSP');
+    }
+    return normalized;
+}
+
+function normalizeSelectedSkinId(selectedId, ownedIds) {
+    const mapped = LEGACY_SKIN_ID_MAP[selectedId] || selectedId || 'default.pngSP';
+    return ownedIds.includes(mapped) ? mapped : 'default.pngSP';
 }
 
 const tr = t;
@@ -484,6 +571,16 @@ const State = {
         friendsInvited: 0,
         data: [],
         videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}')
+    },
+    tasks: {
+        social: {}
+    },
+    daily: {
+        claimedDays: 0,
+        claimAvailable: false,
+        nextDay: 1,
+        infiniteEnergyActive: false,
+        infiniteEnergyExpiresAt: null
     },
     settings: {
         theme: localStorage.getItem('ryohoSettings') ? 
@@ -829,14 +926,15 @@ async function loadUserData() {
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
         
-        State.skins.owned = data.owned_skins || ['default.pngSP'];
-        State.skins.selected = data.selected_skin || 'default.pngSP';
+        State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
+        State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
         State.skins.adsWatched = data.ads_watched || 0;
         
         await loadPrices();
         await loadSkinsList();
         await loadReferralData();
         await checkBoostStatus();
+        await loadDailyRewardStatus();
 
         
         applySavedSkin();
@@ -865,7 +963,7 @@ function getLocalSkins() {
     return [
         // Default
         { id: "default.pngSP", name: "Default", image: "imgg/skins/default.png", rarity: "common", bonus: { type: "multiplier", value: 1.0 }, requirement: null },
-        { id: "referral-special.pngSP", name: "Referral Special", image: "imgg/skins/referral-special.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.8 }, requirement: { type: "friends", value: 1 } },
+        { id: "refferal.pngSP", name: "Referral Special", image: "imgg/skins/refferal.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.8 }, requirement: { type: "friends", value: 1 } },
 
         // Level skins (common, x1.2)
         { id: "10lvl.pngSP", name: "Level 10", image: "imgg/skins/10lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 10 } },
@@ -884,7 +982,11 @@ function getLocalSkins() {
         { id: "video7.pngSP", name: "Video 7", image: "imgg/skins/video7.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video7.pngSP" } },
         { id: "video8.pngSP", name: "Video 8", image: "imgg/skins/video8.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video8.pngSP" } },
 
-        // Legendary (achievements) – пусто, пока без скинов
+        // Social / reward skins
+        { id: "telega.pngSP", name: "Telegram Reward", image: "imgg/skins/telega.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "social", value: "telegram_sub" } },
+        { id: "tiktok.pngSP", name: "TikTok Reward", image: "imgg/skins/tiktok.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "social", value: "tiktok_sub" } },
+        { id: "insta.pngSP", name: "Instagram Reward", image: "imgg/skins/insta.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "social", value: "instagram_sub" } },
+        { id: "retro.pngSP", name: "Day 30 Reward", image: "imgg/skins/retro.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.7 }, requirement: { type: "daily", value: 30 } },
 
         // Stars skins (super, x2). Prices: 3 at 149, 3 at 249, 2 at 500
         { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
@@ -917,11 +1019,149 @@ async function loadSkinsList() {
             skin.requirement.current = State.skins.videoViews[key] || 0;
         } else if (skin.requirement?.type === 'friends') {
             skin.requirement.current = State.skins.friendsInvited || 0;
+        } else if (skin.requirement?.type === 'daily') {
+            skin.requirement.current = State.daily.claimedDays || 0;
         }
     });
     
     renderSkins();
     updateCollectionProgress();
+}
+
+function isDailyInfiniteEnergyActive() {
+    if (!State.daily.infiniteEnergyExpiresAt) return false;
+    const expiresAt = parseServerDate(State.daily.infiniteEnergyExpiresAt);
+    if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
+    return expiresAt.getTime() > Date.now();
+}
+
+function getDailyRewardMeta(day) {
+    const coins = day * DAILY_REWARD_BASE_COINS;
+    const isEnergyDay = day % 7 === 0 && day < DAILY_REWARD_MAX_DAYS;
+    const isFinalDay = day === DAILY_REWARD_MAX_DAYS;
+
+    return {
+        day,
+        coins,
+        isEnergyDay,
+        isFinalDay,
+        title: isEnergyDay ? t('daily.infiniteEnergy') : t('daily.coins'),
+        primary: isEnergyDay ? `∞ ${t('daily.infiniteEnergyDesc')}` : `+${formatNumber(coins)}`,
+        secondary: isFinalDay ? '+ skin' : `+${formatNumber(coins)}`
+    };
+}
+
+function renderDailyRewardButton() {
+    const button = document.getElementById('dailyRewardsButton');
+    if (!button) return;
+    const dot = button.querySelector('.daily-gift-dot');
+    const badge = button.querySelector('.daily-gift-badge');
+    button.title = State.daily.claimAvailable ? t('daily.ready') : t('daily.wait');
+    button.classList.toggle('ready', !!State.daily.claimAvailable);
+    if (dot) dot.style.display = State.daily.claimAvailable ? 'block' : 'none';
+    if (badge) badge.textContent = Math.min(State.daily.nextDay || 1, DAILY_REWARD_MAX_DAYS);
+}
+
+function renderDailyRewardsModal() {
+    const summary = document.getElementById('dailyRewardSummary');
+    const actionButton = document.getElementById('dailyRewardAction');
+    const track = document.getElementById('dailyRewardTrack');
+    const teaserImage = document.getElementById('dailyRewardTeaserImg');
+    const title = document.getElementById('dailyRewardTitle');
+    const kicker = document.getElementById('dailyRewardKicker');
+    const finalKicker = document.getElementById('dailyRewardFinalKicker');
+    const finalTitle = document.getElementById('dailyRewardFinalTitle');
+    const finalDesc = document.getElementById('dailyRewardFinalDesc');
+    if (!summary || !actionButton || !track) return;
+
+    if (title) title.textContent = t('daily.title');
+    if (kicker) kicker.textContent = t('daily.subtitle');
+    if (finalKicker) finalKicker.textContent = t('daily.finalTitle');
+    if (finalTitle) finalTitle.textContent = t('daily.finalName');
+    if (finalDesc) finalDesc.textContent = t('daily.finalDesc');
+
+    summary.innerHTML = `
+        <div class="daily-summary-line">${State.daily.claimAvailable ? t('daily.ready') : t('daily.todayClaimed')}</div>
+        <div class="daily-summary-line subtle">${t('daily.nextReward', { day: Math.min(State.daily.nextDay || 1, DAILY_REWARD_MAX_DAYS) })}</div>
+    `;
+
+    actionButton.textContent = State.daily.claimAvailable ? t('daily.ready') : t('daily.wait');
+    actionButton.disabled = !State.daily.claimAvailable;
+
+    track.innerHTML = Array.from({ length: DAILY_REWARD_MAX_DAYS }, (_, index) => {
+        const meta = getDailyRewardMeta(index + 1);
+        const isClaimed = meta.day <= State.daily.claimedDays;
+        const isCurrent = meta.day === Math.min(State.daily.nextDay || 1, DAILY_REWARD_MAX_DAYS);
+
+        return `
+            <div class="daily-reward-card ${isClaimed ? 'claimed' : ''} ${isCurrent ? 'current' : ''}" data-day="${meta.day}">
+                <div class="daily-card-day">${t('daily.day', { day: meta.day })}</div>
+                <div class="daily-card-title">${meta.title}</div>
+                <div class="daily-card-value">${meta.primary}</div>
+                <div class="daily-card-sub">${meta.isFinalDay ? t('daily.finalName') : meta.secondary}</div>
+            </div>
+        `;
+    }).join('');
+
+    if (teaserImage) {
+        teaserImage.src = 'imgg/skins/retro.png';
+        teaserImage.onerror = () => { teaserImage.src = 'imgg/skins/default.png'; };
+    }
+}
+
+async function loadDailyRewardStatus() {
+    if (!userId) return;
+    try {
+        const response = await API.get(`/api/daily-reward/status/${userId}`);
+        State.daily.claimedDays = response.claimed_days || 0;
+        State.daily.claimAvailable = !!response.claim_available;
+        State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
+        State.daily.infiniteEnergyActive = !!response.infinite_energy_active;
+        State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at || null;
+        State.skins.data.forEach((skin) => {
+            if (skin.requirement?.type === 'daily') {
+                skin.requirement.current = State.daily.claimedDays || 0;
+            }
+        });
+        renderDailyRewardButton();
+        renderDailyRewardsModal();
+        renderSkins();
+        updateCollectionProgress();
+    } catch (err) {
+        console.warn('Daily reward status failed', err);
+    }
+}
+
+function openDailyRewards() {
+    renderDailyRewardsModal();
+    openModal('daily-screen');
+    requestAnimationFrame(() => {
+        const currentCard = document.querySelector(`.daily-reward-card[data-day="${Math.min(State.daily.nextDay || 1, DAILY_REWARD_MAX_DAYS)}"]`);
+        currentCard?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+}
+
+async function claimDailyReward() {
+    if (!userId || !State.daily.claimAvailable) return;
+
+    try {
+        const response = await API.post('/api/daily-reward/claim', { user_id: userId });
+        State.game.coins = response.coins ?? State.game.coins;
+        if (response.skin_id) {
+            State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
+            await loadSkinsList();
+            renderSkins();
+            updateCollectionProgress();
+        }
+        if (response.infinite_energy_expires_at) {
+            State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at;
+        }
+        updateUI();
+        showToast(`🎁 +${formatNumber(response.coins_reward || 0)}`);
+        await loadDailyRewardStatus();
+    } catch (err) {
+        showToast(err?.detail || tr('toasts.serverError'), true);
+    }
 }
 
 // ==================== UI ОБНОВЛЕНИЕ ====================
@@ -1108,6 +1348,7 @@ function handleTap(e) {
 
     const megaBoostActive =
         document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
+    const dailyInfiniteEnergyActive = isDailyInfiniteEnergyActive();
 
     let previewGain = State.game.profitPerTap;
 
@@ -1125,7 +1366,7 @@ function handleTap(e) {
     State.temp.lastTapAt = Date.now();
 
     // СНАЧАЛА проверяем энергию
-    if (!megaBoostActive) {
+    if (!megaBoostActive && !dailyInfiniteEnergyActive) {
         const currentVisualEnergy = getVisualEnergy();
 
         if (currentVisualEnergy < 1) {
@@ -1167,8 +1408,9 @@ function handleTap(e) {
     State.temp.tapPoolIdx++;
     const effect = pool[idx];
     const isNightMode = document.body.classList.contains('night-mode');
-    const tapColor = megaBoostActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4');
-    const tapGlow = megaBoostActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4');
+    const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive;
+    const tapColor = boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4');
+    const tapGlow = boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4');
     effect.style.left = `${clientX}px`;
     effect.style.top = `${clientY}px`;
     effect.style.transform = 'translate(-50%, -50%)';
@@ -1176,7 +1418,7 @@ function handleTap(e) {
     effect.style.fontSize = isAutoTap ? '22px' : '28px';
     effect.style.fontWeight = isAutoTap ? '700' : 'bold';
     effect.style.textShadow = `0 0 10px ${tapGlow}`;
-    effect.textContent = megaBoostActive ? `+${previewGain} 🔥` : `+${previewGain}`;
+    effect.textContent = boostVisualActive ? `+${previewGain} 🔥` : `+${previewGain}`;
     effect.style.animation = 'none';
     effect.style.opacity = '1';
     effect.offsetWidth;
@@ -1193,9 +1435,9 @@ function handleTap(e) {
             const gainNode = window.audioCtx.createGain();
             osc.connect(gainNode);
             gainNode.connect(window.audioCtx.destination);
-            osc.type = megaBoostActive ? 'sawtooth' : 'sine';
-            osc.frequency.setValueAtTime(megaBoostActive ? 800 : (isAutoTap ? 560 : 650), now);
-            osc.frequency.exponentialRampToValueAtTime(megaBoostActive ? 400 : (isAutoTap ? 420 : 450), now + (isAutoTap ? 0.08 : 0.1));
+            osc.type = boostVisualActive ? 'sawtooth' : 'sine';
+            osc.frequency.setValueAtTime(boostVisualActive ? 800 : (isAutoTap ? 560 : 650), now);
+            osc.frequency.exponentialRampToValueAtTime(boostVisualActive ? 400 : (isAutoTap ? 420 : 450), now + (isAutoTap ? 0.08 : 0.1));
             gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
             gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
             osc.start(now);
@@ -1581,7 +1823,8 @@ async function watchAdForSkin(skinId) {
 }
 
 function updateCollectionProgress() {
-    const collected = State.skins.owned.length;
+    const validIds = new Set(State.skins.data.map((skin) => skin.id));
+    const collected = normalizeOwnedSkinIds(State.skins.owned).filter((id) => validIds.has(id)).length;
     const total = State.skins.data.length || 21;
     const percent = (collected / total) * 100;
     
@@ -1883,24 +2126,145 @@ const VIDEO_TASKS = [
         tag: 'скин',
         completed: false,
         available: true
-    },
-    {
-        id: 'reset_tasks',
-        title: 'Сброс заданий',
-        description: 'Обновляет кулдауны всех заданий',
-        reward: '♻ reset',
-        icon: '🔄',
-        type: 'refresh',
-        cooldown: 180,
-        lastUsed: null,
-        category: 'random',
-        tag: 'utility',
-        completed: false,
-        available: true
     }
 ];
 
 const TASKS_STORAGE_KEY = 'videoTasksState';
+
+function persistSocialTasksState() {
+    localStorage.setItem(SOCIAL_TASKS_STORAGE_KEY, JSON.stringify(State.tasks.social || {}));
+}
+
+async function loadSocialTasksStatus() {
+    const saved = JSON.parse(localStorage.getItem(SOCIAL_TASKS_STORAGE_KEY) || '{}');
+    State.tasks.social = {};
+
+    SOCIAL_TASKS.forEach((task) => {
+        State.tasks.social[task.id] = {
+            started: !!saved?.[task.id]?.started,
+            completed: false
+        };
+    });
+
+    if (!userId) return;
+
+    try {
+        const tasks = await API.get(`/api/tasks/${userId}`);
+        tasks
+            .filter((task) => SOCIAL_TASKS.some((socialTask) => socialTask.id === task.id))
+            .forEach((task) => {
+                State.tasks.social[task.id] = {
+                    started: false,
+                    completed: !!task.completed
+                };
+            });
+        persistSocialTasksState();
+    } catch (err) {
+        console.warn('Social tasks sync failed', err);
+    }
+}
+
+function renderSocialTasksMarkup() {
+    return SOCIAL_TASKS.map((task) => {
+        const state = State.tasks.social[task.id] || { started: false, completed: false };
+        const isCompleted = state.completed;
+        const canClaim = state.started && !state.completed;
+        const actionLabel = isCompleted
+            ? (UI_LANG === 'ru' ? 'Получено' : 'Claimed')
+            : canClaim
+                ? (UI_LANG === 'ru' ? 'Получить' : 'Claim')
+                : (UI_LANG === 'ru' ? 'Подписаться' : 'Subscribe');
+        const actionHandler = isCompleted
+            ? ''
+            : canClaim
+                ? `onclick="claimSocialTask('${task.id}')"`
+                : `onclick="startSocialTask('${task.id}')"`
+        ;
+
+        return `
+            <div class="task-card task-card-simple social-task-card social-${task.colorClass}">
+                <div class="social-task-head">
+                    <div class="social-task-brand">
+                        <span class="social-task-icon">${task.icon}</span>
+                        <span class="social-task-dot"></span>
+                        <span class="social-task-name">${task.name}</span>
+                    </div>
+                    <span class="task-reward-pill task-reward-pill-simple">+20K + Skin</span>
+                </div>
+                <div class="task-copy-simple">
+                    <div class="task-title">${UI_LANG === 'ru' ? `Подпишись на ${task.name}` : `Follow ${task.name}`}</div>
+                    <div class="task-desc">${UI_LANG === 'ru' ? '20 000 монет и эксклюзивный скин за подписку' : '20,000 coins and an exclusive skin reward'}</div>
+                </div>
+                <div class="task-actions-simple">
+                    <div class="social-task-preview">
+                        <img src="${task.image}" alt="${task.name}" onerror="this.src='imgg/skins/default.png'">
+                    </div>
+                    <button class="task-action task-action-simple social-action social-${task.colorClass}" ${actionHandler} ${isCompleted ? 'disabled' : ''}>
+                        ${actionLabel}
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function startSocialTask(taskId) {
+    const task = SOCIAL_TASKS.find((item) => item.id === taskId);
+    if (!task) return;
+
+    const link = task.link;
+    if (taskId === 'telegram_sub' && tg?.openTelegramLink) {
+        tg.openTelegramLink(link);
+    } else if (tg?.openLink) {
+        tg.openLink(link);
+    } else {
+        window.open(link, '_blank', 'noopener,noreferrer');
+    }
+
+    State.tasks.social[taskId] = {
+        started: true,
+        completed: false
+    };
+    persistSocialTasksState();
+    renderVideoTasks();
+}
+
+async function claimSocialTask(taskId) {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return;
+    }
+
+    try {
+        const response = await API.post('/api/complete-task', {
+            user_id: userId,
+            task_id: taskId
+        });
+
+        State.tasks.social[taskId] = {
+            started: false,
+            completed: true
+        };
+        persistSocialTasksState();
+
+        if (typeof response.coins === 'number') {
+            State.game.coins = response.coins;
+        }
+
+        if (response.skin_id) {
+            State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
+            await loadSkinsList();
+            renderSkins();
+            updateCollectionProgress();
+        }
+
+        updateUI();
+        renderVideoTasks();
+        showToast(response.message || '✅ Reward claimed!');
+    } catch (err) {
+        showToast(err?.detail || tr('toasts.serverError'), true);
+    }
+}
 
 function checkTaskCooldown(task) {
     if (!task.lastUsed) return true; // Никогда не использовалось
@@ -1923,7 +2287,7 @@ function getTaskTimeLeft(task) {
     return Math.ceil(timeLeft / 1000 / 60); // минуты
 }
 
-function loadVideoTasks() {
+async function loadVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
     
@@ -1950,7 +2314,8 @@ function loadVideoTasks() {
         localStorage.setItem('videoTasksReset', now.toISOString());
         localStorage.removeItem(TASKS_STORAGE_KEY);
     }
-    
+
+    await loadSocialTasksStatus();
     renderVideoTasks();
 }
 
@@ -1972,7 +2337,8 @@ function renderVideoTasks() {
     });
     persistTasksState();
 
-    container.innerHTML = VIDEO_TASKS.map(task => {
+    const socialMarkup = renderSocialTasksMarkup();
+    const videoMarkup = VIDEO_TASKS.map(task => {
         const available = task.available;
         const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
         const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
@@ -2007,6 +2373,8 @@ function renderVideoTasks() {
             </div>
         `;
     }).join('');
+
+    container.innerHTML = `${socialMarkup}${videoMarkup}`;
 }
 async function handleVideoTask(taskId) {
     const task = VIDEO_TASKS.find(t => t.id === taskId);
@@ -2205,6 +2573,13 @@ async function loadReferralData() {
         document.getElementById('referral-earnings').textContent = data.earnings || 0;
         
         State.skins.friendsInvited = data.count || 0;
+        State.skins.data.forEach((skin) => {
+            if (skin.requirement?.type === 'friends') {
+                skin.requirement.current = State.skins.friendsInvited || 0;
+            }
+        });
+        renderSkins();
+        updateCollectionProgress();
         checkAchievements();
     } catch (err) {
         console.error('Referral error:', err);
@@ -2384,8 +2759,7 @@ function applyStaticTranslations() {
         ['#skin-detail-description', 'skins.description'],
         ['#skin-detail-rarity', 'skins.rarity'],
         ['#skin-detail-bonus', 'common.bonusIncome'],
-        ['#skin-action-btn', 'common.claim'],
-        ['#skin-charm-btn', 'common.equip']
+        ['#skin-action-btn', 'common.claim']
     ];
 
     textMap.forEach(([selector, key]) => {
@@ -4462,7 +4836,11 @@ window.syncEnergyWithServer = syncEnergyWithServer;
 window.fullSyncWithServer = fullSyncWithServer;
 window.recoverEnergyWithAd = recoverEnergyWithAd;
 window.openAchievements = openAchievements;
+window.openDailyRewards = openDailyRewards;
+window.claimDailyReward = claimDailyReward;
 window.watchVideoForTask = watchVideoForTask;
+window.startSocialTask = startSocialTask;
+window.claimSocialTask = claimSocialTask;
 window.recoverEnergyWithAd = recoverEnergyWithAd;
 window.checkBoostStatus = checkBoostStatus;
 window.closeSkinDetail = closeSkinDetail;

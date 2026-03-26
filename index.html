@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
+    <!-- Sync marker for VS Code source control -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spirit Clicker</title>
@@ -67,9 +68,11 @@
                 <span>Tournament</span>
             </div>
             
-            <div class="balance-container">
-                <div class="balance-value" id="coinBalance">0</div>
-            </div>
+            <button class="daily-gift-btn" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
+                <span class="daily-gift-icon">🎁</span>
+                <span class="daily-gift-dot"></span>
+                <span class="daily-gift-badge">1</span>
+            </button>
             
             <div class="settings-container">
                 <button class="settings-btn" onclick="openSettings()" title="Settings">
@@ -111,6 +114,11 @@
                         <div class="badge-glow"></div>
                     </div>
                 </div>
+            </div>
+
+            <div class="coin-balance-banner glass">
+                <img src="imgg/coin.png" class="coin-balance-banner-icon" alt="Coins">
+                <div class="coin-balance-banner-value" id="coinBalance">0</div>
             </div>
                     
         <!-- CLICKER AREA -->
@@ -283,6 +291,35 @@
             </div>
         </div>
     </div>
+
+    <!-- DAILY REWARDS MODAL -->
+    <div class="modal-screen" id="daily-screen">
+        <div class="glass daily-modal-shell">
+            <div class="modal-header daily-modal-header">
+                <button class="modal-close" onclick="closeModal('daily-screen')">×</button>
+                <div class="daily-modal-copy">
+                    <span class="daily-modal-kicker" id="dailyRewardKicker">Login Streak</span>
+                    <h2 id="dailyRewardTitle">Daily Rewards</h2>
+                </div>
+            </div>
+            <div class="modal-content daily-modal-content">
+                <div class="daily-summary-card" id="dailyRewardSummary"></div>
+                <button class="btn-primary daily-claim-btn" id="dailyRewardAction" onclick="claimDailyReward()">Claim reward</button>
+                <div class="daily-reward-track" id="dailyRewardTrack"></div>
+                <div class="daily-skin-teaser">
+                    <div class="daily-skin-copy">
+                        <div class="daily-skin-kicker" id="dailyRewardFinalKicker">Day 30 reward</div>
+                        <div class="daily-skin-title" id="dailyRewardFinalTitle">Exclusive skin</div>
+                        <div class="daily-skin-desc" id="dailyRewardFinalDesc">Log in for all 30 days to unlock the final skin bonus.</div>
+                    </div>
+                    <div class="daily-skin-preview">
+                        <img src="imgg/skins/retro.png" alt="Day 30 skin" id="dailyRewardTeaserImg" onerror="this.src='imgg/skins/default.png'">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TASKS MODAL -->
     <div class="modal-screen" id="tasks-screen">
         <div class="glass tasks-modal-shell">
@@ -785,9 +822,6 @@
 
             <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
                 Claim
-            </button>
-            <button class="skin-charm-btn" id="skin-charm-btn" onclick="setCharmFromDetail()">
-                Equip
             </button>
         </div>
     </div>
