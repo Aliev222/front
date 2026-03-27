@@ -1477,6 +1477,23 @@ async function syncGhostBoostStatus() {
     }
 }
 
+async function startAdActionSession(action) {
+    if (!userId) {
+        throw new Error(tr('toasts.authRequired'));
+    }
+
+    const response = await API.post('/api/ad-action/start', {
+        user_id: userId,
+        action
+    });
+
+    if (!response?.ad_session_id) {
+        throw new Error('Ad session was not created');
+    }
+
+    return response.ad_session_id;
+}
+
 function removeLuckyGhost() {
     document.querySelector('.lucky-ghost-event')?.remove();
     State.temp.ghostSpawnVisible = false;
@@ -1502,6 +1519,7 @@ async function claimLuckyGhost(event) {
     }
 
     try {
+        const adSessionId = await startAdActionSession('ghost_boost');
         showToast('Catch the ad and the ghost pays back with x5 taps and infinite energy.', false, {
             title: 'Lucky ghost',
             icon: '👻',
@@ -1510,7 +1528,10 @@ async function claimLuckyGhost(event) {
             duration: 3200
         });
         await window.show_10655027();
-        const activation = await API.post('/api/activate-ghost-boost', { user_id: userId });
+        const activation = await API.post('/api/activate-ghost-boost', {
+            user_id: userId,
+            ad_session_id: adSessionId
+        });
         const expiresAt = activation?.expires_at || new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
         setGhostBoostState(true, expiresAt);
         removeLuckyGhost();
@@ -2352,12 +2373,18 @@ async function watchAdForSkin(skinId) {
     showToast(tr('toasts.adLoading'));
 
     try {
+        const adSessionId = await startAdActionSession('ads_increment');
         await window.show_10655027();
+        const adsSync = await API.post('/api/ads/increment', {
+            user_id: userId,
+            ad_session_id: adSessionId
+        });
 
         // локальный прогресс для конкретного скина
         const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
         State.skins.videoViews[key] = (State.skins.videoViews[key] || 0) + 1;
         localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
+        State.skins.adsWatched = adsSync?.ads_watched || ((State.skins.adsWatched || 0) + 1);
 
         trackAchievementProgress('adsWatched', 1);
         checkAchievements();
@@ -3566,13 +3593,14 @@ async function recoverEnergyWithAd() {
     }
 
     try {
+        const adSessionId = await startAdActionSession('energy_refill_max');
         showToast(tr('toasts.adLoading'));
         await window.show_10655027();
 
         const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({ user_id: userId, ad_session_id: adSessionId })
         });
 
         if (!res.ok) {
@@ -3615,8 +3643,10 @@ function activateMegaBoost() {
     
     window.show_10655027()
         .then(async () => {
+            const adSessionId = await startAdActionSession('mega_boost');
             const activation = await API.post('/api/activate-mega-boost', {
-                user_id: userId
+                user_id: userId,
+                ad_session_id: adSessionId
             });
 
             if (activation?.already_active && activation.expires_at) {
@@ -4328,6 +4358,7 @@ const crashGhostState = {
     bet: 0,
     multiplier: 1,
     crashAt: 1.5,
+    startedAt: 0,
     interval: null,
     settled: false
 };
@@ -4511,7 +4542,10 @@ function resetCrashGhostUI() {
     if (runnerEl) runnerEl.style.left = '0%';
     document.querySelector('#game-crash .crash-track')?.classList.remove('danger');
     if (startBtn) startBtn.disabled = false;
-    if (cashBtn) cashBtn.disabled = true;
+    if (cashBtn) {
+        cashBtn.disabled = true;
+        cashBtn.setAttribute('disabled', 'disabled');
+    }
 }
 
 function startCrashGhost() {
@@ -4535,12 +4569,16 @@ function startCrashGhost() {
     crashGhostState.settled = false;
     crashGhostState.bet = bet;
     crashGhostState.multiplier = 1;
-    crashGhostState.crashAt = Number((1.18 + Math.random() * 4.4).toFixed(2));
+    crashGhostState.startedAt = Date.now();
+    crashGhostState.crashAt = Number((1.55 + Math.random() * 4.1).toFixed(2));
 
     if (Math.random() < 0.12) crashGhostState.crashAt = Number((5.5 + Math.random() * 2.8).toFixed(2));
 
     if (startBtn) startBtn.disabled = true;
-    if (cashBtn) cashBtn.disabled = false;
+    if (cashBtn) {
+        cashBtn.disabled = false;
+        cashBtn.removeAttribute('disabled');
+    }
     statusEl.textContent = tr('minigames.crashRunning');
     resultEl.textContent = tr('minigames.crashStake', { bet });
     playSound('spin');
@@ -4548,6 +4586,10 @@ function startCrashGhost() {
     crashGhostState.interval = setInterval(() => {
         crashGhostState.multiplier = Number((crashGhostState.multiplier + 0.04 + Math.random() * 0.05).toFixed(2));
         updateCrashGhostVisuals();
+
+        if (Date.now() - crashGhostState.startedAt < 650) {
+            return;
+        }
 
         if (crashGhostState.multiplier >= crashGhostState.crashAt) {
             endCrashGhostRound(false, false);
@@ -4616,7 +4658,10 @@ function endCrashGhostRound(cashedOut, silentClose) {
     crashGhostState.active = false;
 
     if (startBtn) startBtn.disabled = false;
-    if (cashBtn) cashBtn.disabled = true;
+    if (cashBtn) {
+        cashBtn.disabled = true;
+        cashBtn.setAttribute('disabled', 'disabled');
+    }
 
     setTimeout(() => {
         runnerEl?.classList.remove('ghost-safe', 'ghost-crashed');

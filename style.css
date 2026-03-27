@@ -5501,6 +5501,9 @@ body.night-mode .task-icon {
 .crash-start-btn,
 .crash-cashout-btn {
     min-height: 48px;
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
 }
 
 .crash-cashout-btn:disabled {
