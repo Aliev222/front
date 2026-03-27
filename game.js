@@ -869,7 +869,7 @@ function updateToastViewportOffset() {
     if (!hud || !header) return;
 
     const headerRect = header.getBoundingClientRect();
-    const topOffset = Math.max(64, Math.round(headerRect.bottom + 8));
+    const topOffset = Math.max(72, Math.round(headerRect.bottom + 22));
     document.documentElement.style.setProperty('--toast-top-offset', `${topOffset}px`);
 }
 
