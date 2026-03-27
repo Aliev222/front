@@ -459,6 +459,9 @@ const GHOST_BOOST_DURATION_MS = 60 * 1000;
 const MEGA_BOOST_DURATION_MS = 60 * 1000;
 const AUTO_CLICK_DURATION_MS = 60 * 1000;
 const AUTO_CLICK_INTERVAL_MS = 55;
+const AUTO_CLICK_COOLDOWN_STORAGE_KEY = 'autoClickCooldownUntil';
+const AUTO_CLICK_COOLDOWN_MIN_MS = 5 * 60 * 1000;
+const AUTO_CLICK_COOLDOWN_MAX_MS = 10 * 60 * 1000;
 const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
 const LEGACY_SKIN_ID_MAP = {
     'referral-special.pngSP': 'refferal.pngSP',
@@ -514,6 +517,21 @@ function normalizeOwnedSkinIds(owned = []) {
 function normalizeSelectedSkinId(selectedId, ownedIds) {
     const mapped = LEGACY_SKIN_ID_MAP[selectedId] || selectedId || 'default.pngSP';
     return ownedIds.includes(mapped) ? mapped : 'default.pngSP';
+}
+
+function getDisplayLevel(rawLevel) {
+    return Math.max(1, Number(rawLevel || 0) + 1);
+}
+
+function formatCooldownClock(totalSeconds) {
+    const safe = Math.max(0, Math.ceil(totalSeconds));
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+function randomIntBetween(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 const tr = t;
@@ -1275,6 +1293,7 @@ async function loadUserData() {
         State.game.levels.multitap = data.multitap_level || 0;
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
+        State.game.level = getDisplayLevel(Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy));
         
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
         State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
@@ -1367,7 +1386,7 @@ async function loadSkinsList() {
     
     State.skins.data.forEach(skin => {
         if (skin.requirement?.type === 'level') {
-            skin.requirement.current = State.game.levels.multitap || 0;
+            skin.requirement.current = getDisplayLevel(State.game.levels.multitap);
         } else if (skin.requirement?.type === 'videos') {
             const key = skin.requirement.progressKey || skin.id;
             skin.requirement.current = State.skins.videoViews[key] || 0;
@@ -1760,7 +1779,9 @@ function updateUI() {
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) {
             const globalLevel = Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
-            globalLevelEl.textContent = globalLevel;
+            const displayLevel = getDisplayLevel(globalLevel);
+            State.game.level = displayLevel;
+            globalLevelEl.textContent = displayLevel;
         }
 
         const globalPriceEl = document.getElementById('globalPrice');
@@ -2209,7 +2230,7 @@ function openSkinDetail(skinId) {
         reqBlock.style.display = 'block';
         
         if (skin.requirement?.type === 'level') {
-            const current = State.game.levels.multitap || 0;
+            const current = getDisplayLevel(State.game.levels.multitap);
             const value = skin.requirement.value || 1;
             const percent = Math.min(100, (current / value) * 100);
             
@@ -3631,8 +3652,9 @@ async function recoverEnergyWithAd() {
 // ==================== MEGA BOOST ====================
 let boostEndTime = null;
 let boostInterval = null;
+let megaBoostCooldownUntil = null;
 
-function activateMegaBoost() {
+async function activateMegaBoost() {
     if (!userId) {
         showToast(tr('toasts.authRequired'), true);
         return;
@@ -3643,6 +3665,24 @@ function activateMegaBoost() {
         showToast(tr('toasts.boostActive'), true);
         return;
     }
+
+    if (megaBoostCooldownUntil && megaBoostCooldownUntil > new Date()) {
+        showToast(`Mega boost cooldown ${formatCooldownClock((megaBoostCooldownUntil - new Date()) / 1000)}`, true);
+        return;
+    }
+
+    try {
+        const status = await API.get(`/api/mega-boost-status/${userId}`);
+        megaBoostCooldownUntil = parseServerDate(status?.cooldown_until) || null;
+        if (status?.cooldown_active && megaBoostCooldownUntil && megaBoostCooldownUntil > new Date()) {
+            showToast(`Mega boost cooldown ${formatCooldownClock((megaBoostCooldownUntil - new Date()) / 1000)}`, true);
+            return;
+        }
+        if (status?.active) {
+            showToast(tr('toasts.boostActive'), true);
+            return;
+        }
+    } catch (err) {}
     
     if (typeof window.show_10655027 !== 'function') {
         showToast(tr('toasts.adUnavailable'), true);
@@ -3664,6 +3704,7 @@ function activateMegaBoost() {
             } else {
                 boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
             }
+            megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
             
             if (boostBtn) boostBtn.classList.add('active');
             
@@ -3703,7 +3744,7 @@ function activateMegaBoost() {
             
             showToast(tr('toasts.megaBoostActivated'));
         })
-        .catch(() => showToast(tr('toasts.watchError'), true));
+        .catch((err) => showToast(err?.detail || err?.message || tr('toasts.watchError'), true));
 }
 
 function showBoostIndicator() {
@@ -3726,6 +3767,7 @@ async function checkBoostStatus() {
         const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
         if (res.ok) {
             const data = await res.json();
+            megaBoostCooldownUntil = parseServerDate(data.cooldown_until) || null;
             if (data.active) {
                 boostEndTime = parseServerDate(data.expires_at);
                 const boostBtn = document.getElementById('mega-boost-btn');
@@ -3757,6 +3799,13 @@ async function checkBoostStatus() {
                     const secs = Math.floor((diff % 60000) / 1000);
                     if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
                 }, 200);
+            } else {
+                const boostBtn = document.getElementById('mega-boost-btn');
+                const timerEl = document.getElementById('mega-boost-timer');
+                if (boostBtn) boostBtn.classList.remove('active');
+                if (timerEl) timerEl.style.display = 'none';
+                document.querySelector('.mega-boost-indicator')?.remove();
+                document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
             }
         }
         await syncGhostBoostStatus();
@@ -5196,6 +5245,16 @@ function initAutoClicker() {
     if (!autoBtn) return;
 
     const autoState = State.temp.auto;
+    const timerLabel = document.getElementById('auto-boost-timer');
+    const getStoredCooldownUntil = () => {
+        const raw = Number(localStorage.getItem(AUTO_CLICK_COOLDOWN_STORAGE_KEY) || 0);
+        return Number.isFinite(raw) && raw > 0 ? raw : 0;
+    };
+    const setStoredCooldownUntil = (value) => {
+        if (value > 0) localStorage.setItem(AUTO_CLICK_COOLDOWN_STORAGE_KEY, String(value));
+        else localStorage.removeItem(AUTO_CLICK_COOLDOWN_STORAGE_KEY);
+    };
+    const getCooldownRemainingMs = () => Math.max(0, getStoredCooldownUntil() - Date.now());
 
     const ensureEffect = () => {
         if (autoState.effect) return autoState.effect;
@@ -5222,28 +5281,33 @@ function initAutoClicker() {
         autoState.timer = setInterval(() => {
             if (Date.now() > autoState.enabledUntil) {
                 autoBtn.classList.remove('active');
-                document.getElementById('auto-boost-timer').textContent = 'OFF';
                 autoState.enabledUntil = 0;
+                const cooldownLeft = getCooldownRemainingMs();
+                if (timerLabel) {
+                    timerLabel.textContent = cooldownLeft > 0 ? `CD ${formatCooldownClock(cooldownLeft / 1000)}` : 'OFF';
+                }
                 updateEffect();
-                return;
-            }
-            const remaining = Math.max(0, autoState.enabledUntil - Date.now());
-            const sec = Math.ceil(remaining / 1000);
-            document.getElementById('auto-boost-timer').textContent = sec + 's';
-            if (autoState.fingerDown) {
-                handleTap({
-                    clientX: autoState.point.x,
-                    clientY: autoState.point.y,
-                    preventDefault: () => {},
-                    syntheticAuto: true
-                });
-                updateEffect();
+            } else {
+                const remaining = Math.max(0, autoState.enabledUntil - Date.now());
+                const sec = Math.ceil(remaining / 1000);
+                if (timerLabel) timerLabel.textContent = sec + 's';
+                if (autoState.fingerDown) {
+                    handleTap({
+                        clientX: autoState.point.x,
+                        clientY: autoState.point.y,
+                        preventDefault: () => {},
+                        syntheticAuto: true
+                    });
+                    updateEffect();
+                }
             }
         }, AUTO_CLICK_INTERVAL_MS);
     };
 
     const enableAuto = (ms) => {
         autoState.enabledUntil = Date.now() + ms;
+        const cooldownMs = randomIntBetween(AUTO_CLICK_COOLDOWN_MIN_MS, AUTO_CLICK_COOLDOWN_MAX_MS);
+        setStoredCooldownUntil(Date.now() + cooldownMs);
         autoBtn.classList.add('active');
         loop();
     };
@@ -5251,6 +5315,11 @@ function initAutoClicker() {
     window.toggleAutoClick = async function toggleAutoClick() {
         if (!autoBtn) return;
         if (autoState.enabledUntil > Date.now()) return; // уже активен
+        const cooldownRemainingMs = getCooldownRemainingMs();
+        if (cooldownRemainingMs > 0) {
+            showToast(`Auto click cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
+            return;
+        }
 
         const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(AUTO_CLICK_DURATION_MS); };
 
@@ -5287,6 +5356,7 @@ function initAutoClicker() {
     document.addEventListener('pointermove', pointerMove);
     document.addEventListener('pointerup', pointerUp);
     document.addEventListener('pointercancel', pointerUp);
+    loop();
 }
 
 // ==================== ПОДВЕСКА БРЕЛКА ====================
