@@ -1773,6 +1773,50 @@ async function startAdActionSession(action) {
     return response.ad_session_id;
 }
 
+async function showRewardedAd(adSessionId = null) {
+    if (typeof window.show_10655027 !== 'function') {
+        throw new Error(tr('toasts.adUnavailable'));
+    }
+
+    if (!adSessionId) {
+        return window.show_10655027();
+    }
+
+    const payload = {
+        ymid: adSessionId,
+        request_var: adSessionId
+    };
+
+    try {
+        return await window.show_10655027(payload);
+    } catch (err) {
+        return window.show_10655027();
+    }
+}
+
+function isAdConfirmationPendingError(err) {
+    const detail = String(err?.detail || err?.message || '').toLowerCase();
+    return detail.includes('ad completion was not confirmed yet') || detail.includes('ad watch is not completed yet');
+}
+
+async function claimAdActionWithRetry(claimFn, attempts = 7, delayMs = 1200) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+            return await claimFn();
+        } catch (err) {
+            lastError = err;
+            if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
+                throw err;
+            }
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+
+    throw lastError || new Error('Ad claim failed');
+}
+
 function removeLuckyGhost() {
     document.querySelector('.lucky-ghost-event')?.remove();
     State.temp.ghostSpawnVisible = false;
@@ -1806,11 +1850,11 @@ async function claimLuckyGhost(event) {
             variant: 'weird',
             duration: 3200
         });
-        await window.show_10655027();
-        const activation = await API.post('/api/activate-ghost-boost', {
+        await showRewardedAd(adSessionId);
+        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
             user_id: userId,
             ad_session_id: adSessionId
-        });
+        }));
         const expiresAt = activation?.expires_at || new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
         setGhostBoostState(true, expiresAt);
         removeLuckyGhost();
@@ -1824,7 +1868,12 @@ async function claimLuckyGhost(event) {
     } catch (err) {
         console.error('Ghost claim error:', err);
         removeLuckyGhost();
-        showToast(tr('toasts.watchError'), true, {
+        showToast(
+            isAdConfirmationPendingError(err)
+                ? 'You did not finish the ad or the reward was not confirmed.'
+                : tr('toasts.watchError'),
+            true,
+            {
             title: 'Ghost lost',
             icon: '👻',
             side: 'right',
@@ -2669,11 +2718,11 @@ async function watchAdForSkin(skinId) {
 
     try {
         const adSessionId = await startAdActionSession('ads_increment');
-        await window.show_10655027();
-        const adsSync = await API.post('/api/ads/increment', {
+        await showRewardedAd(adSessionId);
+        const adsSync = await claimAdActionWithRetry(() => API.post('/api/ads/increment', {
             user_id: userId,
             ad_session_id: adSessionId
-        });
+        }));
 
         // локальный прогресс для конкретного скина
         const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
@@ -2692,7 +2741,12 @@ async function watchAdForSkin(skinId) {
         }
 
     } catch (e) {
-        showToast(tr('toasts.watchError'), true);
+        showToast(
+            isAdConfirmationPendingError(e)
+                ? 'You did not finish the ad or the reward was not confirmed.'
+                : tr('toasts.watchError'),
+            true
+        );
     }
 }
 
@@ -3333,10 +3387,10 @@ async function watchVideoForTask(taskId) {
     
     try {
         const adSessionId = await startAdActionSession('video_task');
-        await window.show_10655027();
+        await showRewardedAd(adSessionId);
         trackAchievementProgress('adsWatched', 1);
 
-        const response = await claimVideoReward(task, adSessionId);
+        const response = await claimAdActionWithRetry(() => claimVideoReward(task, adSessionId));
 
         if (typeof response?.coins === 'number') {
             State.game.coins = response.coins;
@@ -3353,7 +3407,12 @@ async function watchVideoForTask(taskId) {
         createConfetti();
     } catch (error) {
         console.error('Video error:', error);
-        showToast(error?.detail || error?.message || tr('toasts.watchError'), true);
+        showToast(
+            isAdConfirmationPendingError(error)
+                ? 'You did not finish the ad or the reward was not confirmed.'
+                : (error?.detail || error?.message || tr('toasts.watchError')),
+            true
+        );
     }
 }
 
@@ -3820,26 +3879,23 @@ async function recoverEnergyWithAd() {
     try {
         const adSessionId = await startAdActionSession('energy_refill_max');
         showToast(tr('toasts.adLoading'));
-        await window.show_10655027();
-
-        const res = await fetch(`${CONFIG.API_URL}/api/update-energy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, ad_session_id: adSessionId })
-        });
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
+        await showRewardedAd(adSessionId);
+        const data = await claimAdActionWithRetry(() => API.post('/api/update-energy', {
+            user_id: userId,
+            ad_session_id: adSessionId
+        }));
 
         applyServerEnergySnapshot(data);
         updateUI();
         showToast(tr('toasts.energyRecovered'));
     } catch (err) {
         console.error('Energy recover error:', err);
-        showToast(tr('toasts.serverError'), true);
+        showToast(
+            isAdConfirmationPendingError(err)
+                ? 'You did not finish the ad or the reward was not confirmed.'
+                : tr('toasts.serverError'),
+            true
+        );
     }
 }
 
@@ -3884,61 +3940,67 @@ async function activateMegaBoost() {
     }
     
     showToast(tr('toasts.adLoading'));
-    
-    window.show_10655027()
-        .then(async () => {
-            const adSessionId = await startAdActionSession('mega_boost');
-            const activation = await API.post('/api/activate-mega-boost', {
-                user_id: userId,
-                ad_session_id: adSessionId
-            });
 
-            if (activation?.already_active && activation.expires_at) {
-                boostEndTime = parseServerDate(activation.expires_at);
-            } else {
-                boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
+    (async () => {
+        const adSessionId = await startAdActionSession('mega_boost');
+        await showRewardedAd(adSessionId);
+        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
+            user_id: userId,
+            ad_session_id: adSessionId
+        }));
+
+        if (activation?.already_active && activation.expires_at) {
+            boostEndTime = parseServerDate(activation.expires_at);
+        } else {
+            boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
+        }
+        megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
+        
+        if (boostBtn) boostBtn.classList.add('active');
+        
+        const timerEl = document.getElementById('mega-boost-timer');
+        if (timerEl) {
+            timerEl.style.display = 'block';
+            const initialDiff = Math.max(0, boostEndTime - new Date());
+            const initialMins = Math.floor(initialDiff / 60000);
+            const initialSecs = Math.floor((initialDiff % 60000) / 1000);
+            timerEl.textContent = `${initialMins}:${initialSecs.toString().padStart(2, '0')}`;
+        }
+        
+        showBoostIndicator();
+        
+        const energyBar = document.querySelector('.energy-bar-bg');
+        if (energyBar) energyBar.classList.add('boost-active');
+        
+        if (boostInterval) clearInterval(boostInterval);
+        boostInterval = setInterval(() => {
+            const now = new Date();
+            const diff = boostEndTime - now;
+            
+            if (diff <= 0) {
+                clearInterval(boostInterval);
+                if (boostBtn) boostBtn.classList.remove('active');
+                if (timerEl) timerEl.style.display = 'none';
+                document.querySelector('.mega-boost-indicator')?.remove();
+                if (energyBar) energyBar.classList.remove('boost-active');
+                showToast(tr('toasts.boostFinished'));
+                return;
             }
-            megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
             
-            if (boostBtn) boostBtn.classList.add('active');
-            
-            const timerEl = document.getElementById('mega-boost-timer');
-            if (timerEl) {
-                timerEl.style.display = 'block';
-                const initialDiff = Math.max(0, boostEndTime - new Date());
-                const initialMins = Math.floor(initialDiff / 60000);
-                const initialSecs = Math.floor((initialDiff % 60000) / 1000);
-                timerEl.textContent = `${initialMins}:${initialSecs.toString().padStart(2, '0')}`;
-            }
-            
-            showBoostIndicator();
-            
-            const energyBar = document.querySelector('.energy-bar-bg');
-            if (energyBar) energyBar.classList.add('boost-active');
-            
-            if (boostInterval) clearInterval(boostInterval);
-            boostInterval = setInterval(() => {
-                const now = new Date();
-                const diff = boostEndTime - now;
-                
-                if (diff <= 0) {
-                    clearInterval(boostInterval);
-                    if (boostBtn) boostBtn.classList.remove('active');
-                    if (timerEl) timerEl.style.display = 'none';
-                    document.querySelector('.mega-boost-indicator')?.remove();
-                    if (energyBar) energyBar.classList.remove('boost-active');
-                    showToast(tr('toasts.boostFinished'));
-                    return;
-                }
-                
-                const mins = Math.floor(diff / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-                if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-            }, 1000);
-            
-            showToast(tr('toasts.megaBoostActivated'));
-        })
-        .catch((err) => showToast(err?.detail || err?.message || tr('toasts.watchError'), true));
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+        
+        showToast(tr('toasts.megaBoostActivated'));
+    })().catch((err) => {
+        showToast(
+            isAdConfirmationPendingError(err)
+                ? 'You did not finish the ad or the reward was not confirmed.'
+                : (err?.detail || err?.message || tr('toasts.watchError')),
+            true
+        );
+    });
 }
 
 function showBoostIndicator() {
@@ -5528,10 +5590,20 @@ function initAutoClicker() {
         }
         showToast(tr('toasts.adLoading'));
         try {
-            await window.show_10655027();
+            const adSessionId = await startAdActionSession('autoclicker');
+            await showRewardedAd(adSessionId);
+            await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
+                user_id: userId,
+                ad_session_id: adSessionId
+            }));
             enable();
         } catch (e) {
-            showToast(tr('toasts.autoTapError'), true);
+            showToast(
+                isAdConfirmationPendingError(e)
+                    ? 'You did not finish the ad or the reward was not confirmed.'
+                    : tr('toasts.autoTapError'),
+                true
+            );
         }
     };
 
