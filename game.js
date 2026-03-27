@@ -196,11 +196,9 @@ const I18N = {
             incomeBonus: '⚡ x{value} income'
         },
         tasksList: {
-            energy_full: { title: 'Full energy', description: 'Restore energy to 100%', tag: 'energy', reward: '⚡ FULL' },
-            coins_rush: { title: 'Coin rush', description: 'Get +1,500 coins instantly', tag: 'coins' },
-            coins_jackpot: { title: 'Jackpot', description: '+8,000 coins every 45 minutes', tag: 'jackpot' },
-            boost_combo: { title: 'Combo boost', description: 'x2 income for 7 minutes after watching', tag: 'buff', reward: 'x2 • 7 min' },
-            skin_drop: { title: 'Skin drop', description: 'Rare skin for watching (once per hour)', tag: 'skin', reward: '🎁 Rare drop' }
+            tap_surge: { title: 'Tap Surge', description: 'x2 tap income for 5 minutes', tag: 'tap', reward: 'x2 • 5 min' },
+            passive_hour: { title: 'Passive Hour', description: 'x2 passive income for 60 minutes', tag: 'passive', reward: 'x2 • 60 min' },
+            coin_drop: { title: 'Coin Drop', description: 'Random reward from 200 to 30,000 coins', tag: 'coins', reward: '200-30K' }
         },
         minigames: {
             coinflipSpinning: '🪙 Flipping...',
@@ -401,11 +399,9 @@ const I18N = {
             incomeBonus: '⚡ x{value} к доходу'
         },
         tasksList: {
-            energy_full: { title: 'Полная энергия', description: 'Восстанови запас энергии до 100%', tag: 'энергия', reward: '⚡ FULL' },
-            coins_rush: { title: 'Монетный дождь', description: 'Сразу получи +1 500 монет', tag: 'коины' },
-            coins_jackpot: { title: 'Джекпот', description: '+8 000 монет раз в 45 минут', tag: 'джекпот' },
-            boost_combo: { title: 'Комбо-ускорение', description: 'x2 доход на 7 минут после просмотра', tag: 'баф', reward: 'x2 • 7 мин' },
-            skin_drop: { title: 'Дроп скина', description: 'Редкий скин за просмотр (1 раз в час)', tag: 'скин', reward: '🎁 Rare drop' }
+            tap_surge: { title: 'Tap Surge', description: 'x2 к тапу на 5 минут', tag: 'тап', reward: 'x2 • 5 мин' },
+            passive_hour: { title: 'Passive Hour', description: 'x2 к пассивному доходу на 60 минут', tag: 'пассив', reward: 'x2 • 60 мин' },
+            coin_drop: { title: 'Coin Drop', description: 'Случайная награда от 200 до 30 000 монет', tag: 'коины', reward: '200-30K' }
         },
         minigames: {
             coinflipSpinning: '🪙 Подбрасываем...',
@@ -462,6 +458,8 @@ const AUTO_CLICK_INTERVAL_MS = 55;
 const AUTO_CLICK_COOLDOWN_STORAGE_KEY = 'autoClickCooldownUntil';
 const AUTO_CLICK_COOLDOWN_MIN_MS = 5 * 60 * 1000;
 const AUTO_CLICK_COOLDOWN_MAX_MS = 10 * 60 * 1000;
+const SOFT_ONBOARDING_STORAGE_KEY = 'softOnboardingState';
+const SOFT_DISCOVERY_STORAGE_KEY = 'softOnboardingDiscoveries';
 const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
 const LEGACY_SKIN_ID_MAP = {
     'referral-special.pngSP': 'refferal.pngSP',
@@ -532,6 +530,32 @@ function formatCooldownClock(totalSeconds) {
 
 function randomIntBetween(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function isTaskTapBoostActive() {
+    const expiresAt = parseServerDate(State.temp.taskTapBoostExpiresAt);
+    return !!(expiresAt && expiresAt > new Date() && (State.temp.taskTapBoostMultiplier || 1) > 1);
+}
+
+function isTaskPassiveBoostActive() {
+    const expiresAt = parseServerDate(State.temp.taskPassiveBoostExpiresAt);
+    return !!(expiresAt && expiresAt > new Date() && (State.temp.taskPassiveBoostMultiplier || 1) > 1);
+}
+
+function applyTaskBoostPayload(data = {}) {
+    State.temp.taskTapBoostExpiresAt = data.task_tap_boost_expires_at || State.temp.taskTapBoostExpiresAt || null;
+    State.temp.taskTapBoostMultiplier = data.task_tap_boost_multiplier || (data.task_tap_boost_active ? 2 : State.temp.taskTapBoostMultiplier || 1);
+    State.temp.taskPassiveBoostExpiresAt = data.task_passive_boost_expires_at || State.temp.taskPassiveBoostExpiresAt || null;
+    State.temp.taskPassiveBoostMultiplier = data.task_passive_boost_multiplier || (data.task_passive_boost_active ? 2 : State.temp.taskPassiveBoostMultiplier || 1);
+
+    if (!isTaskTapBoostActive()) {
+        State.temp.taskTapBoostExpiresAt = null;
+        State.temp.taskTapBoostMultiplier = 1;
+    }
+    if (!isTaskPassiveBoostActive()) {
+        State.temp.taskPassiveBoostExpiresAt = null;
+        State.temp.taskPassiveBoostMultiplier = 1;
+    }
 }
 
 const tr = t;
@@ -643,6 +667,10 @@ const State = {
             point: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
             effect: null
         },
+        taskTapBoostExpiresAt: null,
+        taskTapBoostMultiplier: 1,
+        taskPassiveBoostExpiresAt: null,
+        taskPassiveBoostMultiplier: 1,
 
         // энергосистема
         energyUiTimer: null,
@@ -665,7 +693,12 @@ const State = {
         ghostNextSpawnAt: 0,
         tournamentLastRank: null,
         tournamentLastTopLimit: 0,
-        tournamentDropWarned: false
+        tournamentDropWarned: false,
+        onboarding: {
+            active: false,
+            step: 'done',
+            handEl: null
+        }
 
     },
     cache: new Map()
@@ -964,6 +997,232 @@ function startAmbientToastLoop() {
         clearInterval(State.temp.toastContextTimer);
     }
     State.temp.toastContextTimer = setInterval(maybeShowAmbientToast, 18000);
+}
+
+function readSoftOnboardingState() {
+    try {
+        return JSON.parse(localStorage.getItem(SOFT_ONBOARDING_STORAGE_KEY) || '{}');
+    } catch (err) {
+        return {};
+    }
+}
+
+function writeSoftOnboardingState(nextState) {
+    localStorage.setItem(SOFT_ONBOARDING_STORAGE_KEY, JSON.stringify(nextState));
+}
+
+function readSoftDiscoveryState() {
+    try {
+        return JSON.parse(localStorage.getItem(SOFT_DISCOVERY_STORAGE_KEY) || '{}');
+    } catch (err) {
+        return {};
+    }
+}
+
+function writeSoftDiscoveryState(nextState) {
+    localStorage.setItem(SOFT_DISCOVERY_STORAGE_KEY, JSON.stringify(nextState));
+}
+
+function clearOnboardingHandHint() {
+    State.temp.onboarding.handEl?.remove?.();
+    State.temp.onboarding.handEl = null;
+}
+
+function renderOnboardingHandHint() {
+    clearOnboardingHandHint();
+    const step = State.temp.onboarding.step;
+    const target = step === 'upgrade'
+        ? document.querySelector('.upgrade-panel')
+        : document.getElementById('ryoho');
+    if (!target || !['tap', 'upgrade'].includes(step)) return;
+
+    const rect = target.getBoundingClientRect();
+    const hint = document.createElement('div');
+    hint.className = 'onboarding-hand-hint';
+    hint.innerHTML = `
+        <div class="onboarding-hand-hint__bubble">${step === 'upgrade' ? 'Upgrade' : 'Tap'}</div>
+        <div class="onboarding-hand-hint__hand">👆</div>
+    `;
+    hint.style.left = `${rect.left + rect.width * (step === 'upgrade' ? 0.78 : 0.72)}px`;
+    hint.style.top = `${rect.top + rect.height * (step === 'upgrade' ? 0.45 : 0.76)}px`;
+    document.body.appendChild(hint);
+    State.temp.onboarding.handEl = hint;
+}
+
+function completeSoftOnboarding() {
+    clearOnboardingHandHint();
+    State.temp.onboarding.active = false;
+    State.temp.onboarding.step = 'done';
+    writeSoftOnboardingState({ step: 'done', completed: true });
+}
+
+function setSoftOnboardingStep(step) {
+    State.temp.onboarding.active = step !== 'done';
+    State.temp.onboarding.step = step;
+    writeSoftOnboardingState({ step, completed: step === 'done' });
+    if (step === 'tap') {
+        renderOnboardingHandHint();
+        showToast('Tap the spirit. Every run starts with your first hit.', false, {
+            title: 'First move',
+            icon: '👆',
+            side: 'right',
+            variant: 'reward',
+            key: 'onboarding:tap',
+            cooldownMs: 5000,
+            duration: 5200
+        });
+        return;
+    }
+    clearOnboardingHandHint();
+    if (step === 'upgrade') {
+        renderOnboardingHandHint();
+        showToast('You have enough coins now. Hit Upgrade to reach level 2.', false, {
+            title: 'Level up',
+            icon: '⬆️',
+            side: 'left',
+            variant: 'reward',
+            key: 'onboarding:upgrade',
+            cooldownMs: 5000,
+            duration: 5000
+        });
+        return;
+    }
+    clearOnboardingHandHint();
+    if (step === 'tasks') {
+        showToast('Good. Open Tasks for fast coins, skins and social rewards.', false, {
+            title: 'Next step',
+            icon: '🎯',
+            side: 'left',
+            variant: 'info',
+            key: 'onboarding:tasks',
+            cooldownMs: 5000,
+            duration: 5000
+        });
+        return;
+    }
+    if (step === 'daily') {
+        showToast('Nice. The gift button holds your daily streak. Open it next.', false, {
+            title: 'Daily rewards',
+            icon: '🎁',
+            side: 'right',
+            variant: 'reward',
+            key: 'onboarding:daily',
+            cooldownMs: 5000,
+            duration: 5000
+        });
+        return;
+    }
+    if (step === 'done') {
+        showToast('You are set. Build momentum and let the run scale up.', false, {
+            title: 'You are in',
+            icon: '✨',
+            side: 'left',
+            variant: 'reward',
+            key: 'onboarding:done',
+            cooldownMs: 5000,
+            duration: 4600
+        });
+        completeSoftOnboarding();
+    }
+}
+
+function initSoftOnboarding() {
+    if (!userId) return;
+
+    const saved = readSoftOnboardingState();
+    const isCompleted = saved?.completed || saved?.step === 'done';
+    if (isCompleted) {
+        State.temp.onboarding.active = false;
+        State.temp.onboarding.step = 'done';
+        clearOnboardingHandHint();
+        return;
+    }
+
+    const isFreshAccount =
+        (State.game.coins || 0) <= 0 &&
+        (State.daily.claimedDays || 0) === 0 &&
+        Math.max(State.game.levels.multitap || 0, State.game.levels.profit || 0, State.game.levels.energy || 0) === 0;
+
+    if (!isFreshAccount && !saved?.step) {
+        writeSoftOnboardingState({ step: 'done', completed: true });
+        return;
+    }
+
+    const step = saved?.step || 'tap';
+    State.temp.onboarding.active = step !== 'done';
+    State.temp.onboarding.step = step;
+    setTimeout(() => setSoftOnboardingStep(step), 500);
+}
+
+function maybePromptUpgradeOnboarding() {
+    if (!State.temp.onboarding.active) return;
+    if (State.temp.onboarding.step !== 'upgrade_wait') return;
+    if ((State.game.coins || 0) < getUpgradeAllPrice()) return;
+    setSoftOnboardingStep('upgrade');
+}
+
+function advanceSoftOnboarding(eventName) {
+    if (!State.temp.onboarding.active) return;
+
+    if (eventName === 'tap' && State.temp.onboarding.step === 'tap') {
+        setSoftOnboardingStep('upgrade_wait');
+        return;
+    }
+    if (eventName === 'upgrade' && State.temp.onboarding.step === 'upgrade') {
+        setSoftOnboardingStep('tasks');
+        return;
+    }
+    if (eventName === 'tasks' && State.temp.onboarding.step === 'tasks') {
+        setSoftOnboardingStep('daily');
+        return;
+    }
+    if (eventName === 'daily' && State.temp.onboarding.step === 'daily') {
+        setSoftOnboardingStep('done');
+    }
+}
+
+function maybeShowDiscoveryToast(tab) {
+    const mapping = {
+        friends: {
+            key: 'friends',
+            title: 'Friends',
+            body: 'Invite friends to unlock referral coins, passive share and the referral skin.',
+            icon: '🤝',
+            side: 'left'
+        },
+        skins: {
+            key: 'skins',
+            title: 'Skins',
+            body: 'Skins are not just cosmetic. Some of them multiply your tap income.',
+            icon: '🎨',
+            side: 'right'
+        },
+        tournament: {
+            key: 'tournament',
+            title: 'Tournament',
+            body: 'Stay near the top and fight for the prize pool before the board shifts.',
+            icon: '🏁',
+            side: 'right'
+        }
+    };
+
+    const item = mapping[tab];
+    if (!item) return;
+
+    const saved = readSoftDiscoveryState();
+    if (saved[item.key]) return;
+    saved[item.key] = true;
+    writeSoftDiscoveryState(saved);
+
+    showToast(item.body, false, {
+        title: item.title,
+        icon: item.icon,
+        side: item.side,
+        variant: 'info',
+        key: `discovery:${item.key}`,
+        cooldownMs: 5000,
+        duration: 4800
+    });
 }
 
 function maybeShowIdleToast() {
@@ -1294,6 +1553,7 @@ async function loadUserData() {
         State.game.levels.profit = data.profit_level || 0;
         State.game.levels.energy = data.energy_level || 0;
         State.game.level = getDisplayLevel(Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy));
+        applyTaskBoostPayload(data);
         
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
         State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
@@ -1717,6 +1977,7 @@ async function loadDailyRewardStatus() {
 }
 
 function openDailyRewards() {
+    advanceSoftOnboarding('daily');
     renderDailyRewardsModal();
     openModal('daily-screen');
     requestAnimationFrame(() => {
@@ -1760,10 +2021,16 @@ function updateUI() {
         if (coinEl) coinEl.textContent = formatNumber(State.game.coins);
 
         const hourEl = document.getElementById('profitPerHour');
-        if (hourEl) hourEl.textContent = formatNumber(State.game.profitPerHour);
+        const displayHour = isTaskPassiveBoostActive()
+            ? Math.floor((State.game.profitPerHour || 0) * (State.temp.taskPassiveBoostMultiplier || 1))
+            : State.game.profitPerHour;
+        if (hourEl) hourEl.textContent = formatNumber(displayHour);
         
         const tapEl = document.getElementById('profitPerTap');
-        if (tapEl) tapEl.textContent = State.game.profitPerTap;
+        const displayTap = isTaskTapBoostActive()
+            ? Math.floor((State.game.profitPerTap || 0) * (State.temp.taskTapBoostMultiplier || 1))
+            : State.game.profitPerTap;
+        if (tapEl) tapEl.textContent = displayTap;
 
         const energyFill = document.getElementById('energyFill');
         const energyText = document.getElementById('energyText');
@@ -1788,6 +2055,8 @@ function updateUI() {
         if (globalPriceEl) {
             globalPriceEl.textContent = formatNumber(State.game.prices.global || 0);
         }
+
+        maybePromptUpgradeOnboarding();
         
         pendingUI = false;
     });
@@ -1943,6 +2212,9 @@ function handleTap(e) {
     if (skin?.bonus?.type === 'multiplier') {
         previewGain *= skin.bonus.value;
     }
+    if (isTaskTapBoostActive()) {
+        previewGain *= Math.max(1, State.temp.taskTapBoostMultiplier || 1);
+    }
 
     if (megaBoostActive) {
         previewGain *= 2;
@@ -1956,6 +2228,9 @@ function handleTap(e) {
     const tapTime = Date.now();
     State.temp.lastTapAt = tapTime;
     registerTapRhythm(tapTime, isAutoTap);
+    if (!isAutoTap) {
+        advanceSoftOnboarding('tap');
+    }
 
     // СНАЧАЛА проверяем энергию
     if (!megaBoostActive && !dailyInfiniteEnergyActive && !ghostBoostActive) {
@@ -2541,6 +2816,7 @@ async function upgradeBoost(type, internal = false) {
         playUpgradeCelebration();
         updateUI();
         checkAchievements();
+        advanceSoftOnboarding('upgrade');
     }
     } catch (err) {
         if (err.status === 429) {
@@ -2609,6 +2885,7 @@ async function upgradeAll(internal = false) {
         playUpgradeCelebration();
         updateUI();
         checkAchievements();
+        advanceSoftOnboarding('upgrade');
     } catch (err) {
         if (err.status === 429) {
             if (internal || queuedUpgradeAllCount > 0) {
@@ -2665,84 +2942,64 @@ function playUpgradeSound() {
 // ==================== ВИДЕО-ЗАДАНИЯ ====================
 const VIDEO_TASKS = [
     {
-        id: 'energy_full',
-        title: 'Full Energy',
-        description: 'Restore energy to 100%',
-        reward: '⚡ FULL',
-        icon: '⚡',
-        type: 'energy_full',
-        cooldown: 10,
-        lastUsed: null,
-        category: 'energy',
-        tag: 'energy',
-        completed: false,
-        available: true
-    },
-    {
-        id: 'coins_rush',
-        title: 'Coin Rush',
-        description: 'Get +1,500 coins instantly',
-        reward: 1500,
-        icon: '💰',
-        type: 'coins',
-        cooldown: 8,
-        lastUsed: null,
-        category: 'coins',
-        tag: 'coins',
-        completed: false,
-        available: true
-    },
-    {
-        id: 'coins_jackpot',
-        title: 'Jackpot',
-        description: '+8,000 coins every 45 minutes',
-        reward: 8000,
-        icon: '🏆',
-        type: 'coins',
-        cooldown: 45,
-        lastUsed: null,
-        category: 'coins',
-        tag: 'jackpot',
-        completed: false,
-        available: true
-    },
-    {
-        id: 'boost_combo',
-        title: 'Combo Boost',
-        description: 'x2 income for 7 minutes after watching',
-        reward: 'x2 • 7 min',
+        id: 'tap_surge',
+        title: 'Tap Surge',
+        description: 'x2 tap income for 5 minutes',
+        reward: 'x2 • 5 min',
         icon: '🚀',
-        type: 'boost',
-        boost_multiplier: 2,
-        boost_minutes: 7,
-        cooldown: 30,
+        type: 'tap_boost',
+        cooldown: 75,
         lastUsed: null,
         category: 'boost',
-        tag: 'buff',
+        tag: 'tap',
         completed: false,
         available: true
     },
     {
-        id: 'skin_drop',
-        title: 'Skin Drop',
-        description: 'Rare skin for watching (once per hour)',
-        reward: '🎁 Rare drop',
-        icon: '🎁',
-        type: 'skin',
-        skin_rarity: 'rare',
+        id: 'passive_hour',
+        title: 'Passive Hour',
+        description: 'x2 passive income for 60 minutes',
+        reward: 'x2 • 60 min',
+        icon: '⏳',
+        type: 'passive_boost',
+        cooldown: 240,
+        lastUsed: null,
+        category: 'passive',
+        tag: 'passive',
+        completed: false,
+        available: true
+    },
+    {
+        id: 'coin_drop',
+        title: 'Coin Drop',
+        description: 'Random reward from 200 to 30,000 coins',
+        reward: '200-30K',
+        icon: '💰',
+        type: 'coin_drop',
         cooldown: 60,
         lastUsed: null,
-        category: 'skins',
-        tag: 'skin',
+        category: 'coins',
+        tag: 'drop',
         completed: false,
         available: true
     }
 ];
 
 const TASKS_STORAGE_KEY = 'videoTasksState';
+const SOCIAL_COMPLETED_COLLAPSED_KEY = 'socialCompletedCollapsed';
 
 function persistSocialTasksState() {
     localStorage.setItem(SOCIAL_TASKS_STORAGE_KEY, JSON.stringify(State.tasks.social || {}));
+}
+
+function isCompletedSocialTasksCollapsed() {
+    return localStorage.getItem(SOCIAL_COMPLETED_COLLAPSED_KEY) === '1';
+}
+
+function toggleCompletedSocialTasks() {
+    const nextValue = isCompletedSocialTasksCollapsed() ? '0' : '1';
+    localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, nextValue);
+    renderVideoTasks();
 }
 
 async function loadSocialTasksStatus() {
@@ -2775,7 +3032,10 @@ async function loadSocialTasksStatus() {
 }
 
 function renderSocialTasksMarkup() {
-    return SOCIAL_TASKS.map((task) => {
+    const activeTasks = [];
+    const completedTasks = [];
+
+    SOCIAL_TASKS.forEach((task) => {
         const state = State.tasks.social[task.id] || { started: false, completed: false };
         const isCompleted = state.completed;
         const canClaim = state.started && !state.completed;
@@ -2797,7 +3057,7 @@ function renderSocialTasksMarkup() {
                 ? (requiresVerify ? 'Join the channel and tap verify' : 'Open the page, then claim the reward')
                 : '20,000 coins and an exclusive skin reward';
 
-        return `
+        const cardMarkup = `
             <div class="task-card task-card-simple social-task-card social-${task.colorClass} ${isCompleted ? 'is-claimed is-inactive' : ''}">
                 <div class="social-task-head">
                     <div class="social-task-brand">
@@ -2821,7 +3081,30 @@ function renderSocialTasksMarkup() {
                 </div>
             </div>
         `;
-    }).join('');
+
+        if (isCompleted) {
+            completedTasks.push(cardMarkup);
+        } else {
+            activeTasks.push(cardMarkup);
+        }
+    });
+
+    const completedCollapsed = isCompletedSocialTasksCollapsed();
+    const completedMarkup = completedTasks.length
+        ? `
+            <div class="social-completed-block ${completedCollapsed ? 'is-collapsed' : ''}">
+                <button class="social-completed-title" type="button" onclick="toggleCompletedSocialTasks()">
+                    <span>Completed</span>
+                    <span class="social-completed-arrow">${completedCollapsed ? '▾' : '▴'}</span>
+                </button>
+                <div class="social-completed-list" ${completedCollapsed ? 'hidden' : ''}>
+                    ${completedTasks.join('')}
+                </div>
+            </div>
+        `
+        : '';
+
+    return `${activeTasks.join('')}${completedMarkup}`;
 }
 
 function startSocialTask(taskId) {
@@ -2910,32 +3193,27 @@ function getTaskTimeLeft(task) {
 async function loadVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
-    
-    const now = new Date();
-    const lastReset = localStorage.getItem('videoTasksReset');
-    const saved = localStorage.getItem(TASKS_STORAGE_KEY);
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            VIDEO_TASKS.forEach(t => {
-                if (parsed[t.id]?.lastUsed) t.lastUsed = parsed[t.id].lastUsed;
-            });
-        } catch (e) {
-            console.warn('task state load failed', e);
-        }
-    }
-    
-    if (!lastReset || new Date(lastReset).getDate() !== now.getDate()) {
-        VIDEO_TASKS.forEach(task => {
-            task.completed = false;
-            task.available = true;
-            task.lastUsed = null;
-        });
-        localStorage.setItem('videoTasksReset', now.toISOString());
-        localStorage.removeItem(TASKS_STORAGE_KEY);
-    }
 
     await loadSocialTasksStatus();
+
+    if (userId) {
+        try {
+            const response = await API.get(`/api/video-tasks/status/${userId}`);
+            const taskMap = new Map((response.tasks || []).map((task) => [task.task_id, task]));
+            VIDEO_TASKS.forEach((task) => {
+                const serverTask = taskMap.get(task.id);
+                task.available = serverTask ? !!serverTask.available : true;
+                task.remainingSeconds = serverTask ? Number(serverTask.remaining_seconds || 0) : 0;
+            });
+        } catch (err) {
+            console.warn('Video task status failed', err);
+            VIDEO_TASKS.forEach((task) => {
+                task.available = true;
+                task.remainingSeconds = 0;
+            });
+        }
+    }
+
     renderVideoTasks();
 }
 
@@ -2949,18 +3227,10 @@ function renderVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
 
-    // обновляем доступность заданий по кулдауну
-    VIDEO_TASKS.forEach(task => {
-        if (task.lastUsed) {
-            task.available = checkTaskCooldown(task);
-        }
-    });
-    persistTasksState();
-
     const socialMarkup = renderSocialTasksMarkup();
     const videoMarkup = VIDEO_TASKS.map(task => {
         const available = task.available;
-        const timeLeft = task.lastUsed ? getTaskTimeLeft(task) : 0;
+        const timeLeft = Math.ceil((task.remainingSeconds || 0) / 60);
         const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
         const rewardValue = taskCopy.reward || task.reward;
         const rewardLabel = typeof rewardValue === 'number'
@@ -2997,68 +3267,7 @@ function renderVideoTasks() {
     container.innerHTML = `${socialMarkup}${videoMarkup}`;
 }
 async function handleVideoTask(taskId) {
-    const task = VIDEO_TASKS.find(t => t.id === taskId);
-    if (!task || !task.available) return;
-    
-    if (typeof window.show_10655027 !== 'function') {
-        showToast(tr('toasts.adUnavailable'), true);
-        return;
-    }
-    
-    showToast(tr('toasts.videoLoading'));
-    
-    try {
-        await window.show_10655027();
-        trackAchievementProgress('adsWatched', 1);
-        
-        // Начисляем награду
-        switch(task.type) {
-            case 'energy_full':
-                State.game.energy = State.game.maxEnergy;
-                showToast(tr('toasts.energyFull'));
-                break;
-                
-            case 'coins':
-                State.game.coins += task.reward;
-                showToast(`💰 +${task.reward} ${tr('tasks.coinsSuffix')}`);
-                break;
-                
-            case 'skin':
-                await unlockRandomSkin(task.skin_rarity);
-                break;
-                
-            case 'boost':
-                activateCustomBoost(task.boost_multiplier, task.boost_minutes);
-                break;
-
-            case 'random':
-                giveRandomReward();
-                break;
-
-            case 'refresh':
-                VIDEO_TASKS.forEach(t => { t.completed = false; t.available = true; t.lastUsed = null; });
-                task.lastUsed = Date.now();
-                task.available = false;
-                renderVideoTasks();
-                showToast(tr('toasts.cooldownsReset'));
-                break;
-        }
-        
-        // Устанавливаем кулдаун
-        if (task.type !== 'refresh') {
-            task.lastUsed = Date.now();
-            task.available = false;
-        }
-        
-        updateUI();
-        renderVideoTasks();
-        createConfetti();
-        persistTasksState();
-        
-    } catch (error) {
-        console.error('Video error:', error);
-        showToast(tr('toasts.watchError'), true);
-    }
+    return watchVideoForTask(taskId);
 }
 
 function giveRandomReward() {
@@ -3123,60 +3332,41 @@ async function watchVideoForTask(taskId) {
     showToast(tr('toasts.videoLoading'));
     
     try {
+        const adSessionId = await startAdActionSession('video_task');
         await window.show_10655027();
-        await claimVideoReward(task);
-        
-        task.completed = true;
-        
-        setTimeout(() => {
-            task.available = true;
-            task.completed = false;
-            renderVideoTasks();
-        }, 24 * 60 * 60 * 1000);
-        
-        renderVideoTasks();
-        showToast(tr('toasts.rewardReceived'));
+        trackAchievementProgress('adsWatched', 1);
+
+        const response = await claimVideoReward(task, adSessionId);
+
+        if (typeof response?.coins === 'number') {
+            State.game.coins = response.coins;
+        }
+
+        applyTaskBoostPayload(response);
+        updateUI();
+        await loadVideoTasks();
+        showToast(response?.message || tr('toasts.rewardReceived'), false, {
+            title: task.title,
+            variant: 'reward',
+            side: task.category === 'passive' ? 'right' : 'left'
+        });
         createConfetti();
-        
     } catch (error) {
         console.error('Video error:', error);
-        showToast(tr('toasts.watchError'), true);
+        showToast(error?.detail || error?.message || tr('toasts.watchError'), true);
     }
 }
 
-async function claimVideoReward(task) {
-    switch(task.type) {
-        case 'coins':
-            State.game.coins += task.reward;
-            break;
-        case 'energy':
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + 50);
-            break;
-        case 'boost':
-            activateMegaBoost();
-            break;
-        case 'chest':
-            const randomReward = Math.floor(Math.random() * 4500) + 500;
-            State.game.coins += randomReward;
-            showToast(`🎁 +${randomReward} ${tr('tasks.coinsSuffix')}`);
-            break;
-        case 'refresh':
-            VIDEO_TASKS.forEach(t => {
-                t.completed = false;
-                t.available = true;
-            });
-            break;
+async function claimVideoReward(task, adSessionId) {
+    if (!userId) {
+        throw new Error(tr('toasts.authRequired'));
     }
-    
-    updateUI();
-    
-    if (userId) {
-        await fetch(`${CONFIG.API_URL}/api/ad-watched`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, reward_type: task.type })
-        }).catch(() => {});
-    }
+
+    return API.post('/api/video-tasks/claim', {
+        user_id: userId,
+        ad_session_id: adSessionId,
+        task_id: task.id
+    });
 }
 
 // ==================== РЕФЕРАЛЫ ====================
@@ -3450,11 +3640,15 @@ function switchTab(tab, el) {
     
     const modalId = `${tab}-screen`;
     openModal(modalId);
+    maybeShowDiscoveryToast(tab);
     
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'tournament') loadTournamentData();
-    if (tab === 'tasks') loadVideoTasks();
+    if (tab === 'tasks') {
+        advanceSoftOnboarding('tasks');
+        loadVideoTasks();
+    }
 }
 
 function openSettings() {
@@ -5035,9 +5229,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     State.temp.lastTapAt = Date.now();
     startIdleToastLoop();
     applySavedSkin();
+    initSoftOnboarding();
     window.addEventListener('resize', () => {
         applyPerformanceMode();
         updateToastViewportOffset();
+        if (State.temp.onboarding.active && ['tap', 'upgrade'].includes(State.temp.onboarding.step)) {
+            renderOnboardingHandHint();
+        }
     });
 
     console.log('✅ Spirit Clicker ready');
@@ -5631,6 +5829,7 @@ window.claimDailyReward = claimDailyReward;
 window.watchVideoForTask = watchVideoForTask;
 window.startSocialTask = startSocialTask;
 window.claimSocialTask = claimSocialTask;
+window.toggleCompletedSocialTasks = toggleCompletedSocialTasks;
 window.recoverEnergyWithAd = recoverEnergyWithAd;
 window.checkBoostStatus = checkBoostStatus;
 window.closeSkinDetail = closeSkinDetail;
