@@ -1779,7 +1779,7 @@ async function showRewardedAd(adSessionId = null) {
     }
 
     if (!adSessionId) {
-        return window.show_10655027();
+        return window.show_10655027('pop');
     }
 
     const payload = {
@@ -1788,9 +1788,13 @@ async function showRewardedAd(adSessionId = null) {
     };
 
     try {
-        return await window.show_10655027(payload);
+        return await window.show_10655027('pop', payload);
     } catch (err) {
-        return window.show_10655027();
+        try {
+            return await window.show_10655027(payload);
+        } catch (fallbackErr) {
+            return window.show_10655027('pop');
+        }
     }
 }
 
