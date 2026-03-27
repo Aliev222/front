@@ -22,6 +22,7 @@ const tg = window.Telegram?.WebApp;
 let userId = null;
 let username = null;
 let referrerId = null;
+const OWNER_ONLINE_COUNTER_USER_ID = 1507124181;
 const telegramInitData = tg?.initData || '';
 const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
 const UI_LANG = 'en';
@@ -3737,8 +3738,19 @@ function setOnlineCount(count) {
     if (countEl) countEl.textContent = formatNumber(Math.max(0, Number(count) || 0));
 }
 
+function canSeeOnlineCounter() {
+    return Number(userId || 0) === OWNER_ONLINE_COUNTER_USER_ID;
+}
+
+function updateOnlineCounterVisibility() {
+    const indicator = document.getElementById('tournament-online-indicator');
+    if (!indicator) return;
+    indicator.style.display = canSeeOnlineCounter() ? '' : 'none';
+}
+
 async function sendOnlineHeartbeat() {
     if (!userId) return;
+    if (!canSeeOnlineCounter()) return;
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/online/heartbeat`, {
             method: 'POST',
@@ -3756,6 +3768,7 @@ async function sendOnlineHeartbeat() {
 }
 
 async function refreshOnlineCount() {
+    if (!canSeeOnlineCounter()) return;
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/online/count`);
         const data = await res.json();
@@ -3767,6 +3780,8 @@ async function refreshOnlineCount() {
 
 function startOnlinePresence() {
     if (!userId) return;
+    updateOnlineCounterVisibility();
+    if (!canSeeOnlineCounter()) return;
     if (!onlineHeartbeatTimer) {
         sendOnlineHeartbeat();
         onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, 25000);
@@ -3786,14 +3801,20 @@ async function loadTournamentData() {
         const rankData = await rankRes.json();
         
         if (leaderboardData.success) {
-            setOnlineCount(leaderboardData.online_now);
+            const topPlayers = Array.isArray(leaderboardData.players)
+                ? leaderboardData.players.slice(0, 3)
+                : [];
+            updateOnlineCounterVisibility();
+            if (canSeeOnlineCounter()) {
+                setOnlineCount(leaderboardData.online_now);
+            }
             renderLeaderboard({
-                players: leaderboardData.players,
+                players: topPlayers,
                 playerRank: rankData.rank,
                 playerScore: rankData.score,
                 timeLeft: leaderboardData.time_left
             });
-            trackTournamentToastState(rankData.rank, Array.isArray(leaderboardData.players) ? leaderboardData.players.length : 0);
+            trackTournamentToastState(rankData.rank, topPlayers.length);
             startTournamentTimer(leaderboardData.time_left);
         }
     } catch (err) {
@@ -3808,7 +3829,7 @@ function renderLeaderboard(data) {
     
     if (list) {
         list.innerHTML = data.players.map(p => `
-            <div class="leaderboard-item">
+            <div class="leaderboard-item leaderboard-item-rank-${p.rank}">
                 <span class="player-rank">${p.rank}</span>
                 <div class="player-avatar">
                     <img src="${p.avatar || '/imgg/default_avatar.png'}" 
