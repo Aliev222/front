@@ -570,7 +570,7 @@ const State = {
         profitPerTap: 1,
         profitPerHour: 100,
         level: 0,
-        prices: { multitap: 50, profit: 40, energy: 30 },
+        prices: { global: 120, multitap: 120, profit: 120, energy: 120 },
         levels: { multitap: 0, profit: 0, energy: 0 }
     },
     skins: {
@@ -1759,14 +1759,13 @@ function updateUI() {
 
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) {
-            const minLevel = Math.min(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
-            globalLevelEl.textContent = minLevel;
+            const globalLevel = Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
+            globalLevelEl.textContent = globalLevel;
         }
 
         const globalPriceEl = document.getElementById('globalPrice');
         if (globalPriceEl) {
-            const total = State.game.prices.multitap + State.game.prices.profit + State.game.prices.energy;
-            globalPriceEl.textContent = formatNumber(total);
+            globalPriceEl.textContent = formatNumber(State.game.prices.global || 0);
         }
         
         pendingUI = false;
@@ -2419,7 +2418,7 @@ let nextUpgradeRequestAt = 0;
 const UPGRADE_REQUEST_GAP_MS = 380;
 
 function getUpgradeAllPrice() {
-    return (State.game.prices.multitap || 0) + (State.game.prices.profit || 0) + (State.game.prices.energy || 0);
+    return State.game.prices.global || 0;
 }
 
 function triggerUpgradeHaptics() {
@@ -2503,8 +2502,13 @@ async function upgradeBoost(type, internal = false) {
         
         if (result) {
             State.game.coins = result.coins;
-            State.game.levels[type] = result.new_level;
-            State.game.prices[type] = result.next_cost || 0;
+            State.game.levels.multitap = result.levels?.multitap ?? result.new_level ?? State.game.levels.multitap;
+            State.game.levels.profit = result.levels?.profit ?? result.new_level ?? State.game.levels.profit;
+            State.game.levels.energy = result.levels?.energy ?? result.new_level ?? State.game.levels.energy;
+            State.game.prices.global = result.next_cost || 0;
+            State.game.prices.multitap = result.next_cost || 0;
+            State.game.prices.profit = result.next_cost || 0;
+            State.game.prices.energy = result.next_cost || 0;
             trackAchievementProgress('upgrades', 1);
             
         if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
@@ -2570,6 +2574,12 @@ async function upgradeAll(internal = false) {
         State.game.levels.profit = result.levels?.profit ?? State.game.levels.profit;
         State.game.levels.energy = result.levels?.energy ?? State.game.levels.energy;
         State.game.prices = { ...State.game.prices, ...(result.prices || {}) };
+        if (result.next_cost) {
+            State.game.prices.global = result.next_cost;
+            State.game.prices.multitap = result.next_cost;
+            State.game.prices.profit = result.next_cost;
+            State.game.prices.energy = result.next_cost;
+        }
         State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
         State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
         State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
@@ -3787,15 +3797,12 @@ function openGame(game) {
     const modal = document.getElementById(`game-${game}`);
     if (game === 'wheel') initRouletteVisuals();
     if (game === 'luckybox') resetLuckyBoxBoard();
-    if (game === 'crash') resetCrashGhostUI();
+    if (game === 'crash' && !crashGhostState.active) resetCrashGhostUI();
     if (modal) modal.classList.add('active');
 }
 
 function closeGame(game) {
     const modal = document.getElementById(`game-${game}`);
-    if (game === 'crash' && crashGhostState.active) {
-        endCrashGhostRound(false, true);
-    }
     if (game === 'wheel') {
         cancelAnimationFrame(rouletteAnimationFrame);
         rouletteAnimationFrame = null;
@@ -4357,7 +4364,8 @@ const crashGhostState = {
     active: false,
     bet: 0,
     multiplier: 1,
-    crashAt: 1.5,
+    crashAt: null,
+    sessionId: null,
     startedAt: 0,
     interval: null,
     settled: false
@@ -4480,49 +4488,72 @@ function playLuckyBox(boxIndex) {
         card.dataset.multiplier = String(shuffled[index]);
     });
 
-    setTimeout(() => {
-        cards.forEach((card, index) => {
-            const mult = shuffled[index];
-            const label = card.querySelector('.lucky-box-label');
-        if (label) {
-            label.textContent = mult === 0 ? tr('minigames.luckyBust') : mult === 0.8 ? tr('minigames.luckySave') : `x${mult}`;
-        }
-        });
+    setTimeout(async () => {
+        try {
+            let outcomeList = shuffled;
+            let multiplier = shuffled[boxIndex];
+            let payout = Math.floor(bet * multiplier);
+            let outcomeType = multiplier > 1 ? 'win' : multiplier === 0.8 ? 'refund' : 'lose';
 
-        const selectedCard = cards[boxIndex];
-        const multiplier = shuffled[boxIndex];
-        const payout = Math.floor(bet * multiplier);
-        State.game.coins -= bet;
+            if (userId) {
+                const data = await postMiniGameRequest('/api/game/luckybox', {
+                    user_id: userId,
+                    bet,
+                    box_index: boxIndex
+                });
+                outcomeList = Array.isArray(data.outcomes) && data.outcomes.length === 4 ? data.outcomes : outcomeList;
+                multiplier = Number(data.multiplier ?? outcomeList[boxIndex] ?? 0);
+                payout = Number(data.payout ?? Math.floor(bet * multiplier));
+                outcomeType = data.outcome || outcomeType;
+                if (typeof data.coins === 'number') {
+                    State.game.coins = data.coins;
+                }
+                resultEl.textContent = data.message || resultEl.textContent;
+            } else {
+                State.game.coins = State.game.coins - bet + payout;
+            }
 
-        if (multiplier > 1) {
-            State.game.coins += payout;
-            selectedCard.classList.add('winning');
-            resultEl.textContent = tr('minigames.luckyHit', { multiplier, profit: payout - bet });
-            createConfetti(selectedCard);
-            spawnGameParticles(selectedCard, 'win');
-            playSound('win');
-        } else if (multiplier === 0.8) {
-            State.game.coins += payout;
-            selectedCard.classList.add('refund');
-            resultEl.textContent = tr('minigames.luckySoft', { payout });
-            spawnGameParticles(selectedCard, 'soft');
-            playSound('coinflip');
-        } else {
-            selectedCard.classList.add('losing');
-            resultEl.textContent = tr('minigames.luckyLost', { bet });
-            shakeGameModal('luckybox');
-            spawnGameParticles(selectedCard, 'lose');
+            cards.forEach((card, index) => {
+                const mult = Number(outcomeList[index] ?? 0);
+                card.dataset.multiplier = String(mult);
+                const label = card.querySelector('.lucky-box-label');
+                if (label) {
+                    label.textContent = mult === 0 ? tr('minigames.luckyBust') : mult === 0.8 ? tr('minigames.luckySave') : `x${mult}`;
+                }
+            });
+
+            const selectedCard = cards[boxIndex];
+            if (outcomeType === 'win') {
+                selectedCard.classList.add('winning');
+                if (!userId) resultEl.textContent = tr('minigames.luckyHit', { multiplier, profit: payout - bet });
+                createConfetti(selectedCard);
+                spawnGameParticles(selectedCard, 'win');
+                playSound('win');
+            } else if (outcomeType === 'refund') {
+                selectedCard.classList.add('refund');
+                if (!userId) resultEl.textContent = tr('minigames.luckySoft', { payout });
+                spawnGameParticles(selectedCard, 'soft');
+                playSound('coinflip');
+            } else {
+                selectedCard.classList.add('losing');
+                if (!userId) resultEl.textContent = tr('minigames.luckyLost', { bet });
+                shakeGameModal('luckybox');
+                spawnGameParticles(selectedCard, 'lose');
+                playSound('lose');
+            }
+
+            trackAchievementProgress('games', 1);
+            checkAchievements();
+            updateUI();
+        } catch (err) {
+            resultEl.textContent = `❌ ${err.message || tr('toasts.serverError')}`;
             playSound('lose');
+        } finally {
+            setTimeout(() => {
+                luckyBoxBusy = false;
+                resetLuckyBoxBoard();
+            }, 2200);
         }
-
-        trackAchievementProgress('games', 1);
-        checkAchievements();
-        updateUI();
-
-        setTimeout(() => {
-            luckyBoxBusy = false;
-            resetLuckyBoxBoard();
-        }, 2200);
     }, 850);
 }
 
@@ -4546,9 +4577,107 @@ function resetCrashGhostUI() {
         cashBtn.disabled = true;
         cashBtn.setAttribute('disabled', 'disabled');
     }
+    crashGhostState.multiplier = 1;
+    crashGhostState.crashAt = null;
+    crashGhostState.sessionId = null;
+    crashGhostState.startedAt = 0;
+    crashGhostState.settled = false;
 }
 
-function startCrashGhost() {
+function stopCrashGhostTracking() {
+    if (crashGhostState.interval) {
+        clearInterval(crashGhostState.interval);
+        crashGhostState.interval = null;
+    }
+}
+
+async function syncCrashGhostRound() {
+    if (!userId || !crashGhostState.active || !crashGhostState.sessionId) return;
+
+    try {
+        const response = await API.get(`/api/game/crash/status/${userId}/${crashGhostState.sessionId}`);
+        if (!response?.active) {
+            if (response?.crashed) {
+                finalizeCrashGhostRound({
+                    crashed: true,
+                    crashAt: response.crash_at || response.multiplier || crashGhostState.multiplier,
+                    coins: State.game.coins
+                });
+            } else {
+                stopCrashGhostTracking();
+                crashGhostState.active = false;
+            }
+            return;
+        }
+
+        crashGhostState.multiplier = Number(response.multiplier || crashGhostState.multiplier || 1);
+        updateCrashGhostVisuals();
+    } catch (err) {
+        console.error('Crash Ghost status error:', err);
+    }
+}
+
+function startCrashGhostTracking() {
+    stopCrashGhostTracking();
+    syncCrashGhostRound();
+    crashGhostState.interval = setInterval(syncCrashGhostRound, 120);
+}
+
+function finalizeCrashGhostRound(result = {}) {
+    stopCrashGhostTracking();
+
+    const statusEl = document.getElementById('crash-status');
+    const resultEl = document.getElementById('crash-result');
+    const startBtn = document.getElementById('crash-start-btn');
+    const cashBtn = document.getElementById('crash-cashout-btn');
+    const runnerEl = document.getElementById('crash-ghost-runner');
+
+    const crashed = !!result.crashed;
+    const cashedOut = !crashed;
+    crashGhostState.settled = true;
+
+    if (typeof result.coins === 'number') {
+        State.game.coins = result.coins;
+    }
+
+    if (cashedOut) {
+        const multiplier = Number(result.multiplier || crashGhostState.multiplier || 1).toFixed(2);
+        const payout = Number(result.payout || 0);
+        const profit = Number(result.profit || 0);
+        if (statusEl) statusEl.textContent = tr('minigames.crashCashout', { multiplier });
+        if (resultEl) resultEl.textContent = tr('minigames.crashCashoutResult', { payout, profit });
+        if (runnerEl) runnerEl.classList.add('ghost-safe');
+        createConfetti(document.getElementById('game-crash'));
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'win');
+        playSound('win');
+    } else {
+        const crashAt = Number(result.crashAt || crashGhostState.crashAt || crashGhostState.multiplier || 1).toFixed(2);
+        if (statusEl) statusEl.textContent = tr('minigames.crashAt', { multiplier: crashAt });
+        if (resultEl) resultEl.textContent = tr('minigames.crashLost', { bet: crashGhostState.bet });
+        if (runnerEl) runnerEl.classList.add('ghost-crashed');
+        shakeGameModal('crash');
+        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'lose');
+        playSound('lose');
+    }
+
+    trackAchievementProgress('games', 1);
+    checkAchievements();
+    updateUI();
+    crashGhostState.active = false;
+
+    if (startBtn) startBtn.disabled = false;
+    if (cashBtn) {
+        cashBtn.disabled = true;
+        cashBtn.setAttribute('disabled', 'disabled');
+    }
+
+    setTimeout(() => {
+        runnerEl?.classList.remove('ghost-safe', 'ghost-crashed');
+        resetCrashGhostUI();
+    }, 1800);
+}
+
+async function startCrashGhost() {
     if (crashGhostState.active) return;
 
     const betInput = document.getElementById('crash-bet');
@@ -4562,39 +4691,38 @@ function startCrashGhost() {
     if (Number.isNaN(bet) || bet < 10) return showToast(tr('toasts.minBet'), true);
     if (bet > State.game.coins) return showToast(tr('toasts.notEnoughCoins', { amount: bet }), true);
 
-    State.game.coins -= bet;
-    updateUI();
+    try {
+        const response = await API.post('/api/game/crash/start', {
+            user_id: userId,
+            bet
+        });
 
-    crashGhostState.active = true;
-    crashGhostState.settled = false;
-    crashGhostState.bet = bet;
-    crashGhostState.multiplier = 1;
-    crashGhostState.startedAt = Date.now();
-    crashGhostState.crashAt = Number((1.55 + Math.random() * 4.1).toFixed(2));
+        crashGhostState.active = true;
+        crashGhostState.settled = false;
+        crashGhostState.bet = bet;
+        crashGhostState.multiplier = Number(response.multiplier || 1);
+        crashGhostState.sessionId = response.session_id || null;
+        crashGhostState.startedAt = parseServerDate(response.server_started_at)?.getTime?.() || Date.now();
+        crashGhostState.crashAt = null;
 
-    if (Math.random() < 0.12) crashGhostState.crashAt = Number((5.5 + Math.random() * 2.8).toFixed(2));
+        if (typeof response.coins === 'number') {
+            State.game.coins = response.coins;
+            updateUI();
+        }
 
-    if (startBtn) startBtn.disabled = true;
-    if (cashBtn) {
-        cashBtn.disabled = false;
-        cashBtn.removeAttribute('disabled');
-    }
-    statusEl.textContent = tr('minigames.crashRunning');
-    resultEl.textContent = tr('minigames.crashStake', { bet });
-    playSound('spin');
-
-    crashGhostState.interval = setInterval(() => {
-        crashGhostState.multiplier = Number((crashGhostState.multiplier + 0.04 + Math.random() * 0.05).toFixed(2));
+        if (startBtn) startBtn.disabled = true;
+        if (cashBtn) {
+            cashBtn.disabled = false;
+            cashBtn.removeAttribute('disabled');
+        }
+        statusEl.textContent = tr('minigames.crashRunning');
+        resultEl.textContent = tr('minigames.crashStake', { bet });
+        playSound('spin');
         updateCrashGhostVisuals();
-
-        if (Date.now() - crashGhostState.startedAt < 650) {
-            return;
-        }
-
-        if (crashGhostState.multiplier >= crashGhostState.crashAt) {
-            endCrashGhostRound(false, false);
-        }
-    }, 90);
+        startCrashGhostTracking();
+    } catch (err) {
+        showToast(err?.detail || err?.message || tr('toasts.serverError'), true);
+    }
 }
 
 function updateCrashGhostVisuals() {
@@ -4607,66 +4735,40 @@ function updateCrashGhostVisuals() {
     if (multiplierEl) multiplierEl.textContent = `${crashGhostState.multiplier.toFixed(2)}x`;
     if (fillEl) fillEl.style.width = `${percent}%`;
     if (runnerEl) runnerEl.style.left = `${percent}%`;
-    if (trackEl) {
-        trackEl.classList.toggle('danger', crashGhostState.crashAt - crashGhostState.multiplier <= 0.6);
-    }
+    if (trackEl) trackEl.classList.remove('danger');
 }
 
-function cashOutCrashGhost() {
+async function cashOutCrashGhost() {
     if (!crashGhostState.active || crashGhostState.settled) return;
-    endCrashGhostRound(true, false);
-}
 
-function endCrashGhostRound(cashedOut, silentClose) {
-    if (!crashGhostState.active && !crashGhostState.interval) return;
-
-    clearInterval(crashGhostState.interval);
-    crashGhostState.interval = null;
-
-    const statusEl = document.getElementById('crash-status');
-    const resultEl = document.getElementById('crash-result');
-    const startBtn = document.getElementById('crash-start-btn');
     const cashBtn = document.getElementById('crash-cashout-btn');
-    const runnerEl = document.getElementById('crash-ghost-runner');
-
-    crashGhostState.settled = true;
-
-    if (cashedOut) {
-        const payout = Math.floor(crashGhostState.bet * crashGhostState.multiplier);
-        State.game.coins += payout;
-        if (statusEl) statusEl.textContent = tr('minigames.crashCashout', { multiplier: crashGhostState.multiplier.toFixed(2) });
-        if (resultEl) resultEl.textContent = tr('minigames.crashCashoutResult', { payout, profit: payout - crashGhostState.bet });
-        if (runnerEl) runnerEl.classList.add('ghost-safe');
-        createConfetti(document.getElementById('game-crash'));
-        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'win');
-        playSound('win');
-    } else if (!silentClose) {
-        if (statusEl) statusEl.textContent = tr('minigames.crashAt', { multiplier: crashGhostState.crashAt.toFixed(2) });
-        if (resultEl) resultEl.textContent = tr('minigames.crashLost', { bet: crashGhostState.bet });
-        if (runnerEl) runnerEl.classList.add('ghost-crashed');
-        shakeGameModal('crash');
-        spawnGameParticles(document.querySelector('#game-crash .crash-track'), 'lose');
-        playSound('lose');
-    }
-
-    if (!silentClose) {
-        trackAchievementProgress('games', 1);
-        checkAchievements();
-    }
-
-    updateUI();
-    crashGhostState.active = false;
-
-    if (startBtn) startBtn.disabled = false;
     if (cashBtn) {
         cashBtn.disabled = true;
         cashBtn.setAttribute('disabled', 'disabled');
     }
+    crashGhostState.settled = true;
 
-    setTimeout(() => {
-        runnerEl?.classList.remove('ghost-safe', 'ghost-crashed');
-        resetCrashGhostUI();
-    }, silentClose ? 0 : 1800);
+    try {
+        const response = await API.post('/api/game/crash/cashout', {
+            user_id: userId,
+            session_id: crashGhostState.sessionId
+        });
+        finalizeCrashGhostRound({
+            crashed: !!response.crashed,
+            crashAt: response.crash_at,
+            multiplier: response.multiplier,
+            payout: response.payout,
+            profit: response.profit,
+            coins: response.coins
+        });
+    } catch (err) {
+        crashGhostState.settled = false;
+        if (cashBtn) {
+            cashBtn.disabled = false;
+            cashBtn.removeAttribute('disabled');
+        }
+        showToast(err?.detail || err?.message || tr('toasts.serverError'), true);
+    }
 }
 
 // ==================== КОНФЕТТИ ====================
