@@ -456,6 +456,7 @@ const GHOST_BOOST_DURATION_MS = 60 * 1000;
 const MEGA_BOOST_DURATION_MS = 60 * 1000;
 const AUTO_CLICK_DURATION_MS = 60 * 1000;
 const AUTO_CLICK_INTERVAL_MS = 55;
+const AUTO_CLICK_FEEDBACK_INTERVAL_MS = 165;
 const AUTO_CLICK_COOLDOWN_STORAGE_KEY = 'autoClickCooldownUntil';
 const AUTO_CLICK_COOLDOWN_MIN_MS = 5 * 60 * 1000;
 const AUTO_CLICK_COOLDOWN_MAX_MS = 10 * 60 * 1000;
@@ -666,8 +667,7 @@ const State = {
         clickBuffer: 0,
         clickValueBuffer: 0,
         clickBatchInFlight: false,
-        lastAutoSoundAt: 0,
-        lastAutoVibrationAt: 0,
+        lastAutoFeedbackAt: 0,
         animationTimer: null,
         syncTimer: null,
         bgm: {
@@ -2360,10 +2360,10 @@ function handleTap(e) {
     effect.offsetWidth;
     effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
 
-    const allowAutoSound = !isAutoTap || (Date.now() - State.temp.lastAutoSoundAt >= 220);
-    const allowAutoVibration = !isAutoTap || (Date.now() - State.temp.lastAutoVibrationAt >= 260);
+    const nowMs = Date.now();
+    const allowAutoFeedback = !isAutoTap || (nowMs - State.temp.lastAutoFeedbackAt >= AUTO_CLICK_FEEDBACK_INTERVAL_MS);
 
-    if (State.settings.sound && allowAutoSound) {
+    if (State.settings.sound && allowAutoFeedback) {
         try {
             if (!window.audioCtx) window.audioCtx = new AudioContext();
             const now = window.audioCtx.currentTime;
@@ -2378,16 +2378,18 @@ function handleTap(e) {
             gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
             osc.start(now);
             osc.stop(now + (isAutoTap ? 0.12 : 0.2));
-            if (isAutoTap) State.temp.lastAutoSoundAt = Date.now();
         } catch (err) {}
     }
 
-    if (State.settings.vibration && allowAutoVibration) {
+    if (State.settings.vibration && allowAutoFeedback) {
         try {
             if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
             else if (navigator.vibrate) navigator.vibrate(isAutoTap ? 12 : 20);
-            if (isAutoTap) State.temp.lastAutoVibrationAt = Date.now();
         } catch (err) {}
+    }
+
+    if (isAutoTap && allowAutoFeedback) {
+        State.temp.lastAutoFeedbackAt = nowMs;
     }
 }
 
