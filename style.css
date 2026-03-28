@@ -9199,3 +9199,108 @@ body:not(.night-mode) #wallet-screen .event-section-card {
         padding: 12px !important;
     }
 }
+
+body.device-lock-body {
+    position: static;
+    overflow: hidden;
+    background:
+        radial-gradient(60% 50% at 20% 10%, rgba(127, 73, 180, 0.22), transparent 60%),
+        radial-gradient(40% 35% at 80% 0%, rgba(86, 196, 255, 0.18), transparent 65%),
+        #0f1220;
+}
+
+.device-lock-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.device-lock-card {
+    width: min(100%, 420px);
+    padding: 28px 24px;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg, rgba(23, 27, 45, 0.96), rgba(12, 16, 28, 0.96));
+    box-shadow:
+        0 22px 60px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    text-align: center;
+    color: #f4f7fb;
+}
+
+.device-lock-kicker {
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(157, 227, 255, 0.9);
+}
+
+.device-lock-card h1 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 6vw, 38px);
+    line-height: 1.04;
+}
+
+.device-lock-card p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: rgba(231, 238, 248, 0.8);
+}
+
+.device-lock-card p strong {
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.device-lock-qr-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 22px 0 14px;
+}
+
+.device-lock-qr {
+    width: min(280px, 72vw);
+    height: auto;
+    display: block;
+    padding: 12px;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.device-lock-handle {
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: rgba(157, 227, 255, 0.9);
+}
+
+.device-lock-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 180px;
+    padding: 14px 18px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #67dfff, #58b7ff);
+    color: #0d1b2a;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow:
+        0 14px 30px rgba(88, 183, 255, 0.24),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.device-lock-link:active {
+    transform: translateY(1px) scale(0.99);
+}

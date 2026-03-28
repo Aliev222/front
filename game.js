@@ -24,6 +24,7 @@ let username = null;
 let referrerId = null;
 const OWNER_ONLINE_COUNTER_USER_ID = 1507124181;
 const telegramInitData = tg?.initData || '';
+const telegramPlatform = (tg?.platform || '').toLowerCase();
 const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
 const UI_LANG = 'en';
 const API_SESSION_TOKEN_KEY = 'spirit_api_session_token';
@@ -43,6 +44,73 @@ let tonWalletState = {
     app_name: '',
     connected_at: null
 };
+const TELEGRAM_BOT_USERNAME = 'Ryoho_bot';
+
+function isLikelyMobileGameClient() {
+    const ua = navigator.userAgent || '';
+    const hasTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+    const isMobileUa = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua);
+    const isDesktopUa = /(Windows NT|Macintosh|X11|CrOS|Linux x86_64)/i.test(ua) && !/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const mobilePlatforms = new Set(['android', 'ios', 'ipados']);
+    const desktopPlatforms = new Set(['tdesktop', 'weba', 'webk', 'web', 'macos', 'windows', 'linux', 'unigram']);
+
+    if (desktopPlatforms.has(telegramPlatform)) return false;
+    if (mobilePlatforms.has(telegramPlatform)) return true;
+
+    return hasTouch && isMobileUa && !isDesktopUa;
+}
+
+function getMobileAccessState() {
+    if (!tg?.initDataUnsafe?.user || !telegramInitData) {
+        return {
+            allowed: false,
+            title: 'Open from Telegram on phone',
+            text: 'This game is available only inside Telegram on a mobile device.',
+        };
+    }
+
+    if (!isLikelyMobileGameClient()) {
+        return {
+            allowed: false,
+            title: 'Desktop access is blocked',
+            text: 'Open the game from Telegram on your phone. Desktop launch is disabled to reduce botting and farming.',
+        };
+    }
+
+    return { allowed: true, title: '', text: '' };
+}
+
+const mobileAccessState = getMobileAccessState();
+
+function renderMobileOnlyGate() {
+    const botLink = (() => {
+        try {
+            const urlParams = new URLSearchParams(window.location.search || '');
+            const ref = parseInt(urlParams.get('ref') || '', 10) || null;
+            return ref
+                ? `https://t.me/${TELEGRAM_BOT_USERNAME}?start=ref_${ref}`
+                : `https://t.me/${TELEGRAM_BOT_USERNAME}`;
+        } catch (_) {
+            return `https://t.me/${TELEGRAM_BOT_USERNAME}`;
+        }
+    })();
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=0&data=${encodeURIComponent(botLink)}`;
+    document.body.classList.add('device-lock-body');
+    document.body.innerHTML = `
+        <div class="device-lock-screen">
+            <div class="device-lock-card">
+                <div class="device-lock-kicker">Spirit Clicker</div>
+                <h1>Игра только на телефоне</h1>
+                <p>Открой <strong>@${TELEGRAM_BOT_USERNAME}</strong> в Telegram на телефоне или просто отсканируй QR-код ниже.</p>
+                <div class="device-lock-qr-wrap">
+                    <img class="device-lock-qr" src="${qrSrc}" alt="QR code to open @${TELEGRAM_BOT_USERNAME}">
+                </div>
+                <div class="device-lock-handle">@${TELEGRAM_BOT_USERNAME}</div>
+                <a class="device-lock-link" href="${botLink}" target="_blank" rel="noopener noreferrer">Открыть бота</a>
+            </div>
+        </div>
+    `;
+}
 
 const I18N = {
     en: {
@@ -606,6 +674,8 @@ window.fetch = (input, init = {}) => {
     }
 
     const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
+    headers.set('X-Telegram-Platform', telegramPlatform || 'unknown');
+    headers.set('X-Client-Mobile', mobileAccessState.allowed ? '1' : '0');
     if (apiSessionToken && apiSessionExpiresAt > Date.now() + 5000) {
         headers.set('Authorization', `Bearer ${apiSessionToken}`);
     } else if (telegramInitData) {
@@ -644,7 +714,9 @@ async function ensureApiSession(forceRefresh = false) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': telegramInitData
+                'X-Telegram-Init-Data': telegramInitData,
+                'X-Telegram-Platform': telegramPlatform || 'unknown',
+                'X-Client-Mobile': mobileAccessState.allowed ? '1' : '0'
             }
         });
         if (!res.ok) {
@@ -5698,6 +5770,11 @@ function setupGlobalClickHandler() {
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Spirit Clicker starting...');
+
+    if (!mobileAccessState.allowed) {
+        renderMobileOnlyGate();
+        return;
+    }
 
     applyPerformanceMode();
     applyStaticTranslations();
