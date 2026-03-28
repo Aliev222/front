@@ -4678,6 +4678,216 @@ body:not(.night-mode) .games-hero-jackpot {
     border-radius: 999px;
 }
 
+#games-screen .event-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+#games-screen .event-stat-card,
+#games-screen .event-section-card {
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.09);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)),
+        linear-gradient(135deg, rgba(147,132,164,0.12), rgba(186,180,196,0.05)) !important;
+    box-shadow:
+        0 16px 32px rgba(0,0,0,0.2),
+        inset 0 1px 0 rgba(255,255,255,0.13);
+}
+
+body:not(.night-mode) #games-screen .event-stat-card,
+body:not(.night-mode) #games-screen .event-section-card {
+    border-color: rgba(113, 102, 125, 0.1);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.26)),
+        linear-gradient(135deg, rgba(139,123,152,0.1), rgba(198,190,181,0.08)) !important;
+    box-shadow:
+        0 14px 28px rgba(64, 74, 103, 0.08),
+        inset 0 1px 0 rgba(255,255,255,0.34);
+}
+
+#games-screen .event-stat-card {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#games-screen .event-stat-label,
+#games-screen .event-section-head span,
+#games-screen .event-league-range,
+#games-screen .event-payout-label {
+    color: var(--premium-sub) !important;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+}
+
+#games-screen .event-stat-value,
+#games-screen .event-section-head h3,
+#games-screen .event-league-name,
+#games-screen .event-payout-value {
+    color: var(--premium-text) !important;
+}
+
+#games-screen .event-stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+#games-screen .event-zone-value {
+    font-size: 15px;
+}
+
+#games-screen .event-section-card {
+    padding: 15px;
+    margin-bottom: 12px;
+}
+
+#games-screen .event-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+#games-screen .event-section-head h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+#games-screen .event-league-splits,
+#games-screen .event-payout-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#games-screen .event-league-card,
+#games-screen .event-payout-card {
+    padding: 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#games-screen .event-league-card.bronze {
+    box-shadow: inset 0 0 0 1px rgba(190, 130, 90, 0.18);
+}
+
+#games-screen .event-league-card.silver {
+    box-shadow: inset 0 0 0 1px rgba(170, 184, 210, 0.18);
+}
+
+#games-screen .event-league-card.gold {
+    box-shadow: inset 0 0 0 1px rgba(224, 190, 90, 0.18);
+}
+
+#games-screen .event-league-card.diamond {
+    box-shadow: inset 0 0 0 1px rgba(113, 220, 255, 0.18);
+}
+
+#games-screen .event-league-share {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--premium-text);
+}
+
+#games-screen .event-league-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+#games-screen .event-league-tab {
+    min-height: 40px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: var(--premium-text);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+#games-screen .event-league-tab.active {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.16);
+}
+
+#games-screen .event-league-tab.bronze.active { background: rgba(190, 130, 90, 0.18); }
+#games-screen .event-league-tab.silver.active { background: rgba(170, 184, 210, 0.18); }
+#games-screen .event-league-tab.gold.active { background: rgba(224, 190, 90, 0.18); }
+#games-screen .event-league-tab.diamond.active { background: rgba(113, 220, 255, 0.18); }
+
+#games-screen .event-leaderboard {
+    margin-bottom: 12px;
+}
+
+#games-screen .event-rank-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 13px;
+}
+
+#games-screen .event-rank-badge.bronze { background: linear-gradient(135deg, #8e5a32, #c28554); }
+#games-screen .event-rank-badge.silver { background: linear-gradient(135deg, #6f7e95, #b7c5d8); }
+#games-screen .event-rank-badge.gold { background: linear-gradient(135deg, #9a7822, #e0bd58); }
+#games-screen .event-rank-badge.diamond { background: linear-gradient(135deg, #2e7e9e, #6ce2ff); }
+
+#games-screen .event-player-highlight {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#games-screen .event-rules-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--premium-sub);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+    #games-screen .event-summary-grid,
+    #games-screen .event-league-splits,
+    #games-screen .event-payout-grid,
+    #games-screen .event-player-highlight {
+        grid-template-columns: 1fr;
+    }
+
+    #games-screen .event-league-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #games-screen .event-section-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #games-screen .games-hero-jackpot-value {
+        font-size: 22px;
+    }
+}
+
 .tasks-list {
     display: grid;
     grid-template-columns: 1fr;

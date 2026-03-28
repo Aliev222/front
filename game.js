@@ -51,7 +51,7 @@ const I18N = {
             claimFree: 'Free',
             bonusIncome: 'Bonus: +50% income'
         },
-        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Games', skins: 'Skins', tournament: 'Tournament', achievements: 'Achievements' },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Event', skins: 'Skins', tournament: 'Event', achievements: 'Achievements' },
         main: { upgrade: 'Upgrade' },
         tournament: {
             title: 'Tournament',
@@ -107,17 +107,17 @@ const I18N = {
             finalDesc: 'Log in for all 30 days to unlock the final skin bonus.'
         },
         games: {
-            title: 'Mini-Games',
-            kicker: 'Neon Casino',
-            heroTitle: 'One tap in. All risk. Pure premium chaos.',
-            heroSubtitle: 'Pick a table, chase the glow, spike your coin balance.',
-            potential: 'Potential',
-            tapToPlay: 'Tap to play',
-            pullReels: 'Pull the reels',
-            rollIt: 'Roll it',
-            spinNow: 'Spin now',
-            openBox: 'Open a box',
-            chaseMultiplier: 'Chase multiplier'
+            title: 'Event',
+            kicker: 'Weekly Prize Clash',
+            heroTitle: 'Climb your league and enter the payout zone.',
+            heroSubtitle: 'Only click-earned coins count. Finish inside top 50 to stay eligible.',
+            potential: 'Ends in',
+            tapToPlay: 'Weekly leagues',
+            pullReels: 'Top 50 payouts',
+            rollIt: 'Click coins only',
+            spinNow: 'Live ranking',
+            openBox: 'Level-based tiers',
+            chaseMultiplier: 'Push harder'
         },
         gameModals: {
             betAmount: 'Bet amount',
@@ -255,7 +255,7 @@ const I18N = {
             claimFree: 'Бесплатно',
             bonusIncome: 'Бонус: +50% к доходу'
         },
-        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Игры', skins: 'Скины', tournament: 'Турнир', achievements: 'Ачивки' },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Ивент', skins: 'Скины', tournament: 'Ивент', achievements: 'Ачивки' },
         main: { upgrade: 'Прокачка' },
         tournament: {
             title: 'Турнир',
@@ -311,17 +311,17 @@ const I18N = {
             finalDesc: 'Заходи все 30 дней, чтобы открыть финальный бонусный скин.'
         },
         games: {
-            title: 'Мини-игры',
-            kicker: 'Неон Казино',
-            heroTitle: 'Один тап. Весь риск. Чистый премиум-хаос.',
-            heroSubtitle: 'Выбирай стол, лови сияние и поднимай баланс.',
-            potential: 'Потенциал',
-            tapToPlay: 'Играть',
-            pullReels: 'Крутить слоты',
-            rollIt: 'Бросить',
-            spinNow: 'Крутить',
-            openBox: 'Открыть бокс',
-            chaseMultiplier: 'Ловить множитель'
+            title: 'Ивент',
+            kicker: 'Еженедельная схватка',
+            heroTitle: 'Поднимайся по лиге и заходи в зону выплат.',
+            heroSubtitle: 'В зачёт идут только монеты, заработанные кликами. Топ-50 остаётся в гонке.',
+            potential: 'До конца',
+            tapToPlay: 'Еженедельные лиги',
+            pullReels: 'Выплаты топ-50',
+            rollIt: 'Только клик-монеты',
+            spinNow: 'Живой рейтинг',
+            openBox: 'Лиги по уровню',
+            chaseMultiplier: 'Дави сильнее'
         },
         gameModals: {
             betAmount: 'Ставка',
@@ -463,8 +463,9 @@ const AUTO_CLICK_DURATION_MS = 60 * 1000;
 const AUTO_CLICK_INTERVAL_MS = 55;
 const AUTO_CLICK_FEEDBACK_INTERVAL_MS = 165;
 const AUTO_CLICK_COOLDOWN_STORAGE_KEY = 'autoClickCooldownUntil';
-const AUTO_CLICK_COOLDOWN_MIN_MS = 5 * 60 * 1000;
+const AUTO_CLICK_COOLDOWN_MIN_MS = 10 * 60 * 1000;
 const AUTO_CLICK_COOLDOWN_MAX_MS = 10 * 60 * 1000;
+const SKIN_AD_COOLDOWN_MINUTES = 10;
 const SOFT_ONBOARDING_STORAGE_KEY = 'softOnboardingState';
 const SOFT_DISCOVERY_STORAGE_KEY = 'softOnboardingDiscoveries';
 const SOCIAL_TASKS_STORAGE_KEY = 'socialTasksState';
@@ -1419,8 +1420,8 @@ const ACHIEVEMENTS = [
     { id: 'upgrade_15',   title: 'Architect',          description: 'Buy 15 upgrades',       icon: '🧰', condition: (s) => s.upgrades >= 15,  reward: 8000 },
     { id: 'upgrade_30',   title: 'System Builder',     description: 'Buy 30 upgrades',       icon: '⬆️', condition: (s) => s.upgrades >= 30,  reward: 20000 },
 
-    { id: 'games_10',     title: 'Player',             description: 'Play 10 mini-games',    icon: '🎮', condition: (s) => s.games >= 10,     reward: 3000 },
-    { id: 'games_30',     title: 'Streamer',           description: 'Play 30 mini-games',    icon: '🎬', condition: (s) => s.games >= 30,     reward: 12000 },
+    { id: 'level_33',     title: 'Silver Gate',        description: 'Reach level 33',         icon: '🥈', condition: (s) => s.level >= 33,     reward: 5000 },
+    { id: 'level_66',     title: 'Gold Pulse',         description: 'Reach level 66',         icon: '🥇', condition: (s) => s.level >= 66,     reward: 12000 },
 
     { id: 'referral_1',   title: 'First Friend',       description: 'Invite 1 friend',       icon: '🤝', condition: (s) => s.referrals >= 1,  reward: 2000 },
     { id: 'referral_5',   title: 'Popular',            description: 'Invite 5 friends',      icon: '👥', condition: (s) => s.referrals >= 5,  reward: 10000 },
@@ -1510,6 +1511,7 @@ function checkAchievements() {
         clicks: State.achievements.clicks || 0,
         upgrades: State.achievements.upgrades || 0,
         games: State.achievements.games || 0,
+        level: Number(State.game.level || 1),
         referrals: State.skins.friendsInvited || 0,
         adsWatched: State.skins.adsWatched || 0
     };
@@ -1633,6 +1635,8 @@ async function loadUserData() {
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
         State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
         State.skins.adsWatched = data.ads_watched || 0;
+        State.skins.videoViews = data.skin_ad_progress || {};
+        localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
         setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
         if (data.daily_infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
@@ -1680,7 +1684,7 @@ function getLocalSkins() {
         { id: "75lvl.pngSP", name: "Level 75", image: "imgg/skins/75lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 75 } },
         { id: "100lvl.pngSP", name: "Level 100", image: "imgg/skins/100lvl.png", rarity: "common", bonus: { type: "multiplier", value: 1.2 }, requirement: { type: "level", value: 100 } },
 
-        // Video skins (rare, x1.5) — per-skin 10 views
+        // Video skins (rare, x1.5) — 10 rewarded watches per skin
         { id: "video.pngSP",  name: "Video 1", image: "imgg/skins/video.png",  rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video.pngSP" } },
         { id: "video2.pngSP", name: "Video 2", image: "imgg/skins/video2.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video2.pngSP" } },
         { id: "video3.pngSP", name: "Video 3", image: "imgg/skins/video3.png", rarity: "rare", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "videos", count: 10, progressKey: "video3.pngSP" } },
@@ -2802,12 +2806,12 @@ async function watchAdForSkin(skinId) {
         await showRewardedAd(adSessionId);
         const adsSync = await claimAdActionWithRetry(() => API.post('/api/ads/increment', {
             user_id: userId,
-            ad_session_id: adSessionId
+            ad_session_id: adSessionId,
+            skin_id: skinId
         }));
 
-        // локальный прогресс для конкретного скина
         const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
-        State.skins.videoViews[key] = (State.skins.videoViews[key] || 0) + 1;
+        State.skins.videoViews[key] = Number(adsSync?.current_count || 0);
         localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
         State.skins.adsWatched = adsSync?.ads_watched || ((State.skins.adsWatched || 0) + 1);
 
@@ -2825,6 +2829,8 @@ async function watchAdForSkin(skinId) {
         showToast(
             isAdConfirmationPendingError(e)
                 ? 'You did not finish the ad or the reward was not confirmed.'
+                : (e?.detail || '').includes('Skin ad cooldown')
+                    ? e.detail
                 : tr('toasts.watchError'),
             true
         );
@@ -3784,7 +3790,7 @@ function switchTab(tab, el) {
     
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
-    if (tab === 'tournament') loadTournamentData();
+    if (tab === 'tournament' || tab === 'games') loadTournamentData();
     if (tab === 'tasks') {
         advanceSoftOnboarding('tasks');
         loadVideoTasks();
@@ -3808,6 +3814,181 @@ function closeSettingsOutside(e) {
 let tournamentTimer = null;
 let onlineHeartbeatTimer = null;
 let onlineCountTimer = null;
+let eventSelectedLeague = null;
+let eventOverviewCache = null;
+const EVENT_LEAGUE_ORDER = ['bronze', 'silver', 'gold', 'diamond'];
+const EVENT_LEAGUE_META = {
+    bronze: { label: 'Bronze', range: 'Lvl 1-32', className: 'bronze' },
+    silver: { label: 'Silver', range: 'Lvl 33-65', className: 'silver' },
+    gold: { label: 'Gold', range: 'Lvl 66-99', className: 'gold' },
+    diamond: { label: 'Diamond', range: 'Lvl 100+', className: 'diamond' }
+};
+
+function getEventLeagueMeta(league) {
+    return EVENT_LEAGUE_META[(league || 'bronze').toLowerCase()] || EVENT_LEAGUE_META.bronze;
+}
+
+function deriveEventLeague(level) {
+    const numericLevel = Number(level || 1);
+    if (numericLevel >= 100) return 'diamond';
+    if (numericLevel >= 66) return 'gold';
+    if (numericLevel >= 33) return 'silver';
+    return 'bronze';
+}
+
+function formatEventTime(seconds) {
+    const value = Math.max(0, Number(seconds) || 0);
+    const days = Math.floor(value / 86400);
+    const hours = Math.floor((value % 86400) / 3600);
+    const minutes = Math.floor((value % 3600) / 60);
+    const secs = value % 60;
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m ${secs}s`;
+}
+
+function getEventZoneText(player) {
+    if (!player || !Number(player.score || 0)) return 'Start tapping to enter the board';
+    if (player.fraud_flag) return 'Review pending';
+    if (player.rank <= 3) return 'Top 3 payout pressure';
+    if (player.rank <= 50 && player.eligible_for_payout) return 'In payout zone';
+    if (player.rank <= 50) return 'Inside top 50';
+    return `${player.rank - 50} places from payout zone`;
+}
+
+function renderEventLeagueSplits(fundSplits = {}) {
+    const host = document.getElementById('event-league-splits');
+    if (!host) return;
+    host.innerHTML = EVENT_LEAGUE_ORDER.map((league) => {
+        const meta = getEventLeagueMeta(league);
+        const pct = Math.round((Number(fundSplits[league] || 0) * 100));
+        return `
+            <div class="event-league-card ${meta.className}">
+                <span class="event-league-name">${meta.label}</span>
+                <span class="event-league-range">${meta.range}</span>
+                <span class="event-league-share">${pct}%</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderEventPayoutGrid(top3Splits = {}, restSplit = 0) {
+    const host = document.getElementById('event-payout-grid');
+    if (!host) return;
+    const rules = [
+        { label: 'Top 1', value: `${Math.round(Number(top3Splits[1] || 0) * 100)}%` },
+        { label: 'Top 2', value: `${Math.round(Number(top3Splits[2] || 0) * 100)}%` },
+        { label: 'Top 3', value: `${Math.round(Number(top3Splits[3] || 0) * 100)}%` },
+        { label: 'Ranks 4-50', value: `${Math.round(Number(restSplit || 0) * 100)}% shared` }
+    ];
+    host.innerHTML = rules.map((rule) => `
+        <div class="event-payout-card">
+            <span class="event-payout-label">${rule.label}</span>
+            <span class="event-payout-value">${rule.value}</span>
+        </div>
+    `).join('');
+}
+
+function renderEventLeagueTabs(selectedLeague) {
+    const host = document.getElementById('event-league-tabs');
+    if (!host) return;
+    host.innerHTML = EVENT_LEAGUE_ORDER.map((league) => {
+        const meta = getEventLeagueMeta(league);
+        return `
+            <button
+                type="button"
+                class="event-league-tab ${meta.className} ${league === selectedLeague ? 'active' : ''}"
+                onclick="selectEventLeague('${league}')"
+            >
+                ${meta.label}
+            </button>
+        `;
+    }).join('');
+}
+
+function renderEventOverview(data) {
+    eventOverviewCache = data || null;
+    const player = data?.player || null;
+    const league = player?.league || deriveEventLeague(State.game.level || 1);
+    const meta = getEventLeagueMeta(league);
+
+    const leagueEl = document.getElementById('event-player-league');
+    const rankEl = document.getElementById('event-player-rank');
+    const scoreEl = document.getElementById('event-player-score');
+    const zoneEl = document.getElementById('event-player-zone');
+    const subtitleEl = document.getElementById('event-board-subtitle');
+
+    if (leagueEl) leagueEl.textContent = meta.label;
+    if (rankEl) rankEl.textContent = player?.rank ? `#${player.rank}` : '--';
+    if (scoreEl) scoreEl.textContent = formatNumber(player?.score || 0);
+    if (zoneEl) zoneEl.textContent = getEventZoneText(player);
+    if (subtitleEl) subtitleEl.textContent = `${meta.label} leaderboard`;
+
+    renderEventLeagueSplits(data?.fund_splits || {});
+    renderEventPayoutGrid(data?.top3_splits || {}, data?.rest_split || 0);
+    trackTournamentToastState(player?.rank || 9999, 50);
+}
+
+function renderEventLeaderboard(players = [], league = 'bronze') {
+    const meta = getEventLeagueMeta(league);
+    const list = document.getElementById('event-leaderboard-list');
+    const highlight = document.getElementById('event-player-highlight');
+    const subtitleEl = document.getElementById('event-board-subtitle');
+    const player = eventOverviewCache?.player || null;
+
+    if (subtitleEl) subtitleEl.textContent = `${meta.label} leaderboard`;
+
+    if (list) {
+        const visible = Array.isArray(players) ? players.slice(0, 10) : [];
+        list.innerHTML = visible.length
+            ? visible.map((entry) => `
+                <div class="leaderboard-item leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
+                    <span class="player-rank">${entry.rank}</span>
+                    <div class="player-avatar event-rank-badge ${meta.className}">${(entry.display_level || 1)}</div>
+                    <span class="player-name">${entry.username ? `@${entry.username}` : 'Player'}</span>
+                    <span class="player-score">${formatNumber(entry.score || 0)}</span>
+                </div>
+            `).join('')
+            : '<div class="loading">No players in this league yet.</div>';
+    }
+
+    if (highlight) {
+        if (!player) {
+            highlight.innerHTML = '<div class="rank-info"><span class="rank-label">Your event status</span><span class="rank-value">No weekly clicks yet</span></div>';
+        } else {
+            const playerMeta = getEventLeagueMeta(player.league);
+            highlight.innerHTML = `
+                <div class="rank-info">
+                    <span class="rank-label">Your lane</span>
+                    <span class="rank-value">${playerMeta.label}</span>
+                </div>
+                <div class="rank-info">
+                    <span class="rank-label">Your rank</span>
+                    <span class="rank-value">#${player.rank || '--'}</span>
+                </div>
+                <div class="rank-info">
+                    <span class="rank-label">Status</span>
+                    <span class="rank-value">${getEventZoneText(player)}</span>
+                </div>
+            `;
+        }
+    }
+}
+
+async function selectEventLeague(league) {
+    eventSelectedLeague = EVENT_LEAGUE_ORDER.includes(league) ? league : 'bronze';
+    renderEventLeagueTabs(eventSelectedLeague);
+    try {
+        const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
+        renderEventLeaderboard(response?.players || [], eventSelectedLeague);
+    } catch (err) {
+        console.error('Event leaderboard error:', err);
+        const list = document.getElementById('event-leaderboard-list');
+        if (list) list.innerHTML = '<div class="loading">Failed to load leaderboard.</div>';
+    }
+}
+
+window.selectEventLeague = selectEventLeague;
 
 function setOnlineCount(count) {
     const countEl = document.getElementById('tournament-online-count');
@@ -3869,79 +4050,39 @@ function startOnlinePresence() {
 
 async function loadTournamentData() {
     try {
-        const leaderboardRes = await fetch(`${CONFIG.API_URL}/api/tournament/leaderboard`);
-        const leaderboardData = await leaderboardRes.json();
-        
-        const rankRes = await fetch(`${CONFIG.API_URL}/api/tournament/player-rank/${userId}`);
-        const rankData = await rankRes.json();
-        
-        if (leaderboardData.success) {
-            const topPlayers = Array.isArray(leaderboardData.players)
-                ? leaderboardData.players.slice(0, 3)
-                : [];
-            updateOnlineCounterVisibility();
-            if (canSeeOnlineCounter()) {
-                setOnlineCount(leaderboardData.online_now);
-            }
-            renderLeaderboard({
-                players: topPlayers,
-                playerRank: rankData.rank,
-                playerScore: rankData.score,
-                timeLeft: leaderboardData.time_left
-            });
-            trackTournamentToastState(rankData.rank, topPlayers.length);
-            startTournamentTimer(leaderboardData.time_left);
-        }
-    } catch (err) {
-        console.error('Tournament error:', err);
-    }
-}
+        const overview = await API.get(`/api/weekly-tournament/overview/${userId}`);
+        if (!overview?.success) return;
 
-function renderLeaderboard(data) {
-    const list = document.getElementById('leaderboard-list');
-    const playerRankEl = document.getElementById('player-rank');
-    const playerScoreEl = document.getElementById('player-score');
-    
-    if (list) {
-        list.innerHTML = data.players.map(p => `
-            <div class="leaderboard-item leaderboard-item-rank-${p.rank}">
-                <span class="player-rank">${p.rank}</span>
-                <div class="player-avatar">
-                    <img src="${p.avatar || '/imgg/default_avatar.png'}" 
-                         alt="avatar"
-                         onerror="this.src='/imgg/default_avatar.png'"
-                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                </div>
-                <span class="player-name">${p.name || 'Player'}</span>
-                <span class="player-score">${formatNumber(p.score)}</span>
-            </div>
-        `).join('');
+        renderEventOverview(overview);
+        updateOnlineCounterVisibility();
+        const preferredLeague = eventSelectedLeague || overview?.player?.league || deriveEventLeague(State.game.level || 1);
+        await selectEventLeague(preferredLeague);
+        startTournamentTimer(overview.time_left_seconds || 0);
+    } catch (err) {
+        console.error('Event error:', err);
+        const list = document.getElementById('event-leaderboard-list');
+        if (list) list.innerHTML = '<div class="loading">Failed to load event data.</div>';
     }
-    
-    if (playerRankEl) playerRankEl.textContent = `#${data.playerRank || 0}`;
-    if (playerScoreEl) playerScoreEl.textContent = formatNumber(data.playerScore || 0);
 }
 
 function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
     
-    const timerEl = document.getElementById('tournament-timer');
+    const timerEl = document.getElementById('event-season-timer');
     if (!timerEl) return;
     
-    let remaining = seconds;
+    let remaining = Math.max(0, Number(seconds) || 0);
+    timerEl.textContent = formatEventTime(remaining);
     
     tournamentTimer = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearInterval(tournamentTimer);
-            timerEl.textContent = t('tournament.finished');
+            timerEl.textContent = 'Finished';
             loadTournamentData();
             return;
         }
-        const hours = Math.floor(remaining / 3600);
-        const minutes = Math.floor((remaining % 3600) / 60);
-        const secs = remaining % 60;
-        timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        timerEl.textContent = formatEventTime(remaining);
     }, 1000);
 }
 
@@ -3993,7 +4134,9 @@ async function recoverEnergyWithAd() {
         showToast(
             isAdConfirmationPendingError(err)
                 ? 'You did not finish the ad or the reward was not confirmed.'
-                : tr('toasts.serverError'),
+                : (err?.detail || '').includes('Energy refill cooldown')
+                    ? err.detail
+                    : tr('toasts.serverError'),
             true
         );
     }
@@ -5290,6 +5433,7 @@ function renderAchievements() {
         if (id.includes('click')) return parseInt(id.split('_')[1]);
         if (id.startsWith('upgrade_')) return parseInt(id.split('_')[1]);
         if (id.startsWith('games_')) return parseInt(id.split('_')[1]);
+        if (id.startsWith('level_')) return parseInt(id.split('_')[1]);
         if (id.startsWith('referral_')) return parseInt(id.split('_')[1]);
         if (id.startsWith('ads_')) return parseInt(id.split('_')[1]);
         return 0;
@@ -5301,6 +5445,7 @@ function renderAchievements() {
         const current = achievement.id.startsWith('click') ? stats.clicks :
                         achievement.id.startsWith('upgrade') ? stats.upgrades :
                         achievement.id.startsWith('games') ? stats.games :
+                        achievement.id.startsWith('level') ? stats.level :
                         achievement.id.startsWith('referral') ? stats.referrals :
                         achievement.id.startsWith('ads') ? stats.adsWatched : 0;
         const total = achievement.target || targetFromId(achievement.id);
