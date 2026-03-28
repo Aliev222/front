@@ -12,6 +12,7 @@
     
     <!-- Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js" defer></script>
     <script src="https://libtl.com/sdk.js" data-zone="10655027" data-sdk="show_10655027" defer></script>
 
     <!-- РћСЃРЅРѕРІРЅРѕР№ СЃРєСЂРёРїС‚ -->
@@ -59,6 +60,13 @@
                     <img src="imgg/light icon/achievements.webp" alt="Achievements" class="nav-icon-img icon-light">
                 </span>
                 <span>Achievements</span>
+            </div>
+            <div class="nav-item" onclick="openTasksModal()">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
+                </span>
+                <span>Tasks</span>
             </div>
             
             <button class="daily-gift-btn" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
@@ -162,7 +170,7 @@
 
         <!-- NAVIGATION -->
         <div class="nav-bar">
-            <div class="nav-item active" onclick="switchTab('main', this)">
+            <div class="nav-item nav-item-main active" onclick="switchTab('main', this)">
                 <span class="nav-icon nav-icon-img-wrap">
                     <img src="imgg/dark icon/home.svg" alt="Main" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/home.svg" alt="Main" class="nav-icon-img icon-light">
@@ -176,12 +184,9 @@
                 </span>
                 <span>Friends</span>
             </div>
-            <div class="nav-item" onclick="switchTab('tasks', this)">
-                <span class="nav-icon nav-icon-img-wrap">
-                    <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
-                    <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
-                </span>
-                <span>Tasks</span>
+            <div class="nav-item nav-item-wallet" onclick="switchTab('wallet', this)">
+                <span class="nav-icon">💎</span>
+                <span>Wallet</span>
             </div>
             <div class="nav-item" onclick="switchTab('games', this)">
                 <span class="nav-icon nav-icon-img-wrap">
@@ -372,11 +377,11 @@
 
                 <div class="event-section-card">
                     <div class="event-section-head">
-                        <h3>Final Stars</h3>
+                        <h3>Final TON</h3>
                         <span id="event-results-subtitle">Shown after the week is finalized</span>
                     </div>
                     <div class="event-results-list" id="event-results-list">
-                        <div class="loading">Stars are shown here after the week is finalized.</div>
+                        <div class="loading">TON rewards are shown here after the week is finalized.</div>
                     </div>
                 </div>
 
@@ -391,6 +396,36 @@
                         <li>League depends on your current level.</li>
                         <li>Top 50 in each league stay in payout contention.</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-screen" id="wallet-screen">
+        <div class="glass wallet-modal-shell">
+            <div class="modal-header modal-header-premium">
+                <button class="modal-close" onclick="closeModal('wallet-screen')">×</button>
+                <div class="modal-header-copy">
+                    <span class="modal-kicker">TON Payouts</span>
+                    <h2>Wallet</h2>
+                </div>
+            </div>
+            <div class="modal-content modal-content-premium wallet-modal-content">
+                <div class="event-section-card event-wallet-card">
+                    <div class="event-section-head">
+                        <h3>TON Wallet</h3>
+                        <span id="event-wallet-status-badge">Not connected</span>
+                    </div>
+                    <div class="event-wallet-body">
+                        <div class="event-wallet-copy">
+                            <div class="event-wallet-title" id="event-wallet-title">Connect wallet for automatic TON payouts</div>
+                            <div class="event-wallet-address" id="event-wallet-address">No wallet connected</div>
+                            <div class="event-wallet-sub" id="event-wallet-sub">Your weekly prize queue will use this address after the season is finalized.</div>
+                        </div>
+                        <div class="event-wallet-actions">
+                            <button class="btn-primary" id="event-wallet-connect-btn" onclick="connectTonWallet()">Connect Wallet</button>
+                            <button class="btn-secondary" id="event-wallet-disconnect-btn" onclick="disconnectTonWallet()" style="display: none;">Disconnect</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -31,6 +31,18 @@ const API_SESSION_EXPIRES_AT_KEY = 'spirit_api_session_expires_at';
 let apiSessionToken = localStorage.getItem(API_SESSION_TOKEN_KEY) || '';
 let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_KEY) || '0', 10) || 0;
 let apiSessionRefreshPromise = null;
+const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
+    ? `${window.location.origin}/tonconnect-manifest.json`
+    : 'https://spirix.vercel.app/tonconnect-manifest.json';
+let tonConnectUI = null;
+let tonWalletState = {
+    connected: false,
+    address: '',
+    masked_address: '',
+    provider: '',
+    app_name: '',
+    connected_at: null
+};
 
 const I18N = {
     en: {
@@ -51,7 +63,7 @@ const I18N = {
             claimFree: 'Free',
             bonusIncome: 'Bonus: +50% income'
         },
-        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', wallet: 'Wallet', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
         main: { upgrade: 'Upgrade' },
         friends: {
             title: 'Friends',
@@ -248,7 +260,7 @@ const I18N = {
             claimFree: 'Бесплатно',
             bonusIncome: 'Бонус: +50% к доходу'
         },
-        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Ивент', skins: 'Скины', achievements: 'Ачивки' },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', wallet: 'Кошелёк', games: 'Ивент', skins: 'Скины', achievements: 'Ачивки' },
         main: { upgrade: 'Прокачка' },
         friends: {
             title: 'Друзья',
@@ -801,6 +813,15 @@ const formatNumber = (num) => {
     if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
     if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
     return num.toString();
+};
+
+const formatTonAmount = (nano) => {
+    const value = Number(nano || 0) / 1_000_000_000;
+    if (!Number.isFinite(value) || value <= 0) return '0';
+    if (value >= 1000) return value.toFixed(0);
+    if (value >= 100) return value.toFixed(1);
+    if (value >= 1) return value.toFixed(2);
+    return value.toFixed(4);
 };
 
 const AMBIENT_TOAST_VARIANTS = [
@@ -1624,6 +1645,7 @@ async function loadUserData() {
         State.skins.videoViews = data.skin_ad_progress || {};
         localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
         setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
+        setTonWalletState(data.ton_wallet || {});
         if (data.daily_infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
         }
@@ -3640,11 +3662,12 @@ function setLabel(id, text) {
 function applyStaticTranslations() {
     const textMap = [
         ['.header .nav-item:nth-child(1) > span:last-child', 'nav.achievements'],
+        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.tasks'],
         
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
         ['.nav-bar .nav-item:nth-child(2) > span:last-child', 'nav.friends'],
-        ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.tasks'],
+        ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.wallet'],
         ['.nav-bar .nav-item:nth-child(4) > span:last-child', 'nav.games'],
         ['.nav-bar .nav-item:nth-child(5) > span:last-child', 'nav.skins'],
         ['#friends-screen .modal-header h2', 'friends.title'],
@@ -3769,6 +3792,7 @@ function switchTab(tab, el) {
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'games') loadTournamentData();
+    if (tab === 'wallet') renderTonWalletState();
     if (tab === 'tasks') {
         advanceSoftOnboarding('tasks');
         loadVideoTasks();
@@ -3786,6 +3810,12 @@ function closeSettings() {
 function closeSettingsOutside(e) {
     const box = document.getElementById('settings-modal-box');
     if (box && !box.contains(e.target)) closeSettings();
+}
+
+function openTasksModal() {
+    openModal('tasks-screen');
+    advanceSoftOnboarding('tasks');
+    loadVideoTasks();
 }
 
 // ==================== ТУРНИР ====================
@@ -3832,6 +3862,141 @@ function getEventZoneText(player) {
     if (player.rank <= 50 && player.eligible_for_payout) return 'In payout zone';
     if (player.rank <= 50) return 'Inside top 50';
     return `${player.rank - 50} places from payout zone`;
+}
+
+function setTonWalletState(wallet = {}) {
+    tonWalletState = {
+        connected: !!wallet?.connected,
+        address: wallet?.address || '',
+        masked_address: wallet?.masked_address || '',
+        provider: wallet?.provider || '',
+        app_name: wallet?.app_name || '',
+        connected_at: wallet?.connected_at || null
+    };
+    renderTonWalletState();
+}
+
+function renderTonWalletState() {
+    const badgeEl = document.getElementById('event-wallet-status-badge');
+    const titleEl = document.getElementById('event-wallet-title');
+    const addressEl = document.getElementById('event-wallet-address');
+    const subEl = document.getElementById('event-wallet-sub');
+    const connectBtn = document.getElementById('event-wallet-connect-btn');
+    const disconnectBtn = document.getElementById('event-wallet-disconnect-btn');
+
+    if (badgeEl) badgeEl.textContent = tonWalletState.connected ? 'Connected' : 'Not connected';
+    if (titleEl) titleEl.textContent = tonWalletState.connected
+        ? 'Automatic TON payouts are enabled for this account'
+        : 'Connect wallet for automatic TON payouts';
+    if (addressEl) addressEl.textContent = tonWalletState.connected
+        ? (tonWalletState.masked_address || tonWalletState.address)
+        : 'No wallet connected';
+    if (subEl) subEl.textContent = tonWalletState.connected
+        ? 'Weekly rewards will be queued to this wallet after season settlement.'
+        : 'Your weekly prize queue will use this address after the season is finalized.';
+    if (connectBtn) connectBtn.style.display = tonWalletState.connected ? 'none' : '';
+    if (disconnectBtn) disconnectBtn.style.display = tonWalletState.connected ? '' : 'none';
+}
+
+async function loadTonWalletStatus() {
+    if (!userId) return;
+    try {
+        const response = await API.get(`/api/ton/wallet/${userId}`);
+        setTonWalletState(response?.wallet || {});
+    } catch (err) {
+        console.error('TON wallet status error:', err);
+    }
+}
+
+async function syncConnectedTonWallet(wallet) {
+    const address = wallet?.account?.address || '';
+    if (!userId || !address) return;
+    const response = await API.post('/api/ton/wallet/connect', {
+        user_id: userId,
+        wallet_address: address,
+        wallet_provider: wallet?.provider || '',
+        wallet_app_name: wallet?.device?.appName || wallet?.device?.app_name || ''
+    });
+    setTonWalletState(response?.wallet || {});
+}
+
+async function initTonWalletBridge() {
+    if (!window.TON_CONNECT_UI?.TonConnectUI) return;
+    try {
+        tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: TON_CONNECT_MANIFEST_URL,
+            language: UI_LANG === 'ru' ? 'ru' : 'en'
+        });
+
+        tonConnectUI.onStatusChange(async (wallet) => {
+            try {
+                if (wallet?.account?.address) {
+                    await syncConnectedTonWallet(wallet);
+                    showToast('TON wallet connected', false, {
+                        title: 'Wallet connected',
+                        icon: '💎',
+                        side: 'right',
+                        key: 'ton:connected',
+                        cooldownMs: 4000
+                    });
+                } else if (userId && tonWalletState.connected) {
+                    const response = await API.post('/api/ton/wallet/disconnect', { user_id: userId });
+                    setTonWalletState(response?.wallet || {});
+                } else {
+                    setTonWalletState({});
+                }
+            } catch (err) {
+                console.error('TON wallet sync error:', err);
+                showToast('Failed to sync TON wallet', true);
+            }
+        });
+
+        if (tonConnectUI.connectionRestored && typeof tonConnectUI.connectionRestored.then === 'function') {
+            tonConnectUI.connectionRestored.then(() => {
+                if (tonConnectUI?.wallet?.account?.address) {
+                    setTonWalletState({
+                        connected: true,
+                        address: tonConnectUI.wallet.account.address,
+                        masked_address: `${tonConnectUI.wallet.account.address.slice(0, 6)}...${tonConnectUI.wallet.account.address.slice(-6)}`,
+                        provider: tonConnectUI.wallet.provider || '',
+                        app_name: tonConnectUI.wallet?.device?.appName || ''
+                    });
+                }
+            }).catch(() => {});
+        }
+    } catch (err) {
+        console.error('TON Connect init error:', err);
+    }
+}
+
+async function connectTonWallet() {
+    if (!tonConnectUI) {
+        showToast('TON wallet connection is unavailable right now', true);
+        return;
+    }
+    try {
+        await tonConnectUI.openModal();
+    } catch (err) {
+        console.error('TON wallet modal error:', err);
+        showToast('Failed to open TON wallet modal', true);
+    }
+}
+
+async function disconnectTonWallet() {
+    try {
+        if (tonConnectUI) {
+            await tonConnectUI.disconnect();
+        }
+        if (userId) {
+            const response = await API.post('/api/ton/wallet/disconnect', { user_id: userId });
+            setTonWalletState(response?.wallet || {});
+        } else {
+            setTonWalletState({});
+        }
+    } catch (err) {
+        console.error('TON wallet disconnect error:', err);
+        showToast('Failed to disconnect TON wallet', true);
+    }
 }
 
 function renderEventLeagueSplits(fundSplits = {}) {
@@ -3917,6 +4082,7 @@ function renderEventOverview(data) {
 
     renderEventLeagueSplits(data?.fund_splits || {});
     renderEventPayoutGrid(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
+    renderTonWalletState();
     trackTournamentToastState(player?.rank || 9999, 50);
 }
 
@@ -3978,7 +4144,7 @@ function renderEventResults(players = [], season = null) {
     }
 
     if (!season || !Array.isArray(players) || !players.length) {
-        list.innerHTML = '<div class="loading">Stars are shown here after the week is finalized.</div>';
+        list.innerHTML = '<div class="loading">TON rewards are shown here after the week is finalized.</div>';
         return;
     }
 
@@ -3986,7 +4152,7 @@ function renderEventResults(players = [], season = null) {
         <div class="event-results-row leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
             <span class="event-results-rank">#${entry.rank}</span>
             <span class="event-results-player">${entry.username ? `@${entry.username}` : 'Player'}</span>
-            <span class="event-results-stars">${formatNumber(entry.stars_reward || 0)} ⭐</span>
+            <span class="event-results-stars">${Number(entry.ton_amount_nano || 0) > 0 ? `${formatTonAmount(entry.ton_amount_nano)} TON` : 'Pending'}</span>
         </div>
     `).join('');
 }
@@ -5539,12 +5705,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateToastViewportOffset();
     loadAchievementsFromStorage();
     loadSettings();
+    initTonWalletBridge();
     initBgm();
     initAutoClicker();
     initBadgePhysics();
 
     if (userId) {
         await loadUserData();
+        await loadTonWalletStatus();
         await checkOfflinePassiveIncome();
         startOnlinePresence();
         setInterval(sendClickBatch, 1500);
@@ -6141,6 +6309,7 @@ window.shareReferral = shareReferral;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.closeSettingsOutside = closeSettingsOutside;
+window.openTasksModal = openTasksModal;
 window.toggleTheme = toggleTheme;
 window.toggleSound = toggleSound;
 window.toggleMusic = toggleMusic;
@@ -6178,6 +6347,8 @@ window.closeSkinDetail = closeSkinDetail;
 window.openSkinDetail = openSkinDetail;
 window.unlockSkinFromDetail = unlockSkinFromDetail;
 window.selectSkinFromDetail = selectSkinFromDetail;
+window.connectTonWallet = connectTonWallet;
+window.disconnectTonWallet = disconnectTonWallet;
 
 console.log('✅ Все функции определены');
 
