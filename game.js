@@ -26,6 +26,11 @@ const OWNER_ONLINE_COUNTER_USER_ID = 1507124181;
 const telegramInitData = tg?.initData || '';
 const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
 const UI_LANG = 'en';
+const API_SESSION_TOKEN_KEY = 'spirit_api_session_token';
+const API_SESSION_EXPIRES_AT_KEY = 'spirit_api_session_expires_at';
+let apiSessionToken = localStorage.getItem(API_SESSION_TOKEN_KEY) || '';
+let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_KEY) || '0', 10) || 0;
+let apiSessionRefreshPromise = null;
 
 const I18N = {
     en: {
@@ -597,18 +602,68 @@ window.fetch = (input, init = {}) => {
         requestUrl.startsWith(CONFIG.API_URL) ||
         requestUrl.startsWith('/api/');
 
-    if (!isApiRequest || !telegramInitData) {
+    if (!isApiRequest) {
         return originalFetch(input, init);
     }
 
     const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined) || {});
-    headers.set('X-Telegram-Init-Data', telegramInitData);
+    if (apiSessionToken && apiSessionExpiresAt > Date.now() + 5000) {
+        headers.set('Authorization', `Bearer ${apiSessionToken}`);
+    } else if (telegramInitData) {
+        headers.set('X-Telegram-Init-Data', telegramInitData);
+    }
 
     return originalFetch(input, {
         ...init,
         headers
     });
 };
+
+function persistApiSession(token, expiresAtMs) {
+    apiSessionToken = token || '';
+    apiSessionExpiresAt = expiresAtMs || 0;
+    if (apiSessionToken) {
+        localStorage.setItem(API_SESSION_TOKEN_KEY, apiSessionToken);
+        localStorage.setItem(API_SESSION_EXPIRES_AT_KEY, String(apiSessionExpiresAt));
+    } else {
+        localStorage.removeItem(API_SESSION_TOKEN_KEY);
+        localStorage.removeItem(API_SESSION_EXPIRES_AT_KEY);
+    }
+}
+
+async function ensureApiSession(forceRefresh = false) {
+    if (!telegramInitData) return null;
+    if (!forceRefresh && apiSessionToken && apiSessionExpiresAt > Date.now() + 30000) {
+        return apiSessionToken;
+    }
+    if (apiSessionRefreshPromise) {
+        return apiSessionRefreshPromise;
+    }
+
+    apiSessionRefreshPromise = (async () => {
+        const res = await originalFetch(`${CONFIG.API_URL}/api/auth/session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': telegramInitData
+            }
+        });
+        if (!res.ok) {
+            persistApiSession('', 0);
+            throw new Error(`Session auth failed: HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const expiresAtMs = Number(data?.expires_at || 0) * 1000;
+        persistApiSession(data?.token || '', expiresAtMs);
+        return apiSessionToken;
+    })();
+
+    try {
+        return await apiSessionRefreshPromise;
+    } finally {
+        apiSessionRefreshPromise = null;
+    }
+}
 
 // ==================== СОСТОЯНИЕ ====================
 const State = {
@@ -1508,7 +1563,7 @@ function playAchievementSound() {
 
 // ==================== API ====================
 const API = {
-    async request(endpoint, options = {}, retries = 2) {
+    async request(endpoint, options = {}, retries = 2, authRetry = true) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
         try {
@@ -1519,6 +1574,10 @@ const API = {
             });
             clearTimeout(timeout);
             if (!res.ok) {
+                if (res.status === 401 && authRetry && telegramInitData) {
+                    await ensureApiSession(true);
+                    return this.request(endpoint, options, retries, false);
+                }
                 const err = new Error(`HTTP ${res.status}`);
                 err.status = res.status;
                 try {
@@ -1546,6 +1605,7 @@ async function loadUserData() {
     if (!userId) return;
     
     try {
+        await ensureApiSession();
         await API.post('/api/register', {
             user_id: userId,
             username,
