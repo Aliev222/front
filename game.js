@@ -3750,7 +3750,6 @@ function updateOnlineCounterVisibility() {
 
 async function sendOnlineHeartbeat() {
     if (!userId) return;
-    if (!canSeeOnlineCounter()) return;
     try {
         const res = await fetch(`${CONFIG.API_URL}/api/online/heartbeat`, {
             method: 'POST',
@@ -3761,7 +3760,7 @@ async function sendOnlineHeartbeat() {
             body: JSON.stringify({ user_id: userId })
         });
         const data = await res.json();
-        if (data.success) setOnlineCount(data.online_now);
+        if (data.success && canSeeOnlineCounter()) setOnlineCount(data.online_now);
     } catch (err) {
         console.warn('Online heartbeat failed:', err);
     }
@@ -3781,11 +3780,11 @@ async function refreshOnlineCount() {
 function startOnlinePresence() {
     if (!userId) return;
     updateOnlineCounterVisibility();
-    if (!canSeeOnlineCounter()) return;
     if (!onlineHeartbeatTimer) {
         sendOnlineHeartbeat();
         onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, 25000);
     }
+    if (!canSeeOnlineCounter()) return;
     if (!onlineCountTimer) {
         refreshOnlineCount();
         onlineCountTimer = setInterval(refreshOnlineCount, 15000);
