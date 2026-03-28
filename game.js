@@ -4047,6 +4047,11 @@ async function connectTonWallet() {
         return;
     }
     try {
+        const walletScreen = document.getElementById('wallet-screen');
+        if (walletScreen?.classList.contains('active')) {
+            closeModal('wallet-screen');
+            await new Promise((resolve) => setTimeout(resolve, 80));
+        }
         await tonConnectUI.openModal();
     } catch (err) {
         console.error('TON wallet modal error:', err);
