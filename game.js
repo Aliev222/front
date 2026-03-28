@@ -575,6 +575,20 @@ if (tg) {
     }
 }
 
+if (!referrerId) {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refParam = urlParams.get('ref') || urlParams.get('startapp') || '';
+        if (refParam.startsWith('ref_')) {
+            referrerId = parseInt(refParam.replace('ref_', '')) || null;
+        } else if (/^\d+$/.test(refParam)) {
+            referrerId = parseInt(refParam, 10) || null;
+        }
+    } catch (error) {
+        console.warn('Failed to parse referral params from URL:', error);
+    }
+}
+
 const originalFetch = window.fetch.bind(window);
 window.fetch = (input, init = {}) => {
     const requestUrl = typeof input === 'string' ? input : input?.url || '';
