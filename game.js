@@ -3975,16 +3975,53 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
     }
 }
 
+function renderEventResults(players = [], season = null) {
+    const subtitleEl = document.getElementById('event-results-subtitle');
+    const list = document.getElementById('event-results-list');
+    if (!list) return;
+
+    if (subtitleEl) {
+        subtitleEl.textContent = season?.season_key
+            ? `Finalized week ${season.season_key}`
+            : 'Shown after the week is finalized';
+    }
+
+    if (!season || !Array.isArray(players) || !players.length) {
+        list.innerHTML = '<div class="loading">Stars are shown here after the week is finalized.</div>';
+        return;
+    }
+
+    list.innerHTML = players.map((entry) => `
+        <div class="event-results-row ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
+            <span class="event-results-rank">#${entry.rank}</span>
+            <span class="event-results-player">${entry.username ? `@${entry.username}` : 'Player'}</span>
+            <span class="event-results-stars">${formatNumber(entry.stars_reward || 0)} ⭐</span>
+        </div>
+    `).join('');
+}
+
+async function loadEventResults(league) {
+    try {
+        const response = await API.get(`/api/weekly-tournament/results/${league}?limit=50`);
+        renderEventResults(response?.players || [], response?.season || null);
+    } catch (err) {
+        console.error('Event results error:', err);
+        renderEventResults([], null);
+    }
+}
+
 async function selectEventLeague(league) {
     eventSelectedLeague = EVENT_LEAGUE_ORDER.includes(league) ? league : 'bronze';
     renderEventLeagueTabs(eventSelectedLeague);
     try {
         const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
         renderEventLeaderboard(response?.players || [], eventSelectedLeague);
+        await loadEventResults(eventSelectedLeague);
     } catch (err) {
         console.error('Event leaderboard error:', err);
         const list = document.getElementById('event-leaderboard-list');
         if (list) list.innerHTML = '<div class="loading">Failed to load leaderboard.</div>';
+        renderEventResults([], null);
     }
 }
 
