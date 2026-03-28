@@ -51,15 +51,8 @@ const I18N = {
             claimFree: 'Free',
             bonusIncome: 'Bonus: +50% income'
         },
-        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Event', skins: 'Skins', tournament: 'Event', achievements: 'Achievements' },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
         main: { upgrade: 'Upgrade' },
-        tournament: {
-            title: 'Tournament',
-            prizePool: 'Prize Pool: 100,000 coins',
-            rank: 'Your rank:',
-            score: 'Your score:',
-            finished: 'Tournament finished'
-        },
         friends: {
             title: 'Friends',
             invited: 'Invited',
@@ -255,15 +248,8 @@ const I18N = {
             claimFree: 'Бесплатно',
             bonusIncome: 'Бонус: +50% к доходу'
         },
-        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Ивент', skins: 'Скины', tournament: 'Ивент', achievements: 'Ачивки' },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', games: 'Ивент', skins: 'Скины', achievements: 'Ачивки' },
         main: { upgrade: 'Прокачка' },
-        tournament: {
-            title: 'Турнир',
-            prizePool: 'Призовой фонд: 100 000 монет',
-            rank: 'Ваш ранг:',
-            score: 'Ваш счёт:',
-            finished: 'Турнир завершён'
-        },
         friends: {
             title: 'Друзья',
             invited: 'Приглашено',
@@ -1268,10 +1254,10 @@ function maybeShowDiscoveryToast(tab) {
             icon: '🎨',
             side: 'right'
         },
-        tournament: {
-            key: 'tournament',
-            title: 'Tournament',
-            body: 'Stay near the top and fight for the prize pool before the board shifts.',
+        games: {
+            key: 'games',
+            title: 'Event',
+            body: 'Push your weekly clicks, stay in the top 50 and fight for the final payouts.',
             icon: '🏁',
             side: 'right'
         }
@@ -1388,11 +1374,11 @@ function trackTournamentToastState(rank, topLimit) {
 
     if (wasInTop && !isInTop && !State.temp.tournamentDropWarned) {
         showToast(`You slipped out of the Top ${topLimit}. Push back in before the pool locks tighter.`, false, {
-            title: 'Tournament alert',
+            title: 'Event alert',
             icon: '🏁',
             side: 'right',
             variant: 'warning',
-            key: 'tournament:drop',
+            key: 'event:drop',
             cooldownMs: 30000,
             duration: 5200
         });
@@ -3654,21 +3640,13 @@ function setLabel(id, text) {
 function applyStaticTranslations() {
     const textMap = [
         ['.header .nav-item:nth-child(1) > span:last-child', 'nav.achievements'],
-        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.tournament'],
+        
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
         ['.nav-bar .nav-item:nth-child(2) > span:last-child', 'nav.friends'],
         ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.tasks'],
         ['.nav-bar .nav-item:nth-child(4) > span:last-child', 'nav.games'],
         ['.nav-bar .nav-item:nth-child(5) > span:last-child', 'nav.skins'],
-        ['#tournament-screen .modal-header h2', 'tournament.title'],
-        ['#tournament-screen .tournament-prize', 'tournament.prizePool'],
-        ['#tournament-screen .online-count-label', 'common.online'],
-        ['#tournament-screen .leaderboard-header span:nth-child(2)', 'common.player'],
-        ['#tournament-screen .leaderboard-header span:nth-child(3)', 'common.score'],
-        ['#tournament-screen #leaderboard-list .loading', 'common.loading'],
-        ['#tournament-screen .player-rank .rank-info:nth-child(1) .rank-label', 'tournament.rank'],
-        ['#tournament-screen .player-rank .rank-info:nth-child(2) .rank-label', 'tournament.score'],
         ['#friends-screen .modal-header h2', 'friends.title'],
         ['#friends-screen .stat-small:nth-child(1) .stat-small-label', 'friends.invited'],
         ['#friends-screen .stat-small:nth-child(2) .stat-small-label', 'friends.earned'],
@@ -3790,7 +3768,7 @@ function switchTab(tab, el) {
     
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
-    if (tab === 'tournament' || tab === 'games') loadTournamentData();
+    if (tab === 'games') loadTournamentData();
     if (tab === 'tasks') {
         advanceSoftOnboarding('tasks');
         loadVideoTasks();
@@ -3872,15 +3850,28 @@ function renderEventLeagueSplits(fundSplits = {}) {
     }).join('');
 }
 
-function renderEventPayoutGrid(top3Splits = {}, restSplit = 0) {
+function renderEventPayoutGrid(payoutSplits = null, top3Splits = {}, restSplit = 0) {
     const host = document.getElementById('event-payout-grid');
     if (!host) return;
+    const top = payoutSplits?.top || top3Splits || {};
+    const ranges = Array.isArray(payoutSplits?.ranges) ? payoutSplits.ranges : [];
     const rules = [
-        { label: 'Top 1', value: `${Math.round(Number(top3Splits[1] || 0) * 100)}%` },
-        { label: 'Top 2', value: `${Math.round(Number(top3Splits[2] || 0) * 100)}%` },
-        { label: 'Top 3', value: `${Math.round(Number(top3Splits[3] || 0) * 100)}%` },
-        { label: 'Ranks 4-50', value: `${Math.round(Number(restSplit || 0) * 100)}% shared` }
+        { label: 'Top 1', value: `${Math.round(Number(top[1] || 0) * 100)}%` },
+        { label: 'Top 2', value: `${Math.round(Number(top[2] || 0) * 100)}%` },
+        { label: 'Top 3', value: `${Math.round(Number(top[3] || 0) * 100)}%` },
     ];
+
+    if (ranges.length) {
+        ranges.forEach((range) => {
+            rules.push({
+                label: `Ranks ${range.start}-${range.end}`,
+                value: `${Math.round(Number(range.share || 0) * 100)}% shared`
+            });
+        });
+    } else {
+        rules.push({ label: 'Ranks 4-50', value: `${Math.round(Number(restSplit || 0) * 100)}% shared` });
+    }
+
     host.innerHTML = rules.map((rule) => `
         <div class="event-payout-card">
             <span class="event-payout-label">${rule.label}</span>
@@ -3925,7 +3916,7 @@ function renderEventOverview(data) {
     if (subtitleEl) subtitleEl.textContent = `${meta.label} leaderboard`;
 
     renderEventLeagueSplits(data?.fund_splits || {});
-    renderEventPayoutGrid(data?.top3_splits || {}, data?.rest_split || 0);
+    renderEventPayoutGrid(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
     trackTournamentToastState(player?.rank || 9999, 50);
 }
 
@@ -3992,7 +3983,7 @@ function renderEventResults(players = [], season = null) {
     }
 
     list.innerHTML = players.map((entry) => `
-        <div class="event-results-row ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
+        <div class="event-results-row leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
             <span class="event-results-rank">#${entry.rank}</span>
             <span class="event-results-player">${entry.username ? `@${entry.username}` : 'Player'}</span>
             <span class="event-results-stars">${formatNumber(entry.stars_reward || 0)} ⭐</span>
@@ -4028,8 +4019,7 @@ async function selectEventLeague(league) {
 window.selectEventLeague = selectEventLeague;
 
 function setOnlineCount(count) {
-    const countEl = document.getElementById('tournament-online-count');
-    if (countEl) countEl.textContent = formatNumber(Math.max(0, Number(count) || 0));
+    return;
 }
 
 function canSeeOnlineCounter() {
@@ -4037,9 +4027,7 @@ function canSeeOnlineCounter() {
 }
 
 function updateOnlineCounterVisibility() {
-    const indicator = document.getElementById('tournament-online-indicator');
-    if (!indicator) return;
-    indicator.style.display = canSeeOnlineCounter() ? '' : 'none';
+    return;
 }
 
 async function sendOnlineHeartbeat() {

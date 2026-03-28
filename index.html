@@ -55,17 +55,10 @@
         <div class="header glass">
             <div class="nav-item" onclick="openAchievements()">
                 <span class="nav-icon nav-icon-img-wrap">
-                    <img src="imgg/dark icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-dark">
-                    <img src="imgg/light icon/tournament.webp" alt="Achievements" class="nav-icon-img icon-light">
+                    <img src="imgg/dark icon/achievements.webp" alt="Achievements" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/achievements.webp" alt="Achievements" class="nav-icon-img icon-light">
                 </span>
                 <span>Achievements</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('games', this)">
-                <span class="nav-icon nav-icon-img-wrap">
-                    <img src="imgg/dark icon/achievements.webp" alt="Event" class="nav-icon-img icon-dark">
-                    <img src="imgg/light icon/achievements.webp" alt="Event" class="nav-icon-img icon-light">
-                </span>
-                <span>Event</span>
             </div>
             
             <button class="daily-gift-btn" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
@@ -203,51 +196,6 @@
                     <img src="imgg/light icon/skins.svg" alt="Skins" class="nav-icon-img icon-light">
                 </span>
                 <span>Skins</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- TOURNAMENT MODAL -->
-    <div class="modal-screen" id="tournament-screen">
-        <div class="glass">
-            <div class="modal-header">
-                <h2>Tournament</h2>
-                <div class="modal-header-actions">
-                    <div class="tournament-online-indicator tournament-online-indicator-top" id="tournament-online-indicator">
-                        <span class="online-dot"></span>
-                        <span class="online-count-label">Online</span>
-                        <span class="online-count-value" id="tournament-online-count">0</span>
-                    </div>
-                    <button class="modal-close" onclick="closeModal('tournament-screen')">×</button>
-                </div>
-            </div>
-            <div class="modal-content">
-                <div class="tournament-header">
-                    <div class="tournament-timer" id="tournament-timer">23:59:59</div>
-                    <div class="tournament-prize">Prize Pool: 100,000 coins</div>
-                </div>
-                
-                <div class="leaderboard">
-                    <div class="leaderboard-header">
-                        <span>#</span>
-                        <span>Player</span>
-                        <span>Score</span>
-                    </div>
-                    <div id="leaderboard-list">
-                        <div class="loading">Loading...</div>
-                    </div>
-                </div>
-                
-                <div class="player-rank glass">
-                    <div class="rank-info">
-                        <span class="rank-label">Your rank:</span>
-                        <span class="rank-value" id="player-rank">#42</span>
-                    </div>
-                    <div class="rank-info">
-                        <span class="rank-label">Your score:</span>
-                        <span class="rank-value" id="player-score">0</span>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

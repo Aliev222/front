@@ -1112,7 +1112,6 @@ body.modal-open .badge-wrap {
 
 }
 
-/* ==================== TOURNAMENT ==================== */
 .modal-header-actions {
     display: inline-flex;
     align-items: center;
@@ -1120,98 +1119,9 @@ body.modal-open .badge-wrap {
     margin-left: auto;
 }
 
-.tournament-header {
-    text-align: center;
-    padding: 14px 16px;
-    background: linear-gradient(145deg, rgba(127,73,180,0.14), rgba(127,73,180,0.05));
-    border-radius: 14px;
-    margin-bottom: 16px;
-    border: 1px solid rgba(127,73,180,0.18);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    position: relative;
-}
-
-.tournament-timer {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--accent);
-    letter-spacing: 2px;
-    text-shadow: 0 0 12px var(--accent-glow);
-}
-
-.tournament-prize {
-    font-size: 16px;
-    color: var(--warning);
-    margin-top: 8px;
-}
-
-.tournament-online-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(127, 73, 180, 0.18);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-.tournament-online-indicator-top {
-    position: static;
-    padding: 5px 9px;
-    gap: 5px;
-    min-height: 32px;
-}
-
-.tournament-online-indicator-top .online-count-label {
-    font-size: 9px;
-}
-
-.tournament-online-indicator-top .online-count-value {
-    font-size: 12px;
-}
-
-.online-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #8a5cff;
-    box-shadow: 0 0 8px rgba(138, 92, 255, 0.85);
-    animation: onlinePulse 1.8s ease-in-out infinite;
-}
-
-.online-count-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-}
-
-.online-count-value {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--text-primary);
-}
-
 @media (max-width: 480px) {
     .modal-header-actions {
         gap: 6px;
-    }
-
-    .tournament-online-indicator-top {
-        padding: 4px 8px;
-        min-height: 30px;
-    }
-
-    .tournament-online-indicator-top .online-count-label {
-        display: none;
-    }
-
-    .tournament-online-indicator-top .online-count-value {
-        font-size: 11px;
     }
 }
 
@@ -2860,20 +2770,24 @@ body.night-mode .skin-preview-mini {
     align-items: center;
     justify-content: center;
     z-index: 14000;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(6px);
+    background: rgba(20, 18, 32, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 16px;
+    box-sizing: border-box;
 }
 
 .energy-recovery-modal .modal-content {
     width: 100%;
     max-width: 320px;
+    margin: auto;
     background: var(--bg-card);
     border: 2px solid var(--accent);
     border-radius: 30px;
     padding: 25px;
     text-align: center;
     transition: background 0.3s ease;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
 }
 
 .energy-recovery-modal h3 {
@@ -3212,19 +3126,25 @@ body.night-mode .skin-preview-mini {
 .leaderboard-item-rank-1 {
     background: linear-gradient(135deg, rgba(255, 233, 160, 0.34), rgba(255, 248, 218, 0.92));
     border: 1px solid rgba(234, 188, 63, 0.38);
-    box-shadow: 0 10px 18px rgba(234, 188, 63, 0.12);
+    box-shadow:
+        0 10px 18px rgba(234, 188, 63, 0.12),
+        0 0 22px rgba(234, 188, 63, 0.18);
 }
 
 .leaderboard-item-rank-2 {
     background: linear-gradient(135deg, rgba(225, 231, 242, 0.42), rgba(248, 250, 255, 0.92));
     border: 1px solid rgba(154, 169, 196, 0.32);
-    box-shadow: 0 10px 18px rgba(154, 169, 196, 0.1);
+    box-shadow:
+        0 10px 18px rgba(154, 169, 196, 0.1),
+        0 0 20px rgba(180, 191, 214, 0.16);
 }
 
 .leaderboard-item-rank-3 {
     background: linear-gradient(135deg, rgba(224, 182, 154, 0.34), rgba(252, 238, 226, 0.92));
     border: 1px solid rgba(180, 123, 86, 0.32);
-    box-shadow: 0 10px 18px rgba(180, 123, 86, 0.1);
+    box-shadow:
+        0 10px 18px rgba(180, 123, 86, 0.1),
+        0 0 20px rgba(194, 132, 95, 0.14);
 }
 
 .leaderboard-item-rank-1 .player-rank,
@@ -3291,16 +3211,25 @@ body.night-mode .skin-preview-mini {
 body.night-mode .leaderboard-item-rank-1 {
     background: linear-gradient(135deg, rgba(160, 124, 32, 0.34), rgba(62, 46, 18, 0.92));
     border-color: rgba(234, 188, 63, 0.28);
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.22),
+        0 0 24px rgba(234, 188, 63, 0.2);
 }
 
 body.night-mode .leaderboard-item-rank-2 {
     background: linear-gradient(135deg, rgba(121, 132, 160, 0.24), rgba(43, 49, 66, 0.92));
     border-color: rgba(154, 169, 196, 0.22);
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.2),
+        0 0 22px rgba(154, 169, 196, 0.18);
 }
 
 body.night-mode .leaderboard-item-rank-3 {
     background: linear-gradient(135deg, rgba(126, 74, 44, 0.26), rgba(55, 33, 22, 0.92));
     border-color: rgba(180, 123, 86, 0.24);
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.2),
+        0 0 22px rgba(180, 123, 86, 0.16);
 }
 
 /* ==================== МОДАЛКА АЧИВОК ==================== */
@@ -4888,6 +4817,28 @@ body:not(.night-mode) #games-screen .event-section-card {
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 
+#games-screen .event-results-row.leaderboard-item-rank-1,
+#games-screen .event-results-row.leaderboard-item-rank-2,
+#games-screen .event-results-row.leaderboard-item-rank-3 {
+    border-width: 1px;
+    border-style: solid;
+}
+
+#games-screen .event-results-row.leaderboard-item-rank-1 .event-results-rank,
+#games-screen .event-results-row.leaderboard-item-rank-1 .event-results-stars {
+    color: #b57c07;
+}
+
+#games-screen .event-results-row.leaderboard-item-rank-2 .event-results-rank,
+#games-screen .event-results-row.leaderboard-item-rank-2 .event-results-stars {
+    color: #76819a;
+}
+
+#games-screen .event-results-row.leaderboard-item-rank-3 .event-results-rank,
+#games-screen .event-results-row.leaderboard-item-rank-3 .event-results-stars {
+    color: #a76333;
+}
+
 #games-screen .event-results-rank,
 #games-screen .event-results-player,
 #games-screen .event-results-stars {
@@ -4910,12 +4861,200 @@ body:not(.night-mode) #games-screen .event-section-card {
     color: var(--premium-gold);
 }
 
+/* ==================== EVENT FULLSCREEN TUNING ==================== */
+#games-screen.active {
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+
+#games-screen .games-modal-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    border-radius: 0;
+    border-left: 0 !important;
+    border-right: 0 !important;
+}
+
+#games-screen .modal-header-premium {
+    margin-bottom: 10px;
+}
+
+#games-screen .modal-header h2 {
+    font-size: clamp(22px, 3.2vw, 28px);
+}
+
+#games-screen .games-hero {
+    margin-bottom: 10px;
+    padding: 12px 14px !important;
+}
+
+#games-screen .games-hero-title {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+}
+
+#games-screen .games-hero-subtitle {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+}
+
+#games-screen .modal-content-premium {
+    padding-right: 0;
+}
+
+#games-screen .event-summary-grid {
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+#games-screen .event-stat-card {
+    padding: 12px;
+    gap: 6px;
+}
+
+#games-screen .event-stat-label,
+#games-screen .event-section-head span,
+#games-screen .event-league-range,
+#games-screen .event-payout-label {
+    font-size: 10px;
+}
+
+#games-screen .event-stat-value {
+    font-size: 16px;
+}
+
+#games-screen .event-zone-value {
+    font-size: 13px;
+}
+
+#games-screen .event-section-card {
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+#games-screen .event-section-head {
+    margin-bottom: 10px;
+}
+
+#games-screen .event-section-head h3 {
+    font-size: 15px;
+}
+
+#games-screen .event-league-splits,
+#games-screen .event-payout-grid {
+    gap: 8px;
+}
+
+#games-screen .event-league-card,
+#games-screen .event-payout-card {
+    padding: 10px;
+}
+
+#games-screen .event-league-share {
+    font-size: 17px;
+}
+
+#games-screen .event-league-tabs {
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+#games-screen .event-league-tab {
+    min-height: 36px;
+    font-size: 11px;
+}
+
+#games-screen .leaderboard-header {
+    grid-template-columns: 40px 1fr 86px;
+    padding: 8px 10px;
+    font-size: 10px;
+}
+
+#games-screen .leaderboard-item {
+    grid-template-columns: 32px 36px 1fr 86px;
+    gap: 8px;
+    min-height: 50px;
+    padding: 7px 10px;
+}
+
+#games-screen .player-rank {
+    font-size: 12px;
+}
+
+#games-screen .player-avatar {
+    width: 36px;
+    height: 36px;
+}
+
+#games-screen .player-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#games-screen .player-score {
+    font-size: 14px;
+}
+
+#games-screen .leaderboard-item-rank-1 .player-rank,
+#games-screen .leaderboard-item-rank-2 .player-rank,
+#games-screen .leaderboard-item-rank-3 .player-rank {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+}
+
+#games-screen .event-rank-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+#games-screen .event-player-highlight {
+    gap: 8px;
+}
+
+#games-screen .event-rules-list {
+    gap: 6px;
+    font-size: 12px;
+}
+
+#games-screen .event-results-list {
+    gap: 6px;
+}
+
+#games-screen .event-results-row {
+    grid-template-columns: 48px 1fr auto;
+    gap: 8px;
+    padding: 10px;
+}
+
+#games-screen .event-results-rank,
+#games-screen .event-results-player,
+#games-screen .event-results-stars {
+    font-size: 13px;
+}
+
 @media (max-width: 640px) {
-    #games-screen .event-summary-grid,
     #games-screen .event-league-splits,
-    #games-screen .event-payout-grid,
-    #games-screen .event-player-highlight {
+    #games-screen .event-payout-grid {
         grid-template-columns: 1fr;
+    }
+
+    #games-screen .event-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #games-screen .event-player-highlight {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
     }
 
     #games-screen .event-league-tabs {
@@ -4929,6 +5068,51 @@ body:not(.night-mode) #games-screen .event-section-card {
 
     #games-screen .games-hero-jackpot-value {
         font-size: 22px;
+    }
+}
+
+@media (max-width: 767px) {
+    #games-screen .games-modal-shell {
+        width: 100vw;
+        max-width: none;
+        height: 100dvh;
+        max-height: 100dvh;
+        padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+        border-radius: 0;
+    }
+
+    #games-screen .modal-header h2 {
+        font-size: 24px;
+    }
+
+    #games-screen .games-hero {
+        padding: 10px 12px !important;
+    }
+
+    #games-screen .leaderboard-header {
+        grid-template-columns: 34px 1fr 74px;
+        padding: 7px 8px;
+    }
+
+    #games-screen .leaderboard-item {
+        grid-template-columns: 28px 32px 1fr 74px;
+        gap: 6px;
+        min-height: 44px;
+        padding: 6px 8px;
+    }
+
+    #games-screen .player-avatar,
+    #games-screen .event-rank-badge {
+        width: 32px;
+        height: 32px;
+    }
+
+    #games-screen .player-name,
+    #games-screen .player-score,
+    #games-screen .event-results-rank,
+    #games-screen .event-results-player,
+    #games-screen .event-results-stars {
+        font-size: 12px;
     }
 }
 
@@ -6898,7 +7082,6 @@ body.night-mode .task-action-simple:disabled {
 .referral-stats,
 .referral-link-card,
 .referral-rules,
-.tournament-header,
 .leaderboard,
 .player-rank,
 #games-screen .game-card {
@@ -7141,7 +7324,6 @@ body.night-mode .coin-balance-banner {
 }
 
 #friends-screen > .glass,
-#tournament-screen > .glass,
 #tasks-screen .tasks-modal-shell,
 #games-screen .games-modal-shell,
 #daily-screen .daily-modal-shell,
@@ -7155,7 +7337,6 @@ body.night-mode .coin-balance-banner {
 }
 
 body.night-mode #friends-screen > .glass,
-body.night-mode #tournament-screen > .glass,
 body.night-mode #tasks-screen .tasks-modal-shell,
 body.night-mode #games-screen .games-modal-shell,
 body.night-mode #daily-screen .daily-modal-shell,
@@ -8545,5 +8726,242 @@ body.ghost-boost-active .energy-bar-bg,
 
     .onboarding-hand-hint__hand {
         font-size: 30px;
+    }
+}
+
+/* ==================== FINAL EVENT MODAL OVERRIDES ==================== */
+#games-screen.active {
+    padding: 0 !important;
+}
+
+#games-screen .games-modal-shell {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+}
+
+#games-screen .games-hero {
+    margin: 0 0 10px !important;
+    padding: 12px 14px !important;
+}
+
+#games-screen .games-hero-title {
+    font-size: 14px !important;
+}
+
+#games-screen .games-hero-subtitle {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+}
+
+#games-screen .event-section-head h3 {
+    font-size: 15px !important;
+}
+
+#games-screen .leaderboard-header {
+    grid-template-columns: 40px 1fr 86px !important;
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+}
+
+#games-screen .leaderboard-item {
+    grid-template-columns: 32px 36px 1fr 86px !important;
+    gap: 8px !important;
+    min-height: 50px !important;
+    padding: 7px 10px !important;
+}
+
+#games-screen .player-rank {
+    font-size: 12px !important;
+}
+
+#games-screen .player-avatar,
+#games-screen .event-rank-badge {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+#games-screen .player-name {
+    font-size: 13px !important;
+}
+
+#games-screen .player-score {
+    font-size: 14px !important;
+}
+
+#games-screen .event-results-row {
+    padding: 10px !important;
+}
+
+#games-screen .event-results-rank,
+#games-screen .event-results-player,
+#games-screen .event-results-stars {
+    font-size: 13px !important;
+}
+
+@media (max-width: 767px) {
+    #games-screen .leaderboard-header {
+        grid-template-columns: 34px 1fr 74px !important;
+        padding: 7px 8px !important;
+    }
+
+    #games-screen .leaderboard-item {
+        grid-template-columns: 28px 32px 1fr 74px !important;
+        gap: 6px !important;
+        min-height: 44px !important;
+        padding: 6px 8px !important;
+    }
+
+    #games-screen .player-avatar,
+    #games-screen .event-rank-badge {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    #games-screen .player-name,
+    #games-screen .player-score,
+    #games-screen .event-results-rank,
+    #games-screen .event-results-player,
+    #games-screen .event-results-stars {
+        font-size: 12px !important;
+    }
+
+    #games-screen .event-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    #games-screen .event-stat-card {
+        padding: 10px !important;
+        gap: 5px !important;
+    }
+
+    #games-screen .event-stat-label {
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+    }
+
+    #games-screen .event-stat-value {
+        font-size: 14px !important;
+        line-height: 1.15 !important;
+    }
+
+    #games-screen .event-zone-value {
+        font-size: 12px !important;
+    }
+}
+
+/* ==================== GLOBAL FULLSCREEN MODALS ==================== */
+#friends-screen.active,
+#daily-screen.active,
+#tasks-screen.active,
+#games-screen.active,
+#skins-screen.active,
+#achievements-screen.active {
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+
+#friends-screen > .glass,
+#daily-screen .daily-modal-shell,
+#tasks-screen .tasks-modal-shell,
+#games-screen .games-modal-shell,
+#skins-screen .skins-modal,
+#achievements-screen .achievements-modal {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+#friends-screen > .glass {
+    padding: 14px !important;
+}
+
+#daily-screen .daily-modal-shell,
+#tasks-screen .tasks-modal-shell,
+#games-screen .games-modal-shell,
+#skins-screen .skins-modal,
+#achievements-screen .achievements-modal {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+}
+
+#friends-screen .modal-content,
+#daily-screen .daily-modal-content,
+#tasks-screen .modal-content-premium,
+#games-screen .modal-content-premium,
+#skins-screen .skins-grid,
+#achievements-screen .achievements-list {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+}
+
+#friends-screen .referral-rules,
+#friends-screen .referral-link-card {
+    flex: 0 0 auto;
+}
+
+#skins-screen .skins-header,
+#skins-screen .collection-progress,
+#skins-screen .skins-filters,
+#achievements-screen .achievements-header,
+#achievements-screen .achievements-progress,
+#friends-screen .modal-header,
+#daily-screen .daily-modal-header {
+    flex: 0 0 auto;
+}
+
+#skins-screen .skins-grid,
+#achievements-screen .achievements-list {
+    padding-bottom: 18px;
+}
+
+/* Keep the empty-energy recovery dialog compact on purpose */
+.energy-recovery-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 100dvh !important;
+    padding: 16px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-sizing: border-box !important;
+}
+
+.energy-recovery-modal .modal-content {
+    width: min(92vw, 360px) !important;
+    max-width: 360px !important;
+    height: auto !important;
+    max-height: min(88dvh, 520px) !important;
+    margin: auto !important;
+    border-radius: 28px !important;
+}
+
+@media (max-width: 767px) {
+    #friends-screen > .glass,
+    #daily-screen .daily-modal-shell,
+    #tasks-screen .tasks-modal-shell,
+    #games-screen .games-modal-shell,
+    #skins-screen .skins-modal,
+    #achievements-screen .achievements-modal {
+        width: 100vw !important;
+        max-width: none !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+    }
+
+    #friends-screen > .glass {
+        padding: 12px !important;
     }
 }
