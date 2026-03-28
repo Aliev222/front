@@ -3954,19 +3954,6 @@ body {
     background: linear-gradient(180deg, rgba(132, 232, 255, 0.32), rgba(132, 232, 255, 0));
 }
 
-.nav-bar .nav-item.nav-item-main.active::before {
-    opacity: 1;
-    background: rgba(255,255,255,0.96);
-    box-shadow:
-        0 0 10px rgba(255,255,255,0.7),
-        0 0 22px rgba(255,255,255,0.28);
-}
-
-.nav-bar .nav-item.nav-item-main.active::after {
-    opacity: 0.9;
-    background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
-}
-
 .nav-icon-img {
     width: 30px;
     height: 30px;
@@ -3993,15 +3980,6 @@ body.night-mode .nav-icon-img.icon-light {
     opacity: 1;
     filter: grayscale(0) brightness(1.5) contrast(1.08);
     transform: none;
-}
-
-.nav-bar .nav-item.nav-item-main.active .nav-icon-img {
-    filter:
-        grayscale(0)
-        brightness(1.62)
-        contrast(1.08)
-        drop-shadow(0 0 10px rgba(255,255,255,0.42))
-        drop-shadow(0 0 18px rgba(255,255,255,0.22));
 }
 
 .header .nav-icon-img-wrap {
@@ -4066,18 +4044,6 @@ body:not(.night-mode) .nav-bar .nav-item.nav-item-wallet::after {
     background: linear-gradient(180deg, rgba(98, 178, 235, 0.26), rgba(98, 178, 235, 0));
 }
 
-body:not(.night-mode) .nav-bar .nav-item.nav-item-main.active::before {
-    background: rgba(34, 39, 51, 0.92);
-    box-shadow:
-        0 0 10px rgba(34, 39, 51, 0.22),
-        0 2px 8px rgba(34, 39, 51, 0.18);
-}
-
-body:not(.night-mode) .nav-bar .nav-item.nav-item-main.active::after {
-    opacity: 0.95;
-    background: linear-gradient(180deg, rgba(34, 39, 51, 0.22), rgba(34, 39, 51, 0));
-}
-
 body:not(.night-mode) .nav-bar .nav-item.active {
     color: var(--text-primary);
     background: transparent !important;
@@ -4122,14 +4088,6 @@ body:not(.night-mode) .nav-bar .nav-item.nav-item-wallet span:last-child {
     color: #244766;
 }
 
-body:not(.night-mode) .nav-bar .nav-item.nav-item-main.active .nav-icon-img {
-    filter:
-        grayscale(0)
-        brightness(1.08)
-        contrast(1.06)
-        drop-shadow(0 0 8px rgba(34, 39, 51, 0.12))
-        drop-shadow(0 0 16px rgba(34, 39, 51, 0.08));
-}
 
 body.night-mode .header,
 body.night-mode .stats-row,
