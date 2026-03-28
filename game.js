@@ -4216,8 +4216,8 @@ function renderEventResults(players = [], season = null) {
 
     if (subtitleEl) {
         subtitleEl.textContent = season?.season_key
-            ? `Finalized week ${season.season_key}`
-            : 'Shown after the week is finalized';
+            ? `TON paid for each place in week ${season.season_key}`
+            : 'TON payouts for each place are shown after the week is finalized';
     }
 
     if (!season || !Array.isArray(players) || !players.length) {
@@ -4228,7 +4228,7 @@ function renderEventResults(players = [], season = null) {
     list.innerHTML = players.map((entry) => `
         <div class="event-results-row leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
             <span class="event-results-rank">#${entry.rank}</span>
-            <span class="event-results-player">${entry.username ? `@${entry.username}` : 'Player'}</span>
+            <span class="event-results-player" title="${entry.username ? `@${entry.username}` : 'Player'}">${entry.username ? `@${entry.username}` : 'Player'}</span>
             <span class="event-results-stars">${Number(entry.ton_amount_nano || 0) > 0 ? `${formatTonAmount(entry.ton_amount_nano)} TON` : 'Pending'}</span>
         </div>
     `).join('');

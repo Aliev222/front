@@ -5070,6 +5070,7 @@ body:not(.night-mode) #games-screen .event-section-card {
     gap: 8px;
     min-height: 50px;
     padding: 7px 10px;
+    align-items: center;
 }
 
 #games-screen .player-rank {
@@ -5084,10 +5085,18 @@ body:not(.night-mode) #games-screen .event-section-card {
 #games-screen .player-name {
     font-size: 13px;
     font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #games-screen .player-score {
     font-size: 14px;
+    min-width: 0;
+    justify-self: end;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 #games-screen .leaderboard-item-rank-1 .player-rank,
@@ -8874,20 +8883,44 @@ body.ghost-boost-active .energy-bar-bg,
 
 #games-screen .player-name {
     font-size: 13px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
 }
 
 #games-screen .player-score {
     font-size: 14px !important;
+    min-width: 0 !important;
+    justify-self: end !important;
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums !important;
 }
 
 #games-screen .event-results-row {
     padding: 10px !important;
+    grid-template-columns: 54px minmax(0, 1fr) auto !important;
+    align-items: center !important;
 }
 
 #games-screen .event-results-rank,
 #games-screen .event-results-player,
 #games-screen .event-results-stars {
     font-size: 13px !important;
+}
+
+#games-screen .event-results-player {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#games-screen .event-results-stars {
+    justify-self: end;
+    white-space: nowrap;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 767px) {
@@ -8915,6 +8948,10 @@ body.ghost-boost-active .energy-bar-bg,
     #games-screen .event-results-player,
     #games-screen .event-results-stars {
         font-size: 12px !important;
+    }
+
+    #games-screen .event-results-row {
+        grid-template-columns: 48px minmax(0, 1fr) auto !important;
     }
 
     #games-screen .event-summary-grid {
