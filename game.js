@@ -40,6 +40,8 @@ const AD_COOLDOWNS_STORAGE_KEY = 'spirit_ad_cooldowns';
 let apiSessionToken = localStorage.getItem(API_SESSION_TOKEN_KEY) || '';
 let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_KEY) || '0', 10) || 0;
 let apiSessionRefreshPromise = null;
+let adsgramController = null;
+let adsgramInitializedBlockId = '';
 const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
     ? `${window.location.origin}/tonconnect-manifest.json`
     : 'https://spirix.vercel.app/tonconnect-manifest.json';
@@ -728,6 +730,28 @@ function formatCooldownClock(totalSeconds) {
 
 function randomIntBetween(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getAdsgramBlockId() {
+    return String(window.ADSGRAM_CONFIG?.blockId || '').trim();
+}
+
+function isAdsgramReady() {
+    return !!(window.Adsgram?.init && getAdsgramBlockId());
+}
+
+async function initAdsgramController() {
+    const blockId = getAdsgramBlockId();
+    if (!blockId || !window.Adsgram?.init) {
+        return null;
+    }
+
+    if (!adsgramController || adsgramInitializedBlockId !== blockId) {
+        adsgramController = window.Adsgram.init({ blockId });
+        adsgramInitializedBlockId = blockId;
+    }
+
+    return adsgramController;
 }
 
 function isTaskTapBoostActive() {
@@ -2158,27 +2182,23 @@ async function startAdActionSession(action) {
 }
 
 async function showRewardedAd(adSessionId = null) {
-    if (typeof window.show_10655027 !== 'function') {
+    const controller = await initAdsgramController();
+    if (!controller) {
         throw new Error(tr('toasts.adUnavailable'));
     }
 
-    if (!adSessionId) {
-        return window.show_10655027('pop');
-    }
-
-    const payload = {
-        ymid: adSessionId,
-        request_var: adSessionId
-    };
-
     try {
-        return await window.show_10655027('pop', payload);
-    } catch (err) {
-        try {
-            return await window.show_10655027(payload);
-        } catch (fallbackErr) {
-            throw new Error('Tracked rewarded ad could not be started');
+        const result = await controller.show();
+        if (result?.done === false) {
+            throw new Error(result?.description || 'Ad was not completed');
         }
+        return result;
+    } catch (err) {
+        const detail = String(err?.description || err?.message || '').trim();
+        if (detail) {
+            throw new Error(detail);
+        }
+        throw err;
     }
 }
 
@@ -2231,7 +2251,7 @@ async function claimLuckyGhost(event) {
     if (ghost?.dataset.claiming === '1') return;
     if (ghost) ghost.dataset.claiming = '1';
 
-    if (typeof window.show_10655027 !== 'function') {
+    if (!isAdsgramReady()) {
         removeLuckyGhost();
         showToast(tr('toasts.adUnavailable'), true, {
             title: 'Ghost escaped',
@@ -3121,7 +3141,7 @@ async function buySkinWithStarsPlaceholder(skin) {
 }
 
 async function watchAdForSkin(skinId) {
-    if (typeof window.show_10655027 !== 'function') {
+    if (!isAdsgramReady()) {
         showToast(tr('toasts.adUnavailable'), true);
         return;
     }
@@ -3800,7 +3820,7 @@ async function watchVideoForTask(taskId) {
     const task = VIDEO_TASKS.find(t => t.id === taskId);
     if (!task || task.completed || !task.available) return;
     
-    if (typeof window.show_10655027 !== 'function') {
+    if (!isAdsgramReady()) {
         showToast(tr('toasts.adUnavailableTemp'), true);
         return;
     }
@@ -4731,7 +4751,7 @@ async function recoverEnergyWithAd() {
         return;
     }
 
-    if (typeof window.show_10655027 !== 'function') {
+    if (!isAdsgramReady()) {
         showToast(tr('toasts.adUnavailable'), true);
         return;
     }
@@ -4827,7 +4847,7 @@ async function activateMegaBoost() {
         }
     } catch (err) {}
     
-    if (typeof window.show_10655027 !== 'function') {
+    if (!isAdsgramReady()) {
         showToast(tr('toasts.adUnavailable'), true);
         return;
     }
@@ -6490,9 +6510,8 @@ function initAutoClicker() {
 
         const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(AUTO_CLICK_DURATION_MS); };
 
-        if (typeof window.show_10655027 !== 'function') {
-            showToast(tr('toasts.autoTapFallback'));
-            enableAuto(AUTO_CLICK_DURATION_MS);
+        if (!isAdsgramReady()) {
+            showToast(tr('toasts.adUnavailable'), true);
             return;
         }
         showToast(tr('toasts.adLoading'));
