@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <!-- Sync marker for VS Code source control -->
     <meta charset="UTF-8">
@@ -101,7 +101,7 @@
             </button>
             
             <div class="settings-container">
-                <button class="settings-btn" onclick="openSettings()" title="Settings">
+                <button class="settings-btn" id="settingsOpenButton" onclick="openSettings()" title="Settings">
                     <img src="imgg/dark icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-dark">
                     <img src="imgg/light icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-light">
                 </button>
@@ -432,15 +432,15 @@
             <div class="modal-header modal-header-premium">
                 <button class="modal-close" onclick="closeModal('wallet-screen')">×</button>
                 <div class="modal-header-copy">
-                    <span class="modal-kicker">TON Payouts</span>
-                    <h2>Wallet</h2>
+                    <span class="modal-kicker" id="wallet-modal-kicker">TON Payouts</span>
+                    <h2 id="wallet-modal-title">Wallet</h2>
                 </div>
             </div>
             <div class="modal-content modal-content-premium wallet-modal-content">
                 <div class="event-payout-notice hidden" id="wallet-payout-notice"></div>
                 <div class="event-section-card event-wallet-card">
                     <div class="event-section-head">
-                        <h3>TON Wallet</h3>
+                        <h3 id="wallet-section-title">TON Wallet</h3>
                         <span id="event-wallet-status-badge">Not connected</span>
                     </div>
                     <div class="event-wallet-body">
@@ -462,7 +462,7 @@
     <div class="settings-overlay" id="settings-screen" onclick="closeSettingsOutside(event)">
         <div class="settings-modal glass" id="settings-modal-box">
             <div class="settings-header">
-                <h2>Settings</h2>
+                <h2 id="settings-modal-title">Settings</h2>
                 <button class="modal-close" onclick="closeSettings()">×</button>
             </div>
 
@@ -470,7 +470,7 @@
                 <div class="settings-label">
                     <span class="settings-icon" id="themeIcon">☀️</span>
                     <div>
-                        <div class="settings-title">Theme</div>
+                        <div class="settings-title" id="themeTitle">Theme</div>
                         <div class="settings-sub" id="themeLabel">Day</div>
                     </div>
                 </div>
@@ -483,9 +483,23 @@
 
             <div class="settings-section">
                 <div class="settings-label">
+                    <span class="settings-icon">🌐</span>
+                    <div>
+                        <div class="settings-title" id="languageTitle">Language</div>
+                        <div class="settings-sub" id="languageLabel">English</div>
+                    </div>
+                </div>
+                <div class="language-switch" id="languageSwitch">
+                    <button type="button" class="language-option" id="lang-en-btn" onclick="setLanguage('en')">EN</button>
+                    <button type="button" class="language-option" id="lang-ru-btn" onclick="setLanguage('ru')">RU</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
                     <span class="settings-icon" id="soundIcon">🔊</span>
                     <div>
-                        <div class="settings-title">Sound</div>
+                        <div class="settings-title" id="soundTitle">Sound</div>
                         <div class="settings-sub" id="soundLabel">On</div>
                     </div>
                 </div>
@@ -500,7 +514,7 @@
                 <div class="settings-label">
                     <span class="settings-icon" id="musicIcon">🎵</span>
                     <div>
-                        <div class="settings-title">Music</div>
+                        <div class="settings-title" id="musicTitle">Music</div>
                         <div class="settings-sub" id="musicLabel">On</div>
                     </div>
                 </div>
@@ -515,7 +529,7 @@
                 <div class="settings-label">
                     <span class="settings-icon" id="vibIcon">📳</span>
                     <div>
-                        <div class="settings-title">Vibration</div>
+                        <div class="settings-title" id="vibrationTitle">Vibration</div>
                         <div class="settings-sub" id="vibLabel">On</div>
                     </div>
                 </div>

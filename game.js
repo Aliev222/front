@@ -26,7 +26,14 @@ const OWNER_ONLINE_COUNTER_USER_ID = 1507124181;
 const telegramInitData = tg?.initData || '';
 const telegramPlatform = (tg?.platform || '').toLowerCase();
 const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en').toLowerCase();
-const UI_LANG = 'en';
+const savedSettings = (() => {
+    try {
+        return JSON.parse(localStorage.getItem('ryohoSettings') || '{}') || {};
+    } catch (_) {
+        return {};
+    }
+})();
+let UI_LANG = normalizeUiLanguage(savedSettings.language || telegramLanguage || 'en');
 const API_SESSION_TOKEN_KEY = 'spirit_api_session_token';
 const API_SESSION_EXPIRES_AT_KEY = 'spirit_api_session_expires_at';
 const AD_COOLDOWNS_STORAGE_KEY = 'spirit_ad_cooldowns';
@@ -48,6 +55,10 @@ let tonWalletState = {
 let pendingTonWalletNotice = null;
 const TELEGRAM_BOT_USERNAME = 'Ryoho_bot';
 
+function normalizeUiLanguage(value) {
+    return String(value || '').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+}
+
 function isLikelyMobileGameClient() {
     const ua = navigator.userAgent || '';
     const hasTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
@@ -63,19 +74,24 @@ function isLikelyMobileGameClient() {
 }
 
 function getMobileAccessState() {
+    const isRu = UI_LANG === 'ru';
     if (!tg?.initDataUnsafe?.user || !telegramInitData) {
         return {
             allowed: false,
-            title: 'Open from Telegram on phone',
-            text: 'This game is available only inside Telegram on a mobile device.',
+            title: isRu ? 'Открой через Telegram на телефоне' : 'Open from Telegram on phone',
+            text: isRu
+                ? 'Эта игра доступна только внутри Telegram на мобильном устройстве.'
+                : 'This game is available only inside Telegram on a mobile device.',
         };
     }
 
     if (!isLikelyMobileGameClient()) {
         return {
             allowed: false,
-            title: 'Desktop access is blocked',
-            text: 'Open the game from Telegram on your phone. Desktop launch is disabled to reduce botting and farming.',
+            title: isRu ? 'Доступ с компьютера заблокирован' : 'Desktop access is blocked',
+            text: isRu
+                ? 'Открой игру в Telegram на телефоне. Запуск с компьютера отключён, чтобы снизить ботов и фарм.'
+                : 'Open the game from Telegram on your phone. Desktop launch is disabled to reduce botting and farming.',
         };
     }
 
@@ -102,13 +118,15 @@ function renderMobileOnlyGate() {
         <div class="device-lock-screen">
             <div class="device-lock-card">
                 <div class="device-lock-kicker">Spirit Clicker</div>
-                <h1>Игра только на телефоне</h1>
-                <p>Открой <strong>@${TELEGRAM_BOT_USERNAME}</strong> в Telegram на телефоне или просто отсканируй QR-код ниже.</p>
+                <h1>${UI_LANG === 'ru' ? 'Игра только на телефоне' : 'Game is available only on phone'}</h1>
+                <p>${UI_LANG === 'ru'
+                    ? `Открой <strong>@${TELEGRAM_BOT_USERNAME}</strong> в Telegram на телефоне или просто отсканируй QR-код ниже.`
+                    : `Open <strong>@${TELEGRAM_BOT_USERNAME}</strong> in Telegram on your phone or scan the QR code below.`}</p>
                 <div class="device-lock-qr-wrap">
                     <img class="device-lock-qr" src="${qrSrc}" alt="QR code to open @${TELEGRAM_BOT_USERNAME}">
                 </div>
                 <div class="device-lock-handle">@${TELEGRAM_BOT_USERNAME}</div>
-                <a class="device-lock-link" href="${botLink}" target="_blank" rel="noopener noreferrer">Открыть бота</a>
+                <a class="device-lock-link" href="${botLink}" target="_blank" rel="noopener noreferrer">${UI_LANG === 'ru' ? 'Открыть бота' : 'Open bot'}</a>
             </div>
         </div>
     `;
@@ -122,6 +140,8 @@ const I18N = {
             off: 'Off',
             day: 'Day',
             night: 'Night',
+            english: 'English',
+            russian: 'Russian',
             player: 'Player',
             score: 'Score',
             online: 'Online',
@@ -142,6 +162,7 @@ const I18N = {
             referralLink: 'Your referral link',
             copyLink: 'Copy link',
             share: 'Share',
+            shareText: 'Join Spirit Clicker!',
             bonuses: 'Bonuses',
             bonus1: 'Invite 1 friend — +25000 coins',
             bonus2: 'Friend income share — 5% forever',
@@ -193,6 +214,23 @@ const I18N = {
             spinNow: 'Live ranking',
             openBox: 'Level-based tiers',
             chaseMultiplier: 'Push harder',
+            leagueLeaderboard: '{league} leaderboard',
+            eventStatusTitle: 'Your event status',
+            noWeeklyClicks: 'No weekly clicks yet',
+            yourLeague: 'Your league',
+            yourRank: 'Your rank',
+            status: 'Status',
+            noPlayersYet: 'No players in this league yet.',
+            finalTonWeek: 'TON paid for each place in week {season}',
+            finalTonPending: 'TON payouts for each place are shown after the week is finalized',
+            finalTonEmpty: 'TON rewards are shown here after the week is finalized.',
+            pendingReward: 'Pending',
+            zoneStart: 'Start tapping to enter the board',
+            zoneReview: 'Review pending',
+            zoneTop3: 'Top 3 payout pressure',
+            zonePayout: 'In payout zone',
+            zoneTop50: 'Inside top 50',
+            zonePlacesAway: '{places} places from payout zone',
             walletNoticeTitle: 'Tournament payout is waiting',
             walletNoticeBody: 'You finished in the payout zone, but TON cannot be sent until you connect a wallet.',
             walletNoticeLeague: 'League',
@@ -212,9 +250,24 @@ const I18N = {
             chooseAction: 'Choose an action',
             settings: 'Settings',
             theme: 'Theme',
+            language: 'Language',
             sound: 'Sound',
             music: 'Music',
             vibration: 'Vibration'
+        },
+        wallet: {
+            kicker: 'TON Payouts',
+            title: 'Wallet',
+            sectionTitle: 'TON Wallet',
+            connected: 'Connected',
+            notConnected: 'Not connected',
+            connect: 'Connect Wallet',
+            disconnect: 'Disconnect',
+            connectedTitle: 'Automatic TON payouts are enabled for this account',
+            disconnectedTitle: 'Connect wallet for automatic TON payouts',
+            noWallet: 'No wallet connected',
+            connectedSub: 'Weekly rewards will be queued to this wallet after season settlement.',
+            disconnectedSub: 'Your weekly prize queue will use this address after the season is finalized.'
         },
         skins: { title: 'Skin', name: 'Skin name', description: 'Skin description', rarity: 'rarity' },
         achievements: { title: 'Achievements' }
@@ -250,6 +303,7 @@ const I18N = {
             skinAlreadyOwned: '✅ You already own this skin',
             skinClaimError: '❌ Claim error',
             skinAdProgress: '✅ +1 video view for skin!',
+            adNotConfirmed: 'You did not finish the ad or the reward was not confirmed.',
             starsUnavailable: '❌ Stars payments are not available in this client',
             starsInvoiceError: '❌ Failed to create payment invoice',
             starsPending: '⏳ Waiting for payment confirmation',
@@ -265,7 +319,14 @@ const I18N = {
             charmUpdated: '✅ Charm updated',
             energyRecovered: '⚡ Energy restored!',
             energyFull: '⚡ Energy fully restored!',
-            cooldownsReset: '🔄 Cooldowns reset'
+            cooldownsReset: '🔄 Cooldowns reset',
+            tonWalletConnected: 'TON wallet connected',
+            walletConnectedTitle: 'Wallet connected',
+            tonWalletSyncError: 'Failed to sync TON wallet',
+            tonWalletUnavailable: 'TON wallet connection is unavailable right now',
+            tonWalletOpenError: 'Failed to open TON wallet modal',
+            tonWalletDisconnectError: 'Failed to disconnect TON wallet',
+            leaderboardLoadError: 'Failed to load leaderboard.'
         },
         skinsDyn: {
             noSkins: 'No skins',
@@ -328,6 +389,8 @@ const I18N = {
             off: 'Выкл',
             day: 'День',
             night: 'Ночь',
+            english: 'Английский',
+            russian: 'Русский',
             player: 'Игрок',
             score: 'Счёт',
             online: 'Онлайн',
@@ -348,6 +411,7 @@ const I18N = {
             referralLink: 'Ваша реферальная ссылка',
             copyLink: 'Копировать',
             share: 'Поделиться',
+            shareText: 'Присоединяйся к Spirit Clicker!',
             bonuses: 'Бонусы',
             bonus1: 'Пригласи 1 друга — +25000 монет',
             bonus2: 'Доход с друга — 5% навсегда',
@@ -373,8 +437,8 @@ const I18N = {
             coinsSuffix: 'монет'
         },
         daily: {
-            title: 'Daily Rewards',
-            subtitle: 'Login streak',
+            title: 'Ежедневные награды',
+            subtitle: 'Серия входов',
             ready: 'Забрать награду',
             wait: 'Жди завтра',
             todayClaimed: 'Сегодня награда уже получена.',
@@ -399,6 +463,23 @@ const I18N = {
             spinNow: 'Живой рейтинг',
             openBox: 'Лиги по уровню',
             chaseMultiplier: 'Дави сильнее',
+            leagueLeaderboard: 'Лидерборд {league}',
+            eventStatusTitle: 'Твой статус в ивенте',
+            noWeeklyClicks: 'Пока нет недельных кликов',
+            yourLeague: 'Твоя лига',
+            yourRank: 'Твой ранг',
+            status: 'Статус',
+            noPlayersYet: 'В этой лиге пока нет игроков.',
+            finalTonWeek: 'TON за каждое место за неделю {season}',
+            finalTonPending: 'TON-выплаты за места появятся после завершения недели',
+            finalTonEmpty: 'TON-награды появятся здесь после завершения недели.',
+            pendingReward: 'Ожидается',
+            zoneStart: 'Начни кликать, чтобы попасть в таблицу',
+            zoneReview: 'Идёт проверка',
+            zoneTop3: 'Давление зоны топ-3',
+            zonePayout: 'Ты в зоне выплат',
+            zoneTop50: 'Ты внутри топ-50',
+            zonePlacesAway: 'До зоны выплат: {places} мест',
             walletNoticeTitle: 'Турнирная выплата ждёт кошелёк',
             walletNoticeBody: 'Ты попал в зону выплат, но TON не отправится, пока не будет подключён кошелёк.',
             walletNoticeLeague: 'Лига',
@@ -418,9 +499,24 @@ const I18N = {
             chooseAction: 'Выберите действие',
             settings: 'Настройки',
             theme: 'Тема',
+            language: 'Язык',
             sound: 'Звуки',
             music: 'Музыка',
             vibration: 'Вибрация'
+        },
+        wallet: {
+            kicker: 'TON выплаты',
+            title: 'Кошелёк',
+            sectionTitle: 'TON кошелёк',
+            connected: 'Подключён',
+            notConnected: 'Не подключён',
+            connect: 'Подключить кошелёк',
+            disconnect: 'Отключить',
+            connectedTitle: 'Автоматические TON-выплаты включены для этого аккаунта',
+            disconnectedTitle: 'Подключи кошелёк для автоматических TON-выплат',
+            noWallet: 'Кошелёк не подключён',
+            connectedSub: 'Недельные награды будут поставлены в очередь на этот кошелёк после завершения сезона.',
+            disconnectedSub: 'Твоя недельная очередь выплат будет использовать этот адрес после завершения сезона.'
         },
         skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
         achievements: { title: 'Ачивки' },
@@ -455,6 +551,7 @@ const I18N = {
             skinAlreadyOwned: '✅ Скин уже есть',
             skinClaimError: '❌ Ошибка получения',
             skinAdProgress: '✅ +1 просмотр для скина!',
+            adNotConfirmed: 'Вы не досмотрели рекламу или награда не была подтверждена.',
             starsUnavailable: '❌ Оплата Stars недоступна в этом клиенте',
             starsInvoiceError: '❌ Не удалось создать счёт на оплату',
             starsPending: '⏳ Ожидаем подтверждение оплаты',
@@ -464,13 +561,20 @@ const I18N = {
             boostActive: '⚡ Буст уже активен!',
             boostFinished: '⏰ Буст закончился',
             megaBoostActivated: '🔥 БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!',
-            autoTapEnabled: '✅ Auto Tap 2 мин',
+            autoTapEnabled: '✅ Автокликер на 2 мин',
             autoTapFallback: 'ℹ️ Реклама недоступна, авто на 30 сек',
             autoTapError: '❌ Не удалось включить авто',
             charmUpdated: '✅ Брелок обновлен',
             energyRecovered: '⚡ Энергия восстановлена!',
             energyFull: '⚡ Энергия полностью восстановлена!',
-            cooldownsReset: '🔄 Кулдауны сброшены'
+            cooldownsReset: '🔄 Кулдауны сброшены',
+            tonWalletConnected: 'TON-кошелёк подключён',
+            walletConnectedTitle: 'Кошелёк подключён',
+            tonWalletSyncError: 'Не удалось синхронизировать TON-кошелёк',
+            tonWalletUnavailable: 'Подключение TON-кошелька сейчас недоступно',
+            tonWalletOpenError: 'Не удалось открыть окно TON-кошелька',
+            tonWalletDisconnectError: 'Не удалось отключить TON-кошелёк',
+            leaderboardLoadError: 'Не удалось загрузить лидерборд.'
         },
         skinsDyn: {
             noSkins: 'Нет скинов',
@@ -491,8 +595,8 @@ const I18N = {
             incomeBonus: '⚡ x{value} к доходу'
         },
         tasksList: {
-            tap_surge: { title: 'Tap Surge', description: 'x2 к тапу на 5 минут', tag: 'тап', reward: 'x2 • 5 мин' },
-            passive_hour: { title: 'Passive Hour', description: 'x2 к пассивному доходу на 60 минут', tag: 'пассив', reward: 'x2 • 60 мин' },
+            tap_surge: { title: 'Тап-рывок', description: 'x2 к тапу на 5 минут', tag: 'тап', reward: 'x2 • 5 мин' },
+            passive_hour: { title: 'Пассивный час', description: 'x2 к пассивному доходу на 60 минут', tag: 'пассив', reward: 'x2 • 60 мин' },
             coin_drop: { title: 'Coin Drop', description: 'Случайная награда от 200 до 30 000 монет', tag: 'коины', reward: '200-30K' }
         },
         minigames: {
@@ -872,17 +976,11 @@ const State = {
         infiniteEnergyExpiresAt: null
     },
     settings: {
-        theme: localStorage.getItem('ryohoSettings') ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).theme || 'day' : 'day',
-        sound: localStorage.getItem('ryohoSettings') ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).sound !== undefined ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).sound : true : true,
-        music: localStorage.getItem('ryohoSettings') ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).music !== undefined ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).music : true : true,
-        vibration: localStorage.getItem('ryohoSettings') ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).vibration !== undefined ? 
-            JSON.parse(localStorage.getItem('ryohoSettings')).vibration : true : true
+        theme: savedSettings.theme || 'day',
+        language: UI_LANG,
+        sound: savedSettings.sound !== undefined ? savedSettings.sound : true,
+        music: savedSettings.music !== undefined ? savedSettings.music : true,
+        vibration: savedSettings.vibration !== undefined ? savedSettings.vibration : true
     },
     temp: {
         tapAnimation: null,
@@ -2091,7 +2189,7 @@ function isAdConfirmationPendingError(err) {
 
 function resolveRewardedAdErrorMessage(err, fallbackMessage) {
     if (isAdConfirmationPendingError(err)) {
-        return 'You did not finish the ad or the reward was not confirmed yet.';
+        return tr('toasts.adNotConfirmed');
     }
 
     const detail = String(err?.detail || err?.message || '').trim();
@@ -3733,7 +3831,7 @@ async function watchVideoForTask(taskId) {
         console.error('Video error:', error);
         showToast(
             isAdConfirmationPendingError(error)
-                ? 'You did not finish the ad or the reward was not confirmed.'
+                ? tr('toasts.adNotConfirmed')
                 : (error?.detail || error?.message || tr('toasts.watchError')),
             true
         );
@@ -3799,12 +3897,13 @@ function shareReferral() {
         showToast(tr('toasts.linkNotLoaded'), true);
         return;
     }
-    const shareText = '🎮 Join Spirit Clicker!';
+    const shareText = `🎮 ${t('friends.shareText')}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(linkText)}&text=${encodeURIComponent(shareText)}`, '_blank');
 }
 
 // ==================== НАСТРОЙКИ ====================
 function loadSettings() {
+    document.documentElement.lang = UI_LANG;
     applyTheme();
     updateSettingsUI();
 }
@@ -3850,15 +3949,27 @@ function toggleVibration() {
     if (State.settings.vibration && navigator.vibrate) navigator.vibrate(50);
 }
 
+function setLanguage(language) {
+    const nextLang = normalizeUiLanguage(language);
+    if (nextLang === UI_LANG) return;
+    UI_LANG = nextLang;
+    State.settings.language = nextLang;
+    saveSettings();
+    document.documentElement.lang = nextLang;
+    window.location.reload();
+}
+
 function updateSettingsUI() {
     const isNight = State.settings.theme === 'night';
     const soundOn = State.settings.sound;
     const musicOn = State.settings.music;
     const vibOn = State.settings.vibration;
+    const lang = normalizeUiLanguage(State.settings.language || UI_LANG);
     
     setToggle('themeTrack', isNight);
     setIcon('themeIcon', isNight ? '🌙' : '☀️');
     setLabel('themeLabel', isNight ? t('common.night') : t('common.day'));
+    setLabel('languageLabel', lang === 'ru' ? t('common.russian') : t('common.english'));
     
     setToggle('soundTrack', soundOn);
     setIcon('soundIcon', soundOn ? '🔊' : '🔇');
@@ -3871,6 +3982,9 @@ function updateSettingsUI() {
     setToggle('vibTrack', vibOn);
     setIcon('vibIcon', vibOn ? '📳' : '📴');
     setLabel('vibLabel', vibOn ? t('common.on') : t('common.off'));
+
+    document.getElementById('lang-en-btn')?.classList.toggle('active', lang === 'en');
+    document.getElementById('lang-ru-btn')?.classList.toggle('active', lang === 'ru');
 }
 
 function setToggle(id, active) {
@@ -3917,6 +4031,11 @@ function applyStaticTranslations() {
         ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
         ['#tasks-screen .tasks-hero-badge-value', 'tasks.heroValue'],
         ['#tasks-screen .tasks-list .loading', 'common.loading'],
+        ['#dailyRewardKicker', 'daily.subtitle'],
+        ['#dailyRewardTitle', 'daily.title'],
+        ['#dailyRewardFinalKicker', 'daily.finalTitle'],
+        ['#dailyRewardFinalTitle', 'daily.finalName'],
+        ['#dailyRewardFinalDesc', 'daily.finalDesc'],
         ['#games-screen .modal-kicker', 'games.kicker'],
         ['#games-screen .modal-header-copy h2', 'games.title'],
         ['#games-screen .games-hero-title', 'games.heroTitle'],
@@ -3928,11 +4047,15 @@ function applyStaticTranslations() {
         ['#games-screen .game-card:nth-child(4) .game-enter', 'games.spinNow'],
         ['#games-screen .game-card:nth-child(5) .game-enter', 'games.openBox'],
         ['#games-screen .game-card:nth-child(6) .game-enter', 'games.chaseMultiplier'],
-        ['#settings-screen h2', 'gameModals.settings'],
-        ['#settings-screen .settings-section:nth-of-type(2) .settings-title', 'gameModals.theme'],
-        ['#settings-screen .settings-section:nth-of-type(3) .settings-title', 'gameModals.sound'],
-        ['#settings-screen .settings-section:nth-of-type(4) .settings-title', 'gameModals.music'],
-        ['#settings-screen .settings-section:nth-of-type(5) .settings-title', 'gameModals.vibration'],
+        ['#wallet-modal-kicker', 'wallet.kicker'],
+        ['#wallet-modal-title', 'wallet.title'],
+        ['#wallet-section-title', 'wallet.sectionTitle'],
+        ['#settings-modal-title', 'gameModals.settings'],
+        ['#themeTitle', 'gameModals.theme'],
+        ['#languageTitle', 'gameModals.language'],
+        ['#soundTitle', 'gameModals.sound'],
+        ['#musicTitle', 'gameModals.music'],
+        ['#vibrationTitle', 'gameModals.vibration'],
         ['#confirm-modal-title', 'gameModals.chooseAction'],
         ['#confirm-skin-name', 'skins.name'],
         ['#confirm-skin-desc', 'skins.description'],
@@ -3980,6 +4103,11 @@ function applyStaticTranslations() {
         const el = document.querySelector(selector);
         if (el) el.textContent = t(key);
     });
+
+    const dailyButton = document.getElementById('dailyRewardsButton');
+    if (dailyButton) dailyButton.setAttribute('title', t('daily.title'));
+    const settingsButton = document.getElementById('settingsOpenButton');
+    if (settingsButton) settingsButton.setAttribute('title', t('gameModals.settings'));
 
     const referralLink = document.getElementById('referral-link');
     if (referralLink && referralLink.textContent.trim().toLowerCase() === 'loading...') {
@@ -4055,14 +4183,19 @@ let eventSelectedLeague = null;
 let eventOverviewCache = null;
 const EVENT_LEAGUE_ORDER = ['bronze', 'silver', 'gold', 'diamond'];
 const EVENT_LEAGUE_META = {
-    bronze: { label: 'Bronze', range: 'Lvl 1-32', className: 'bronze' },
-    silver: { label: 'Silver', range: 'Lvl 33-65', className: 'silver' },
-    gold: { label: 'Gold', range: 'Lvl 66-99', className: 'gold' },
-    diamond: { label: 'Diamond', range: 'Lvl 100+', className: 'diamond' }
+    bronze: { label: { en: 'Bronze', ru: 'Бронза' }, range: { en: 'Lvl 1-32', ru: 'Ур. 1-32' }, className: 'bronze' },
+    silver: { label: { en: 'Silver', ru: 'Серебро' }, range: { en: 'Lvl 33-65', ru: 'Ур. 33-65' }, className: 'silver' },
+    gold: { label: { en: 'Gold', ru: 'Золото' }, range: { en: 'Lvl 66-99', ru: 'Ур. 66-99' }, className: 'gold' },
+    diamond: { label: { en: 'Diamond', ru: 'Алмаз' }, range: { en: 'Lvl 100+', ru: 'Ур. 100+' }, className: 'diamond' }
 };
 
 function getEventLeagueMeta(league) {
-    return EVENT_LEAGUE_META[(league || 'bronze').toLowerCase()] || EVENT_LEAGUE_META.bronze;
+    const raw = EVENT_LEAGUE_META[(league || 'bronze').toLowerCase()] || EVENT_LEAGUE_META.bronze;
+    return {
+        ...raw,
+        label: raw.label?.[UI_LANG] || raw.label?.en || '',
+        range: raw.range?.[UI_LANG] || raw.range?.en || ''
+    };
 }
 
 function deriveEventLeague(level) {
@@ -4085,12 +4218,12 @@ function formatEventTime(seconds) {
 }
 
 function getEventZoneText(player) {
-    if (!player || !Number(player.score || 0)) return 'Start tapping to enter the board';
-    if (player.fraud_flag) return 'Review pending';
-    if (player.rank <= 3) return 'Top 3 payout pressure';
-    if (player.rank <= 50 && player.eligible_for_payout) return 'In payout zone';
-    if (player.rank <= 50) return 'Inside top 50';
-    return `${player.rank - 50} places from payout zone`;
+    if (!player || !Number(player.score || 0)) return tr('games.zoneStart');
+    if (player.fraud_flag) return tr('games.zoneReview');
+    if (player.rank <= 3) return tr('games.zoneTop3');
+    if (player.rank <= 50 && player.eligible_for_payout) return tr('games.zonePayout');
+    if (player.rank <= 50) return tr('games.zoneTop50');
+    return tr('games.zonePlacesAway', { places: player.rank - 50 });
 }
 
 function setTonWalletState(wallet = {}) {
@@ -4113,18 +4246,20 @@ function renderTonWalletState() {
     const connectBtn = document.getElementById('event-wallet-connect-btn');
     const disconnectBtn = document.getElementById('event-wallet-disconnect-btn');
 
-    if (badgeEl) badgeEl.textContent = tonWalletState.connected ? 'Connected' : 'Not connected';
+    if (badgeEl) badgeEl.textContent = tonWalletState.connected ? t('wallet.connected') : t('wallet.notConnected');
     if (titleEl) titleEl.textContent = tonWalletState.connected
-        ? 'Automatic TON payouts are enabled for this account'
-        : 'Connect wallet for automatic TON payouts';
+        ? t('wallet.connectedTitle')
+        : t('wallet.disconnectedTitle');
     if (addressEl) addressEl.textContent = tonWalletState.connected
         ? (tonWalletState.masked_address || tonWalletState.address)
-        : 'No wallet connected';
+        : t('wallet.noWallet');
     if (subEl) subEl.textContent = tonWalletState.connected
-        ? 'Weekly rewards will be queued to this wallet after season settlement.'
-        : 'Your weekly prize queue will use this address after the season is finalized.';
+        ? t('wallet.connectedSub')
+        : t('wallet.disconnectedSub');
     if (connectBtn) connectBtn.style.display = tonWalletState.connected ? 'none' : '';
     if (disconnectBtn) disconnectBtn.style.display = tonWalletState.connected ? '' : 'none';
+    if (connectBtn) connectBtn.textContent = t('wallet.connect');
+    if (disconnectBtn) disconnectBtn.textContent = t('wallet.disconnect');
     renderPendingTonWalletNotice(pendingTonWalletNotice);
 }
 
@@ -4212,8 +4347,8 @@ async function initTonWalletBridge() {
             try {
                 if (wallet?.account?.address) {
                     await syncConnectedTonWallet(wallet);
-                    showToast('TON wallet connected', false, {
-                        title: 'Wallet connected',
+                    showToast(t('toasts.tonWalletConnected'), false, {
+                        title: t('toasts.walletConnectedTitle'),
                         icon: '💎',
                         side: 'right',
                         key: 'ton:connected',
@@ -4227,7 +4362,7 @@ async function initTonWalletBridge() {
                 }
             } catch (err) {
                 console.error('TON wallet sync error:', err);
-                showToast('Failed to sync TON wallet', true);
+                showToast(t('toasts.tonWalletSyncError'), true);
             }
         });
 
@@ -4251,7 +4386,7 @@ async function initTonWalletBridge() {
 
 async function connectTonWallet() {
     if (!tonConnectUI) {
-        showToast('TON wallet connection is unavailable right now', true);
+        showToast(t('toasts.tonWalletUnavailable'), true);
         return;
     }
     try {
@@ -4263,7 +4398,7 @@ async function connectTonWallet() {
         await tonConnectUI.openModal();
     } catch (err) {
         console.error('TON wallet modal error:', err);
-        showToast('Failed to open TON wallet modal', true);
+        showToast(t('toasts.tonWalletOpenError'), true);
     }
 }
 
@@ -4280,7 +4415,7 @@ async function disconnectTonWallet() {
         }
     } catch (err) {
         console.error('TON wallet disconnect error:', err);
-        showToast('Failed to disconnect TON wallet', true);
+        showToast(t('toasts.tonWalletDisconnectError'), true);
     }
 }
 
@@ -4363,7 +4498,7 @@ function renderEventOverview(data) {
     if (rankEl) rankEl.textContent = player?.rank ? `#${player.rank}` : '--';
     if (scoreEl) scoreEl.textContent = formatNumber(player?.score || 0);
     if (zoneEl) zoneEl.textContent = getEventZoneText(player);
-    if (subtitleEl) subtitleEl.textContent = `${meta.label} leaderboard`;
+    if (subtitleEl) subtitleEl.textContent = tr('games.leagueLeaderboard', { league: meta.label });
 
     renderEventLeagueSplits(data?.fund_splits || {});
     renderEventPayoutGrid(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
@@ -4378,7 +4513,7 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
     const subtitleEl = document.getElementById('event-board-subtitle');
     const player = eventOverviewCache?.player || null;
 
-    if (subtitleEl) subtitleEl.textContent = `${meta.label} leaderboard`;
+    if (subtitleEl) subtitleEl.textContent = tr('games.leagueLeaderboard', { league: meta.label });
 
     if (list) {
         const visible = Array.isArray(players) ? players.slice(0, 10) : [];
@@ -4387,29 +4522,29 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
                 <div class="leaderboard-item leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
                     <span class="player-rank">${entry.rank}</span>
                     <div class="player-avatar event-rank-badge ${meta.className}">${(entry.display_level || 1)}</div>
-                    <span class="player-name">${entry.username ? `@${entry.username}` : 'Player'}</span>
+                    <span class="player-name">${entry.username ? `@${entry.username}` : t('common.player')}</span>
                     <span class="player-score">${formatNumber(entry.score || 0)}</span>
                 </div>
             `).join('')
-            : '<div class="loading">No players in this league yet.</div>';
+            : `<div class="loading">${t('games.noPlayersYet')}</div>`;
     }
 
     if (highlight) {
         if (!player) {
-            highlight.innerHTML = '<div class="rank-info"><span class="rank-label">Your event status</span><span class="rank-value">No weekly clicks yet</span></div>';
+            highlight.innerHTML = `<div class="rank-info"><span class="rank-label">${t('games.eventStatusTitle')}</span><span class="rank-value">${t('games.noWeeklyClicks')}</span></div>`;
         } else {
             const playerMeta = getEventLeagueMeta(player.league);
             highlight.innerHTML = `
                 <div class="rank-info">
-                    <span class="rank-label">Your lane</span>
+                    <span class="rank-label">${t('games.yourLeague')}</span>
                     <span class="rank-value">${playerMeta.label}</span>
                 </div>
                 <div class="rank-info">
-                    <span class="rank-label">Your rank</span>
+                    <span class="rank-label">${t('games.yourRank')}</span>
                     <span class="rank-value">#${player.rank || '--'}</span>
                 </div>
                 <div class="rank-info">
-                    <span class="rank-label">Status</span>
+                    <span class="rank-label">${t('games.status')}</span>
                     <span class="rank-value">${getEventZoneText(player)}</span>
                 </div>
             `;
@@ -4424,20 +4559,20 @@ function renderEventResults(players = [], season = null) {
 
     if (subtitleEl) {
         subtitleEl.textContent = season?.season_key
-            ? `TON paid for each place in week ${season.season_key}`
-            : 'TON payouts for each place are shown after the week is finalized';
+            ? tr('games.finalTonWeek', { season: season.season_key })
+            : tr('games.finalTonPending');
     }
 
     if (!season || !Array.isArray(players) || !players.length) {
-        list.innerHTML = '<div class="loading">TON rewards are shown here after the week is finalized.</div>';
+        list.innerHTML = `<div class="loading">${t('games.finalTonEmpty')}</div>`;
         return;
     }
 
     list.innerHTML = players.map((entry) => `
         <div class="event-results-row leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
             <span class="event-results-rank">#${entry.rank}</span>
-            <span class="event-results-player" title="${entry.username ? `@${entry.username}` : 'Player'}">${entry.username ? `@${entry.username}` : 'Player'}</span>
-            <span class="event-results-stars">${Number(entry.ton_amount_nano || 0) > 0 ? `${formatTonAmount(entry.ton_amount_nano)} TON` : 'Pending'}</span>
+            <span class="event-results-player" title="${entry.username ? `@${entry.username}` : t('common.player')}">${entry.username ? `@${entry.username}` : t('common.player')}</span>
+            <span class="event-results-stars">${Number(entry.ton_amount_nano || 0) > 0 ? `${formatTonAmount(entry.ton_amount_nano)} TON` : t('games.pendingReward')}</span>
         </div>
     `).join('');
 }
@@ -4462,7 +4597,7 @@ async function selectEventLeague(league) {
     } catch (err) {
         console.error('Event leaderboard error:', err);
         const list = document.getElementById('event-leaderboard-list');
-        if (list) list.innerHTML = '<div class="loading">Failed to load leaderboard.</div>';
+        if (list) list.innerHTML = `<div class="loading">${t('toasts.leaderboardLoadError')}</div>`;
         renderEventResults([], null);
     }
 }
@@ -6643,6 +6778,7 @@ window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.closeSettingsOutside = closeSettingsOutside;
 window.openTasksModal = openTasksModal;
+window.setLanguage = setLanguage;
 window.toggleTheme = toggleTheme;
 window.toggleSound = toggleSound;
 window.toggleMusic = toggleMusic;
