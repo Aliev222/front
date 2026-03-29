@@ -29,6 +29,7 @@ const telegramLanguage = (tg?.initDataUnsafe?.user?.language_code || navigator.l
 const UI_LANG = 'en';
 const API_SESSION_TOKEN_KEY = 'spirit_api_session_token';
 const API_SESSION_EXPIRES_AT_KEY = 'spirit_api_session_expires_at';
+const AD_COOLDOWNS_STORAGE_KEY = 'spirit_ad_cooldowns';
 let apiSessionToken = localStorage.getItem(API_SESSION_TOKEN_KEY) || '';
 let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_KEY) || '0', 10) || 0;
 let apiSessionRefreshPromise = null;
@@ -721,6 +722,51 @@ function persistApiSession(token, expiresAtMs) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getStoredAdCooldownMap() {
+    try {
+        const raw = localStorage.getItem(AD_COOLDOWNS_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+function setStoredAdCooldownMap(map) {
+    localStorage.setItem(AD_COOLDOWNS_STORAGE_KEY, JSON.stringify(map || {}));
+}
+
+function getAdCooldownUntilMs(key) {
+    const map = getStoredAdCooldownMap();
+    const value = Number(map[key] || 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAdCooldownRemainingMs(key) {
+    return Math.max(0, getAdCooldownUntilMs(key) - Date.now());
+}
+
+function setAdCooldownUntilMs(key, valueMs) {
+    const map = getStoredAdCooldownMap();
+    if (valueMs > Date.now()) {
+        map[key] = valueMs;
+    } else {
+        delete map[key];
+    }
+    setStoredAdCooldownMap(map);
+}
+
+function setAdCooldownFromIso(key, isoValue, fallbackMinutes = 0) {
+    const parsed = parseServerDate(isoValue);
+    if (parsed && !Number.isNaN(parsed.getTime())) {
+        setAdCooldownUntilMs(key, parsed.getTime());
+        return;
+    }
+    if (fallbackMinutes > 0) {
+        setAdCooldownUntilMs(key, Date.now() + (fallbackMinutes * 60 * 1000));
+    }
 }
 
 function isRetryableStartupError(err) {
@@ -2033,7 +2079,7 @@ async function showRewardedAd(adSessionId = null) {
         try {
             return await window.show_10655027(payload);
         } catch (fallbackErr) {
-            return window.show_10655027('pop');
+            throw new Error('Tracked rewarded ad could not be started');
         }
     }
 }
@@ -2043,7 +2089,20 @@ function isAdConfirmationPendingError(err) {
     return detail.includes('ad completion was not confirmed yet') || detail.includes('ad watch is not completed yet');
 }
 
-async function claimAdActionWithRetry(claimFn, attempts = 7, delayMs = 1200) {
+function resolveRewardedAdErrorMessage(err, fallbackMessage) {
+    if (isAdConfirmationPendingError(err)) {
+        return 'You did not finish the ad or the reward was not confirmed yet.';
+    }
+
+    const detail = String(err?.detail || err?.message || '').trim();
+    if (detail) {
+        return detail;
+    }
+
+    return fallbackMessage;
+}
+
+async function claimAdActionWithRetry(claimFn, attempts = 15, delayMs = 1500) {
     let lastError = null;
 
     for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -2054,7 +2113,7 @@ async function claimAdActionWithRetry(claimFn, attempts = 7, delayMs = 1200) {
             if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
                 throw err;
             }
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            await sleep(delayMs);
         }
     }
 
@@ -2113,9 +2172,7 @@ async function claimLuckyGhost(event) {
         console.error('Ghost claim error:', err);
         removeLuckyGhost();
         showToast(
-            isAdConfirmationPendingError(err)
-                ? 'You did not finish the ad or the reward was not confirmed.'
-                : tr('toasts.watchError'),
+            resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
             true,
             {
             title: 'Ghost lost',
@@ -2791,6 +2848,7 @@ function openSkinDetail(skinId) {
     const progressText = document.getElementById('requirement-progress-text');
     const progressFill = document.getElementById('requirement-progress-fill');
     const actionBtn = document.getElementById('skin-action-btn');
+    actionBtn.disabled = false;
     
     if (isOwned) {
         reqBlock.style.display = 'none';
@@ -2831,14 +2889,24 @@ function openSkinDetail(skinId) {
             const current = State.skins.videoViews[key] || 0;
             const count = skin.requirement.count || 10;
             const percent = Math.min(100, (current / count) * 100);
+            const cooldownRemainingMs = getAdCooldownRemainingMs(`skin:${key}`);
 
             reqText.textContent = tr('skinsDyn.reqWatchSkin', { count });
             progressText.textContent = `${current}/${count}`;
             progressFill.style.width = percent + '%';
             reqProgress.style.display = 'flex';
 
-            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
-            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+            if (current >= count) {
+                actionBtn.textContent = tr('skinsDyn.claim');
+                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+            } else if (cooldownRemainingMs > 0) {
+                actionBtn.textContent = `Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`;
+                actionBtn.onclick = null;
+                actionBtn.disabled = true;
+            } else {
+                actionBtn.textContent = tr('skinsDyn.watchVideo');
+                actionBtn.onclick = () => watchAdForSkin(skin.id);
+            }
         } else if (skin.requirement?.type === 'stars') {
             reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
             reqProgress.style.display = 'none';
@@ -2960,6 +3028,17 @@ async function watchAdForSkin(skinId) {
         return;
     }
 
+    const skin = State.skins.data.find(s => s.id === skinId);
+    const cooldownKey = `skin:${skin?.requirement?.progressKey || skinId}`;
+    const cooldownRemainingMs = getAdCooldownRemainingMs(cooldownKey);
+    if (cooldownRemainingMs > 0) {
+        showToast(`Skin cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
+        if (document.getElementById('skin-detail-modal')?.classList.contains('active')) {
+            openSkinDetail(skinId);
+        }
+        return;
+    }
+
     showToast(tr('toasts.adLoading'));
 
     try {
@@ -2975,6 +3054,7 @@ async function watchAdForSkin(skinId) {
         State.skins.videoViews[key] = Number(adsSync?.current_count || 0);
         localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
         State.skins.adsWatched = adsSync?.ads_watched || ((State.skins.adsWatched || 0) + 1);
+        setAdCooldownFromIso(`skin:${key}`, adsSync?.next_allowed_at || null, Number(adsSync?.cooldown_minutes || 10));
 
         trackAchievementProgress('adsWatched', 1);
         checkAchievements();
@@ -2988,11 +3068,7 @@ async function watchAdForSkin(skinId) {
 
     } catch (e) {
         showToast(
-            isAdConfirmationPendingError(e)
-                ? 'You did not finish the ad or the reward was not confirmed.'
-                : (e?.detail || '').includes('Skin ad cooldown')
-                    ? e.detail
-                : tr('toasts.watchError'),
+            resolveRewardedAdErrorMessage(e, tr('toasts.watchError')),
             true
         );
     }
@@ -4490,6 +4566,7 @@ function startTournamentTimer(seconds) {
 // ==================== ЭНЕРГИЯ - МОДАЛКА ====================
 function showEnergyRecoveryModal() {
     if (document.querySelector('.energy-recovery-modal')) return;
+    const cooldownRemainingMs = getAdCooldownRemainingMs('energy_refill');
     
     const modal = document.createElement('div');
     modal.className = 'energy-recovery-modal';
@@ -4498,8 +4575,8 @@ function showEnergyRecoveryModal() {
             <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">✕</button>
             <h3>⚡ Energy is empty!</h3>
             <p>Watch an ad and restore energy to maximum</p>
-            <button class="btn-primary" onclick="recoverEnergyWithAd()">
-                📺 Restore to max
+            <button class="btn-primary" onclick="recoverEnergyWithAd()" ${cooldownRemainingMs > 0 ? 'disabled' : ''}>
+                ${cooldownRemainingMs > 0 ? `⏳ Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}` : '📺 Restore to max'}
             </button>
             <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
                 ⏳ Wait
@@ -4512,6 +4589,12 @@ function showEnergyRecoveryModal() {
 async function recoverEnergyWithAd() {
     const modal = document.querySelector('.energy-recovery-modal');
     if (modal) modal.remove();
+
+    const cooldownRemainingMs = getAdCooldownRemainingMs('energy_refill');
+    if (cooldownRemainingMs > 0) {
+        showToast(`Energy refill cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
+        return;
+    }
 
     if (typeof window.show_10655027 !== 'function') {
         showToast(tr('toasts.adUnavailable'), true);
@@ -4528,16 +4611,13 @@ async function recoverEnergyWithAd() {
         }));
 
         applyServerEnergySnapshot(data);
+        setAdCooldownFromIso('energy_refill', data?.cooldown_until || null, Number(data?.cooldown_minutes || 10));
         updateUI();
         showToast(tr('toasts.energyRecovered'));
     } catch (err) {
         console.error('Energy recover error:', err);
         showToast(
-            isAdConfirmationPendingError(err)
-                ? 'You did not finish the ad or the reward was not confirmed.'
-                : (err?.detail || '').includes('Energy refill cooldown')
-                    ? err.detail
-                    : tr('toasts.serverError'),
+            resolveRewardedAdErrorMessage(err, tr('toasts.serverError')),
             true
         );
     }
@@ -4547,6 +4627,14 @@ async function recoverEnergyWithAd() {
 let boostEndTime = null;
 let boostInterval = null;
 let megaBoostCooldownUntil = null;
+
+function updateMegaBoostButtonState(button = document.getElementById('mega-boost-btn')) {
+    if (!button) return;
+    const now = new Date();
+    const cooldownActive = !!(megaBoostCooldownUntil && megaBoostCooldownUntil > now);
+    const boostActive = !!(boostEndTime && boostEndTime > now);
+    button.disabled = cooldownActive || boostActive;
+}
 
 async function activateMegaBoost() {
     if (!userId) {
@@ -4599,8 +4687,10 @@ async function activateMegaBoost() {
             boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
         }
         megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
+        setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
         
         if (boostBtn) boostBtn.classList.add('active');
+        updateMegaBoostButtonState(boostBtn);
         
         const timerEl = document.getElementById('mega-boost-timer');
         if (timerEl) {
@@ -4627,6 +4717,7 @@ async function activateMegaBoost() {
                 if (timerEl) timerEl.style.display = 'none';
                 document.querySelector('.mega-boost-indicator')?.remove();
                 if (energyBar) energyBar.classList.remove('boost-active');
+                updateMegaBoostButtonState(boostBtn);
                 showToast(tr('toasts.boostFinished'));
                 return;
             }
@@ -4639,9 +4730,7 @@ async function activateMegaBoost() {
         showToast(tr('toasts.megaBoostActivated'));
     })().catch((err) => {
         showToast(
-            isAdConfirmationPendingError(err)
-                ? 'You did not finish the ad or the reward was not confirmed.'
-                : (err?.detail || err?.message || tr('toasts.watchError')),
+            resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
             true
         );
     });
@@ -4668,10 +4757,12 @@ async function checkBoostStatus() {
         if (res.ok) {
             const data = await res.json();
             megaBoostCooldownUntil = parseServerDate(data.cooldown_until) || null;
+            setAdCooldownFromIso('mega_boost', data?.cooldown_until || null);
             if (data.active) {
                 boostEndTime = parseServerDate(data.expires_at);
                 const boostBtn = document.getElementById('mega-boost-btn');
                 if (boostBtn) boostBtn.classList.add('active');
+                updateMegaBoostButtonState(boostBtn);
                 
                 const timerEl = document.getElementById('mega-boost-timer');
                 if (timerEl) timerEl.style.display = 'block';
@@ -4692,6 +4783,7 @@ async function checkBoostStatus() {
                         if (timerEl) timerEl.style.display = 'none';
                         document.querySelector('.mega-boost-indicator')?.remove();
                         if (energyBar) energyBar.classList.remove('boost-active');
+                        updateMegaBoostButtonState(boostBtn);
                         return;
                     }
                     
@@ -4700,9 +4792,11 @@ async function checkBoostStatus() {
                     if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
                 }, 200);
             } else {
+                boostEndTime = null;
                 const boostBtn = document.getElementById('mega-boost-btn');
                 const timerEl = document.getElementById('mega-boost-timer');
                 if (boostBtn) boostBtn.classList.remove('active');
+                updateMegaBoostButtonState(boostBtn);
                 if (timerEl) timerEl.style.display = 'none';
                 document.querySelector('.mega-boost-indicator')?.remove();
                 document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
@@ -6168,6 +6262,9 @@ function initAutoClicker() {
         else localStorage.removeItem(AUTO_CLICK_COOLDOWN_STORAGE_KEY);
     };
     const getCooldownRemainingMs = () => Math.max(0, getStoredCooldownUntil() - Date.now());
+    const updateAutoButtonState = () => {
+        autoBtn.disabled = autoState.enabledUntil > Date.now() || getCooldownRemainingMs() > 0;
+    };
 
     const ensureEffect = () => {
         if (autoState.effect) return autoState.effect;
@@ -6199,11 +6296,13 @@ function initAutoClicker() {
                 if (timerLabel) {
                     timerLabel.textContent = cooldownLeft > 0 ? `CD ${formatCooldownClock(cooldownLeft / 1000)}` : 'OFF';
                 }
+                updateAutoButtonState();
                 updateEffect();
             } else {
                 const remaining = Math.max(0, autoState.enabledUntil - Date.now());
                 const sec = Math.ceil(remaining / 1000);
                 if (timerLabel) timerLabel.textContent = sec + 's';
+                updateAutoButtonState();
                 if (autoState.fingerDown) {
                     handleTap({
                         clientX: autoState.point.x,
@@ -6222,6 +6321,7 @@ function initAutoClicker() {
         const cooldownMs = randomIntBetween(AUTO_CLICK_COOLDOWN_MIN_MS, AUTO_CLICK_COOLDOWN_MAX_MS);
         setStoredCooldownUntil(Date.now() + cooldownMs);
         autoBtn.classList.add('active');
+        updateAutoButtonState();
         loop();
     };
 
@@ -6231,6 +6331,7 @@ function initAutoClicker() {
         const cooldownRemainingMs = getCooldownRemainingMs();
         if (cooldownRemainingMs > 0) {
             showToast(`Auto click cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
+            updateAutoButtonState();
             return;
         }
 
@@ -6252,9 +6353,7 @@ function initAutoClicker() {
             enable();
         } catch (e) {
             showToast(
-                isAdConfirmationPendingError(e)
-                    ? 'You did not finish the ad or the reward was not confirmed.'
-                    : tr('toasts.autoTapError'),
+                resolveRewardedAdErrorMessage(e, tr('toasts.autoTapError')),
                 true
             );
         }
@@ -6279,6 +6378,7 @@ function initAutoClicker() {
     document.addEventListener('pointermove', pointerMove);
     document.addEventListener('pointerup', pointerUp);
     document.addEventListener('pointercancel', pointerUp);
+    updateAutoButtonState();
     loop();
 }
 
