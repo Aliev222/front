@@ -2207,6 +2207,30 @@ async function showRewardedAd(adSessionId = null) {
     }
 }
 
+async function confirmAdsgramAdSession(adSessionId, attempts = 6, delayMs = 1500) {
+    if (!userId || !adSessionId) {
+        throw new Error('Ad session was not created');
+    }
+
+    let lastError = null;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+            return await API.post('/api/ads/adsgram/complete', {
+                user_id: userId,
+                ad_session_id: adSessionId
+            });
+        } catch (err) {
+            lastError = err;
+            if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
+                throw err;
+            }
+            await sleep(delayMs);
+        }
+    }
+
+    throw lastError || new Error('Ad completion was not confirmed yet');
+}
+
 function isAdConfirmationPendingError(err) {
     const detail = String(err?.detail || err?.message || '').toLowerCase();
     return detail.includes('ad completion was not confirmed yet') || detail.includes('ad watch is not completed yet');
@@ -2277,6 +2301,7 @@ async function claimLuckyGhost(event) {
             duration: 3200
         });
         await showRewardedAd(adSessionId);
+        await confirmAdsgramAdSession(adSessionId);
         const activation = await claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
             user_id: userId,
             ad_session_id: adSessionId
@@ -3174,6 +3199,7 @@ async function watchAdForSkin(skinId) {
     try {
         const adSessionId = await startAdActionSession('ads_increment');
         await showRewardedAd(adSessionId);
+        await confirmAdsgramAdSession(adSessionId);
         const adsSync = await claimAdActionWithRetry(() => API.post('/api/ads/increment', {
             user_id: userId,
             ad_session_id: adSessionId,
@@ -3856,6 +3882,7 @@ async function watchVideoForTask(taskId) {
     try {
         const adSessionId = await startAdActionSession('video_task');
         await showRewardedAd(adSessionId);
+        await confirmAdsgramAdSession(adSessionId);
         trackAchievementProgress('adsWatched', 1);
 
         const response = await claimAdActionWithRetry(() => claimVideoReward(task, adSessionId));
@@ -4786,6 +4813,7 @@ async function recoverEnergyWithAd() {
         const adSessionId = await startAdActionSession('energy_refill_max');
         showToast(tr('toasts.adLoading'));
         await showRewardedAd(adSessionId);
+        await confirmAdsgramAdSession(adSessionId);
         const data = await claimAdActionWithRetry(() => API.post('/api/update-energy', {
             user_id: userId,
             ad_session_id: adSessionId
@@ -4883,6 +4911,7 @@ async function activateMegaBoost() {
     (async () => {
         const adSessionId = await startAdActionSession('mega_boost');
         await showRewardedAd(adSessionId);
+        await confirmAdsgramAdSession(adSessionId);
         const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
             user_id: userId,
             ad_session_id: adSessionId
@@ -6570,6 +6599,7 @@ function initAutoClicker() {
         try {
             const adSessionId = await startAdActionSession('autoclicker');
             await showRewardedAd(adSessionId);
+            await confirmAdsgramAdSession(adSessionId);
             await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                 user_id: userId,
                 ad_session_id: adSessionId
