@@ -684,7 +684,8 @@ const SOCIAL_TASKS = [
         icon: '🎵',
         image: 'imgg/skins/tiktok.png',
         colorClass: 'tiktok',
-        link: 'https://www.tiktok.com/@spirit.cliker?_r=1&_t=ZG-94zyH9Al2Fl'
+        link: 'https://www.tiktok.com/@spirit.cliker?_r=1&_t=ZG-94zyH9Al2Fl',
+        verifyMode: 'unavailable'
     },
     {
         id: 'instagram_sub',
@@ -692,7 +693,8 @@ const SOCIAL_TASKS = [
         icon: '📸',
         image: 'imgg/skins/insta.png',
         colorClass: 'instagram',
-        link: 'https://www.instagram.com/spirit_cliker/'
+        link: 'https://www.instagram.com/spirit_cliker/',
+        verifyMode: 'unavailable'
     }
 ];
 
@@ -1011,6 +1013,7 @@ const State = {
         clickBuffer: 0,
         clickValueBuffer: 0,
         clickBatchInFlight: false,
+        pendingClickBatchId: null,
         lastAutoFeedbackAt: 0,
         animationTimer: null,
         syncTimer: null,
@@ -1829,9 +1832,7 @@ function checkAchievements() {
         if (!State.achievements.completed.includes(achievement.id) && 
             achievement.condition(stats)) {
             State.achievements.completed.push(achievement.id);
-            State.game.coins += achievement.reward;
             showAchievementNotification(achievement);
-            updateUI();
             changed = true;
         }
     });
@@ -1840,7 +1841,7 @@ function checkAchievements() {
 }
 
 function showAchievementNotification(achievement) {
-    showToast(`${achievement.title} • +${formatNumber(achievement.reward)} coins`, false, {
+    showToast(`${achievement.title}`, false, {
         title: 'Achievement unlocked',
         icon: achievement.icon || '🏆',
         side: 'right',
@@ -1876,6 +1877,8 @@ const API = {
     async request(endpoint, options = {}, retries = 2, authRetry = true) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
+        const method = String(options.method || 'GET').toUpperCase();
+        const isRetryableRequest = ['GET', 'HEAD', 'OPTIONS'].includes(method) || options.idempotent === true;
         try {
             const res = await fetch(CONFIG.API_URL + endpoint, {
                 ...options,
@@ -1899,7 +1902,7 @@ const API = {
             return await res.json();
         } catch (err) {
             clearTimeout(timeout);
-            if (retries > 0 && (err.name === 'AbortError' || err.status >= 500)) {
+            if (isRetryableRequest && retries > 0 && (err.name === 'AbortError' || err.status >= 500)) {
                 await new Promise(r => setTimeout(r, 1000));
                 return this.request(endpoint, options, retries - 1);
             }
@@ -1907,7 +1910,9 @@ const API = {
         }
     },
     get(endpoint) { return this.request(endpoint); },
-    post(endpoint, data) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(data) }); }
+    post(endpoint, data, options = {}) {
+        return this.request(endpoint, { ...options, method: 'POST', body: JSON.stringify(data) });
+    }
 };
 
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
@@ -2606,13 +2611,13 @@ async function sendClickBatch() {
     if (clicks === 0 || !userId || State.temp.clickBatchInFlight) return;
 
     const optimisticGain = State.temp.clickValueBuffer;
+    const batchId = State.temp.pendingClickBatchId || `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
     State.temp.clickBuffer = 0;
     State.temp.clickValueBuffer = 0;
     State.temp.clickBatchInFlight = true;
+    State.temp.pendingClickBatchId = batchId;
 
     try {
-        const batchId = `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
-
         const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2623,6 +2628,12 @@ async function sendClickBatch() {
             })
         });
 
+        if (res.status === 409) {
+            State.temp.pendingClickBatchId = null;
+            await fullSyncWithServer();
+            return;
+        }
+
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}`);
         }
@@ -2630,6 +2641,7 @@ async function sendClickBatch() {
         const data = await res.json();
 
         if (data.success) {
+            State.temp.pendingClickBatchId = null;
             State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
@@ -3485,7 +3497,11 @@ const TASKS_STORAGE_KEY = 'videoTasksState';
 const SOCIAL_COMPLETED_COLLAPSED_KEY = 'socialCompletedCollapsed';
 
 function persistSocialTasksState() {
-    localStorage.setItem(SOCIAL_TASKS_STORAGE_KEY, JSON.stringify(State.tasks.social || {}));
+    const payload = {};
+    Object.entries(State.tasks.social || {}).forEach(([taskId, taskState]) => {
+        payload[taskId] = { completed: !!taskState?.completed };
+    });
+    localStorage.setItem(SOCIAL_TASKS_STORAGE_KEY, JSON.stringify(payload));
 }
 
 function isCompletedSocialTasksCollapsed() {
@@ -3499,12 +3515,11 @@ function toggleCompletedSocialTasks() {
 }
 
 async function loadSocialTasksStatus() {
-    const saved = JSON.parse(localStorage.getItem(SOCIAL_TASKS_STORAGE_KEY) || '{}');
     State.tasks.social = {};
 
     SOCIAL_TASKS.forEach((task) => {
         State.tasks.social[task.id] = {
-            started: !!saved?.[task.id]?.started,
+            started: false,
             completed: false
         };
     });
@@ -3534,13 +3549,14 @@ function renderSocialTasksMarkup() {
     SOCIAL_TASKS.forEach((task) => {
         const state = State.tasks.social[task.id] || { started: false, completed: false };
         const isCompleted = state.completed;
-        const canClaim = state.started && !state.completed;
+        const verificationUnavailable = task.verifyMode === 'unavailable';
+        const canClaim = state.started && !state.completed && !verificationUnavailable;
         const requiresVerify = task.verifyMode === 'telegram';
         const actionLabel = isCompleted
             ? 'Claimed'
             : canClaim
                 ? (requiresVerify ? 'Verify' : 'Claim')
-                : 'Subscribe';
+                : (verificationUnavailable ? 'Open' : 'Subscribe');
         const actionHandler = isCompleted
             ? ''
             : canClaim
@@ -3551,7 +3567,9 @@ function renderSocialTasksMarkup() {
             ? 'Reward received'
             : canClaim
                 ? (requiresVerify ? 'Join the channel and tap verify' : 'Open the page, then claim the reward')
-                : '20,000 coins and an exclusive skin reward';
+                : (verificationUnavailable
+                    ? 'Open the page. Reward is disabled until server-side verification is added.'
+                    : '20,000 coins and an exclusive skin reward');
 
         const cardMarkup = `
             <div class="task-card task-card-simple social-task-card social-${task.colorClass} ${isCompleted ? 'is-claimed is-inactive' : ''}">
@@ -3617,7 +3635,7 @@ function startSocialTask(taskId) {
     }
 
     State.tasks.social[taskId] = {
-        started: true,
+        started: task.verifyMode !== 'unavailable',
         completed: false
     };
     persistSocialTasksState();
@@ -3661,6 +3679,14 @@ async function claimSocialTask(taskId) {
             side: taskId === 'telegram_sub' ? 'right' : 'left'
         });
     } catch (err) {
+        if (String(err?.detail || '').includes('Task verification is not available yet')) {
+            State.tasks.social[taskId] = {
+                started: false,
+                completed: false
+            };
+            persistSocialTasksState();
+            renderVideoTasks();
+        }
         showToast(err?.detail || tr('toasts.serverError'), true);
     }
 }
@@ -5836,7 +5862,7 @@ async function syncCrashGhostRound() {
 function startCrashGhostTracking() {
     stopCrashGhostTracking();
     syncCrashGhostRound();
-    crashGhostState.interval = setInterval(syncCrashGhostRound, 120);
+    crashGhostState.interval = setInterval(syncCrashGhostRound, 300);
 }
 
 function finalizeCrashGhostRound(result = {}) {
@@ -6151,25 +6177,51 @@ function updateAchievementsProgress() {
 }
 
 // ==================== ОБРАБОТЧИК КЛИКОВ ====================
+let globalTapPointerHandler = null;
+let globalTapTouchHandler = null;
+let globalTapClickHandler = null;
+
 function setupGlobalClickHandler() {
-    document.removeEventListener('click', handleTap);
-    document.removeEventListener('touchstart', handleTap);
-    
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
+    const ignoreSelector =
+        'button, a, .nav-item, .settings-btn, .modal-close, ' +
+        '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
+        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button';
+
+    if (globalTapPointerHandler) {
+        document.removeEventListener('pointerdown', globalTapPointerHandler);
+        globalTapPointerHandler = null;
+    }
+    if (globalTapTouchHandler) {
+        document.removeEventListener('touchstart', globalTapTouchHandler);
+        globalTapTouchHandler = null;
+    }
+    if (globalTapClickHandler) {
+        document.removeEventListener('click', globalTapClickHandler);
+        globalTapClickHandler = null;
+    }
+
+    if (window.PointerEvent) {
+        globalTapPointerHandler = function(e) {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (e.target.closest(ignoreSelector)) return;
+            handleTap(e);
+        };
+        document.addEventListener('pointerdown', globalTapPointerHandler, { passive: false });
+        return;
+    }
+
+    globalTapTouchHandler = function(e) {
+        if (e.target.closest(ignoreSelector)) return;
         handleTap(e);
-    });
-    
-    document.addEventListener('touchstart', function(e) {
-        if (e.target.closest('button, a, .nav-item, .settings-btn, .modal-close, ' +
-            '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
-            '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-            '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button')) return;
+    };
+    globalTapClickHandler = function(e) {
+        if (e.target.closest(ignoreSelector)) return;
         handleTap(e);
-    }, { passive: false });
+    };
+
+    document.addEventListener('touchstart', globalTapTouchHandler, { passive: false });
+    document.addEventListener('click', globalTapClickHandler);
 }
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
