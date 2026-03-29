@@ -7392,7 +7392,7 @@ body.night-mode #games-screen .game-card {
 /* RESTORED TODAY UI */
 .header {
     display: grid !important;
-    grid-template-columns: auto auto 1fr 108px 56px !important;
+    grid-template-columns: auto 1fr 108px 56px !important;
     align-items: center !important;
     gap: 10px !important;
 }
@@ -7412,16 +7412,12 @@ body.night-mode #games-screen .game-card {
     grid-column: 1 !important;
 }
 
-.header > .nav-item:nth-child(2) {
-    grid-column: 2 !important;
-}
-
 .header > .daily-gift-btn {
-    grid-column: 4 !important;
+    grid-column: 3 !important;
 }
 
 .header > .settings-container {
-    grid-column: 5 !important;
+    grid-column: 4 !important;
 }
 
 .header .nav-item {

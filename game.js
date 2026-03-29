@@ -414,7 +414,7 @@ const I18N = {
             claimFree: 'Бесплатно',
             bonusIncome: 'Бонус: +50% к доходу'
         },
-        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', wallet: 'Кошелёк', games: 'Ивент', skins: 'Скины', achievements: 'Ачивки' },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', wallet: 'Кошелёк', games: 'Ивент', skins: 'Скины', achievements: 'Достижения' },
         main: { upgrade: 'Прокачка' },
         friends: {
             title: 'Друзья',
@@ -534,7 +534,7 @@ const I18N = {
             verificationSub: 'Подключи кошелёк заново и подтверди проверку, чтобы выплаты ушли на этот адрес безопасно.'
         },
         skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
-        achievements: { title: 'Ачивки' },
+        achievements: { title: 'Достижения' },
         toasts: {
             loadDataError: '⚠️ Ошибка загрузки данных',
             authRequired: '❌ Авторизуйтесь',
@@ -4104,8 +4104,7 @@ function setLabel(id, text) {
 
 function applyStaticTranslations() {
     const textMap = [
-        ['.header .nav-item:nth-child(1) > span:last-child', 'nav.achievements'],
-        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.tasks'],
+        ['.header .nav-item:nth-child(1) > span:last-child', 'nav.tasks'],
         
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
@@ -4125,7 +4124,7 @@ function applyStaticTranslations() {
         ['#friends-screen .referral-rules li:nth-child(3)', 'friends.bonus3'],
         ['#friends-screen .referral-rules li:nth-child(4)', 'friends.bonus4'],
         ['#tasks-screen .modal-kicker', 'tasks.kicker'],
-        ['#tasks-screen .modal-header-copy h2', 'tasks.title'],
+        ['#tasks-screen .modal-header-copy h2', 'achievements.title'],
         ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
         ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
         ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
