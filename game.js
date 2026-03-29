@@ -4526,7 +4526,10 @@ async function connectTonWallet() {
         return;
     }
     try {
-        await prepareTonProofPayload(true);
+        const hasFreshProof = tonProofPayloadState.value && tonProofPayloadState.expiresAt - Date.now() > 60_000;
+        if (!hasFreshProof) {
+            prepareTonProofPayload().catch(() => {});
+        }
         const walletScreen = document.getElementById('wallet-screen');
         if (walletScreen?.classList.contains('active')) {
             closeModal('wallet-screen');
