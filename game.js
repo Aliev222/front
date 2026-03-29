@@ -4636,6 +4636,32 @@ function updateMegaBoostButtonState(button = document.getElementById('mega-boost
     button.disabled = cooldownActive || boostActive;
 }
 
+function updateMegaBoostTimerLabel(timerEl = document.getElementById('mega-boost-timer')) {
+    if (!timerEl) return;
+
+    const now = new Date();
+    const boostActive = !!(boostEndTime && boostEndTime > now);
+    const cooldownActive = !!(megaBoostCooldownUntil && megaBoostCooldownUntil > now);
+
+    if (boostActive) {
+        timerEl.style.display = 'block';
+        const diff = Math.max(0, boostEndTime - now);
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        return;
+    }
+
+    if (cooldownActive) {
+        timerEl.style.display = 'block';
+        const cooldownDiff = Math.max(0, megaBoostCooldownUntil - now);
+        timerEl.textContent = `CD ${formatCooldownClock(cooldownDiff / 1000)}`;
+        return;
+    }
+
+    timerEl.style.display = 'none';
+}
+
 async function activateMegaBoost() {
     if (!userId) {
         showToast(tr('toasts.authRequired'), true);
@@ -4693,13 +4719,7 @@ async function activateMegaBoost() {
         updateMegaBoostButtonState(boostBtn);
         
         const timerEl = document.getElementById('mega-boost-timer');
-        if (timerEl) {
-            timerEl.style.display = 'block';
-            const initialDiff = Math.max(0, boostEndTime - new Date());
-            const initialMins = Math.floor(initialDiff / 60000);
-            const initialSecs = Math.floor((initialDiff % 60000) / 1000);
-            timerEl.textContent = `${initialMins}:${initialSecs.toString().padStart(2, '0')}`;
-        }
+        updateMegaBoostTimerLabel(timerEl);
         
         showBoostIndicator();
         
@@ -4714,17 +4734,16 @@ async function activateMegaBoost() {
             if (diff <= 0) {
                 clearInterval(boostInterval);
                 if (boostBtn) boostBtn.classList.remove('active');
-                if (timerEl) timerEl.style.display = 'none';
                 document.querySelector('.mega-boost-indicator')?.remove();
                 if (energyBar) energyBar.classList.remove('boost-active');
                 updateMegaBoostButtonState(boostBtn);
+                boostEndTime = null;
+                updateMegaBoostTimerLabel(timerEl);
                 showToast(tr('toasts.boostFinished'));
                 return;
             }
             
-            const mins = Math.floor(diff / 60000);
-            const secs = Math.floor((diff % 60000) / 1000);
-            if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            updateMegaBoostTimerLabel(timerEl);
         }, 1000);
         
         showToast(tr('toasts.megaBoostActivated'));
@@ -4765,7 +4784,7 @@ async function checkBoostStatus() {
                 updateMegaBoostButtonState(boostBtn);
                 
                 const timerEl = document.getElementById('mega-boost-timer');
-                if (timerEl) timerEl.style.display = 'block';
+                updateMegaBoostTimerLabel(timerEl);
                 
                 showBoostIndicator();
                 
@@ -4780,16 +4799,15 @@ async function checkBoostStatus() {
                     if (diff <= 0) {
                         clearInterval(boostInterval);
                         if (boostBtn) boostBtn.classList.remove('active');
-                        if (timerEl) timerEl.style.display = 'none';
                         document.querySelector('.mega-boost-indicator')?.remove();
                         if (energyBar) energyBar.classList.remove('boost-active');
                         updateMegaBoostButtonState(boostBtn);
+                        boostEndTime = null;
+                        updateMegaBoostTimerLabel(timerEl);
                         return;
                     }
                     
-                    const mins = Math.floor(diff / 60000);
-                    const secs = Math.floor((diff % 60000) / 1000);
-                    if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                    updateMegaBoostTimerLabel(timerEl);
                 }, 200);
             } else {
                 boostEndTime = null;
@@ -4797,7 +4815,7 @@ async function checkBoostStatus() {
                 const timerEl = document.getElementById('mega-boost-timer');
                 if (boostBtn) boostBtn.classList.remove('active');
                 updateMegaBoostButtonState(boostBtn);
-                if (timerEl) timerEl.style.display = 'none';
+                updateMegaBoostTimerLabel(timerEl);
                 document.querySelector('.mega-boost-indicator')?.remove();
                 document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
             }
