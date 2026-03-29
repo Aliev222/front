@@ -719,6 +719,33 @@ function persistApiSession(token, expiresAtMs) {
     }
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRetryableStartupError(err) {
+    if (!err) return false;
+    if (err.name === 'AbortError' || err.name === 'TypeError') return true;
+    if (typeof err.status === 'number' && (err.status >= 500 || err.status === 429)) return true;
+    return false;
+}
+
+async function runWithRetry(task, attempts = 3, initialDelayMs = 1200) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        try {
+            return await task(attempt);
+        } catch (err) {
+            lastError = err;
+            if (attempt >= attempts || !isRetryableStartupError(err)) {
+                throw err;
+            }
+            await sleep(initialDelayMs * attempt);
+        }
+    }
+    throw lastError;
+}
+
 async function ensureApiSession(forceRefresh = false) {
     if (!telegramInitData) return null;
     if (!forceRefresh && apiSessionToken && apiSessionExpiresAt > Date.now() + 30000) {
@@ -729,23 +756,27 @@ async function ensureApiSession(forceRefresh = false) {
     }
 
     apiSessionRefreshPromise = (async () => {
-        const res = await originalFetch(`${CONFIG.API_URL}/api/auth/session`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': telegramInitData,
-                'X-Telegram-Platform': telegramPlatform || 'unknown',
-                'X-Client-Mobile': mobileAccessState.allowed ? '1' : '0'
+        return runWithRetry(async () => {
+            const res = await originalFetch(`${CONFIG.API_URL}/api/auth/session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Telegram-Init-Data': telegramInitData,
+                    'X-Telegram-Platform': telegramPlatform || 'unknown',
+                    'X-Client-Mobile': mobileAccessState.allowed ? '1' : '0'
+                }
+            });
+            if (!res.ok) {
+                persistApiSession('', 0);
+                const err = new Error(`Session auth failed: HTTP ${res.status}`);
+                err.status = res.status;
+                throw err;
             }
-        });
-        if (!res.ok) {
-            persistApiSession('', 0);
-            throw new Error(`Session auth failed: HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        const expiresAtMs = Number(data?.expires_at || 0) * 1000;
-        persistApiSession(data?.token || '', expiresAtMs);
-        return apiSessionToken;
+            const data = await res.json();
+            const expiresAtMs = Number(data?.expires_at || 0) * 1000;
+            persistApiSession(data?.token || '', expiresAtMs);
+            return apiSessionToken;
+        }, forceRefresh ? 2 : 3, 1500);
     })();
 
     try {
@@ -1716,14 +1747,15 @@ async function loadUserData() {
     if (!userId) return;
     
     try {
-        await ensureApiSession();
-        await API.post('/api/register', {
-            user_id: userId,
-            username,
-            referrer_id: referrerId
-        });
-        
-        const data = await API.get(`/api/user/${userId}`);
+        const data = await runWithRetry(async () => {
+            await ensureApiSession();
+            await API.post('/api/register', {
+                user_id: userId,
+                username,
+                referrer_id: referrerId
+            });
+            return API.get(`/api/user/${userId}`);
+        }, 3, 1800);
         
         State.game.coins = data.coins || 0;
         State.game.energy = data.energy || 500;
@@ -1752,11 +1784,20 @@ async function loadUserData() {
             State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
         }
         
-        await loadPrices();
-        await loadSkinsList();
-        await loadReferralData();
-        await checkBoostStatus();
-        await loadDailyRewardStatus();
+        const secondaryLoads = await Promise.allSettled([
+            loadPrices(),
+            loadSkinsList(),
+            loadReferralData(),
+            checkBoostStatus(),
+            loadDailyRewardStatus()
+        ]);
+
+        secondaryLoads.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                const labels = ['prices', 'skins', 'referrals', 'boost-status', 'daily-reward'];
+                console.warn(`Deferred startup load failed: ${labels[index]}`, result.reason);
+            }
+        });
 
         
         applySavedSkin();
@@ -1766,7 +1807,17 @@ async function loadUserData() {
         
     } catch (err) {
         console.error('Failed to load user data:', err);
-        showToast(tr('toasts.loadDataError'), true);
+        const wakingUp = isRetryableStartupError(err);
+        showToast(
+            wakingUp ? 'Server is waking up. Please wait a few seconds and try again.' : tr('toasts.loadDataError'),
+            true,
+            wakingUp ? {
+                title: 'Startup delay',
+                icon: '⏳',
+                duration: 5200,
+                key: 'startup-delay'
+            } : {}
+        );
     }
 }
 
