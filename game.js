@@ -60,6 +60,7 @@ let tonProofPayloadState = {
     value: '',
     expiresAt: 0
 };
+let tasksHubTab = 'tasks';
 let pendingTonWalletNotice = null;
 const TELEGRAM_BOT_USERNAME = 'Ryoho_bot';
 
@@ -4125,6 +4126,8 @@ function applyStaticTranslations() {
         ['#friends-screen .referral-rules li:nth-child(4)', 'friends.bonus4'],
         ['#tasks-screen .modal-kicker', 'tasks.kicker'],
         ['#tasks-screen .modal-header-copy h2', 'achievements.title'],
+        ['#tasks-hub-tab-tasks', 'nav.tasks'],
+        ['#tasks-hub-tab-achievements', 'achievements.title'],
         ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
         ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
         ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
@@ -4271,7 +4274,28 @@ function closeSettingsOutside(e) {
 function openTasksModal() {
     openModal('tasks-screen');
     advanceSoftOnboarding('tasks');
-    loadVideoTasks();
+    switchTaskHubTab('tasks');
+}
+
+function switchTaskHubTab(tab = 'tasks') {
+    tasksHubTab = tab === 'achievements' ? 'achievements' : 'tasks';
+
+    const tasksTabBtn = document.getElementById('tasks-hub-tab-tasks');
+    const achievementsTabBtn = document.getElementById('tasks-hub-tab-achievements');
+    const tasksPanel = document.getElementById('tasks-panel');
+    const achievementsPanel = document.getElementById('achievements-panel');
+
+    tasksTabBtn?.classList.toggle('active', tasksHubTab === 'tasks');
+    achievementsTabBtn?.classList.toggle('active', tasksHubTab === 'achievements');
+    tasksPanel?.classList.toggle('active', tasksHubTab === 'tasks');
+    achievementsPanel?.classList.toggle('active', tasksHubTab === 'achievements');
+
+    if (tasksHubTab === 'tasks') {
+        loadVideoTasks();
+        return;
+    }
+
+    renderAchievements();
 }
 
 // ==================== ТУРНИР ====================
@@ -6238,12 +6262,12 @@ function playSound(type) {
 
 // ==================== АЧИВКИ ====================
 function openAchievements() {
-    renderAchievements();
-    openModal('achievements-screen');
+    openModal('tasks-screen');
+    switchTaskHubTab('achievements');
 }
 
 function renderAchievements() {
-    const list = document.getElementById('achievements-list');
+    const list = document.getElementById('tasks-achievements-list');
     if (!list) return;
     
     const stats = {
@@ -6302,9 +6326,12 @@ function updateAchievementsProgress() {
     const total = ACHIEVEMENTS.length;
     const percent = (completed / total) * 100;
     
-    document.getElementById('achievements-completed').textContent = completed;
-    document.getElementById('achievements-total').textContent = total;
-    document.getElementById('achievements-progress-fill').style.width = percent + '%';
+    const completedEl = document.getElementById('tasks-achievements-completed');
+    const totalEl = document.getElementById('tasks-achievements-total');
+    const fillEl = document.getElementById('tasks-achievements-progress-fill');
+    if (completedEl) completedEl.textContent = completed;
+    if (totalEl) totalEl.textContent = total;
+    if (fillEl) fillEl.style.width = percent + '%';
 }
 
 // ==================== ОБРАБОТЧИК КЛИКОВ ====================
@@ -6981,6 +7008,7 @@ window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.closeSettingsOutside = closeSettingsOutside;
 window.openTasksModal = openTasksModal;
+window.switchTaskHubTab = switchTaskHubTab;
 window.setLanguage = setLanguage;
 window.toggleTheme = toggleTheme;
 window.toggleSound = toggleSound;

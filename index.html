@@ -305,20 +305,35 @@
                     <h2>Achievements</h2>
                 </div>
             </div>
-            <div class="tasks-hero">
-                <div class="tasks-hero-copy">
-                    <div class="tasks-hero-title">Ad rewards with premium drops</div>
-                    <div class="tasks-hero-subtitle">Fast tasks, glowing payouts, instant dopamine.</div>
+            <div class="tasks-hub-tabs" id="tasks-hub-tabs">
+                <button class="tasks-hub-tab active" id="tasks-hub-tab-tasks" onclick="switchTaskHubTab('tasks')">Tasks</button>
+                <button class="tasks-hub-tab" id="tasks-hub-tab-achievements" onclick="switchTaskHubTab('achievements')">Achievements</button>
+            </div>
+            <div class="tasks-hub-panel active" id="tasks-panel">
+                <div class="tasks-hero">
+                    <div class="tasks-hero-copy">
+                        <div class="tasks-hero-title">Ad rewards with premium drops</div>
+                        <div class="tasks-hero-subtitle">Fast tasks, glowing payouts, instant dopamine.</div>
+                    </div>
+                    <div class="tasks-hero-badge">
+                        <span class="tasks-hero-badge-label">Ghost Pass</span>
+                        <span class="tasks-hero-badge-value">Hot Loot</span>
+                    </div>
                 </div>
-                <div class="tasks-hero-badge">
-                    <span class="tasks-hero-badge-label">Ghost Pass</span>
-                    <span class="tasks-hero-badge-value">Hot Loot</span>
+                <div class="modal-content modal-content-premium tasks-modal-content">
+                    <div class="tasks-list" id="tasks-list">
+                        <div class="loading">Loading...</div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-content modal-content-premium tasks-modal-content">
-                <div class="tasks-list" id="tasks-list">
-                    <div class="loading">Loading...</div>
+            <div class="tasks-hub-panel" id="achievements-panel">
+                <div class="achievements-progress tasks-hub-achievements-progress">
+                    <span>📊 <span id="tasks-achievements-completed">0</span>/<span id="tasks-achievements-total">0</span></span>
+                    <div class="progress-bar-mini">
+                        <div class="progress-fill" id="tasks-achievements-progress-fill" style="width: 0%"></div>
+                    </div>
                 </div>
+                <div class="achievements-list tasks-hub-achievements-list" id="tasks-achievements-list"></div>
             </div>
         </div>
     </div>
