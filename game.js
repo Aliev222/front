@@ -4418,6 +4418,12 @@ function renderPendingTonWalletNotice(notice = null) {
     });
 }
 
+function buildTonProofRequestValue(payload) {
+    const value = (payload || '').trim();
+    if (!value) return null;
+    return { tonProof: value };
+}
+
 async function loadTonWalletStatus() {
     if (!userId) return;
     try {
@@ -4432,9 +4438,10 @@ async function prepareTonProofPayload(force = false) {
     if (!userId || !tonConnectUI?.setConnectRequestParameters) return null;
     const now = Date.now();
     if (!force && tonProofPayloadState.value && tonProofPayloadState.expiresAt - now > 60_000) {
+        const requestValue = buildTonProofRequestValue(tonProofPayloadState.value);
         tonConnectUI.setConnectRequestParameters({
             state: 'ready',
-            value: tonProofPayloadState.value
+            value: requestValue
         });
         return tonProofPayloadState.value;
     }
@@ -4450,9 +4457,10 @@ async function prepareTonProofPayload(force = false) {
             value: payload,
             expiresAt: Number(response?.expires_at || 0) * 1000
         };
+        const requestValue = buildTonProofRequestValue(payload);
         tonConnectUI.setConnectRequestParameters({
             state: 'ready',
-            value: payload
+            value: requestValue
         });
         return payload;
     } catch (err) {
@@ -4466,9 +4474,14 @@ async function prepareTonProofPayload(force = false) {
 }
 
 function getTonProofPayload(wallet) {
-    const proofItem = wallet?.connectItems?.tonProof;
-    if (!proofItem || !('proof' in proofItem) || !proofItem.proof) return null;
-    return proofItem.proof;
+    const proofItem =
+        wallet?.connectItems?.tonProof ||
+        tonConnectUI?.wallet?.connectItems?.tonProof ||
+        null;
+    if (!proofItem) return null;
+    if (proofItem.proof) return proofItem.proof;
+    if (proofItem.payload && proofItem.signature && proofItem.domain) return proofItem;
+    return null;
 }
 
 async function syncConnectedTonWallet(wallet) {
