@@ -44,6 +44,7 @@ let tonWalletState = {
     app_name: '',
     connected_at: null
 };
+let pendingTonWalletNotice = null;
 const TELEGRAM_BOT_USERNAME = 'Ryoho_bot';
 
 function isLikelyMobileGameClient() {
@@ -190,7 +191,16 @@ const I18N = {
             rollIt: 'Click coins only',
             spinNow: 'Live ranking',
             openBox: 'Level-based tiers',
-            chaseMultiplier: 'Push harder'
+            chaseMultiplier: 'Push harder',
+            walletNoticeTitle: 'Tournament payout is waiting',
+            walletNoticeBody: 'You finished in the payout zone, but TON cannot be sent until you connect a wallet.',
+            walletNoticeLeague: 'League',
+            walletNoticeSeason: 'Season',
+            walletNoticeRank: 'Place',
+            walletNoticeDeadline: 'Connect within {hours}h or the payout will stay blocked.',
+            walletNoticeSent: 'Reminder already sent. Deadline: {date}',
+            walletNoticeOpen: 'Open wallet',
+            walletNoticeConnect: 'Connect wallet'
         },
         gameModals: {
             betAmount: 'Bet amount',
@@ -387,7 +397,16 @@ const I18N = {
             rollIt: 'Только клик-монеты',
             spinNow: 'Живой рейтинг',
             openBox: 'Лиги по уровню',
-            chaseMultiplier: 'Дави сильнее'
+            chaseMultiplier: 'Дави сильнее',
+            walletNoticeTitle: 'Турнирная выплата ждёт кошелёк',
+            walletNoticeBody: 'Ты попал в зону выплат, но TON не отправится, пока не будет подключён кошелёк.',
+            walletNoticeLeague: 'Лига',
+            walletNoticeSeason: 'Сезон',
+            walletNoticeRank: 'Место',
+            walletNoticeDeadline: 'Подключи кошелёк в течение {hours} ч, иначе выплата останется заблокированной.',
+            walletNoticeSent: 'Напоминание уже отправлено. Дедлайн: {date}',
+            walletNoticeOpen: 'Открыть кошелёк',
+            walletNoticeConnect: 'Подключить кошелёк'
         },
         gameModals: {
             betAmount: 'Ставка',
@@ -895,6 +914,17 @@ const formatTonAmount = (nano) => {
     if (value >= 1) return value.toFixed(2);
     return value.toFixed(4);
 };
+
+function formatDateTimeShort(value) {
+    const parsed = parseServerDate(value);
+    if (!parsed || Number.isNaN(parsed.getTime())) return '';
+    return new Intl.DateTimeFormat(UI_LANG === 'ru' ? 'ru-RU' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(parsed);
+}
 
 const AMBIENT_TOAST_VARIANTS = [
     {
@@ -3968,6 +3998,57 @@ function renderTonWalletState() {
         : 'Your weekly prize queue will use this address after the season is finalized.';
     if (connectBtn) connectBtn.style.display = tonWalletState.connected ? 'none' : '';
     if (disconnectBtn) disconnectBtn.style.display = tonWalletState.connected ? '' : 'none';
+    renderPendingTonWalletNotice(pendingTonWalletNotice);
+}
+
+function openWalletPayoutScreen() {
+    openModal('wallet-screen');
+}
+
+window.openWalletPayoutScreen = openWalletPayoutScreen;
+
+function buildPendingTonWalletNoticeHtml(notice) {
+    const meta = getEventLeagueMeta(notice?.league);
+    const deadlineText = notice?.reminder_sent_at && notice?.deadline_at
+        ? tr('games.walletNoticeSent', { date: formatDateTimeShort(notice.deadline_at) })
+        : tr('games.walletNoticeDeadline', { hours: notice?.hours_until_deadline || 72 });
+
+    return `
+        <div class="event-wallet-notice-head">
+            <div>
+                <div class="event-wallet-notice-title">${tr('games.walletNoticeTitle')}</div>
+                <div class="event-wallet-notice-sub">${tr('games.walletNoticeBody')}</div>
+            </div>
+            <span class="event-wallet-notice-badge">${tr('games.walletNoticeRank')} #${Number(notice?.rank || 0)}</span>
+        </div>
+        <div class="event-wallet-notice-meta">
+            <span>${tr('games.walletNoticeLeague')}: ${meta.label}</span>
+            <span>${tr('games.walletNoticeSeason')}: ${notice?.season_key || '--'}</span>
+        </div>
+        <div class="event-wallet-notice-deadline">${deadlineText}</div>
+        <div class="event-wallet-notice-actions">
+            <button class="btn-primary" onclick="openWalletPayoutScreen()">${tr('games.walletNoticeOpen')}</button>
+            <button class="btn-secondary" onclick="connectTonWallet()">${tr('games.walletNoticeConnect')}</button>
+        </div>
+    `;
+}
+
+function renderPendingTonWalletNotice(notice = null) {
+    pendingTonWalletNotice = notice || null;
+    const eventNoticeEl = document.getElementById('event-payout-notice');
+    const walletNoticeEl = document.getElementById('wallet-payout-notice');
+    const shouldShow = !!notice && !tonWalletState.connected;
+
+    [eventNoticeEl, walletNoticeEl].forEach((node) => {
+        if (!node) return;
+        if (!shouldShow) {
+            node.classList.add('hidden');
+            node.innerHTML = '';
+            return;
+        }
+        node.classList.remove('hidden');
+        node.innerHTML = buildPendingTonWalletNoticeHtml(notice);
+    });
 }
 
 async function loadTonWalletStatus() {
@@ -4321,6 +4402,7 @@ async function loadTournamentData() {
         const overview = await API.get(`/api/weekly-tournament/overview/${userId}`);
         if (!overview?.success) return;
 
+        renderPendingTonWalletNotice(overview?.pending_ton_notice || null);
         renderEventOverview(overview);
         updateOnlineCounterVisibility();
         const preferredLeague = eventSelectedLeague || overview?.player?.league || deriveEventLeague(State.game.level || 1);

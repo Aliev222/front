@@ -4796,6 +4796,76 @@ body:not(.night-mode) #games-screen .event-section-card {
     flex: 1 1 140px;
 }
 
+#games-screen .event-payout-notice,
+#wallet-screen .event-payout-notice {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(88, 231, 208, 0.26);
+    background: linear-gradient(180deg, rgba(23, 50, 63, 0.95), rgba(16, 32, 48, 0.96));
+    box-shadow: inset 0 0 0 1px rgba(121, 212, 255, 0.06);
+}
+
+#games-screen .event-payout-notice.hidden,
+#wallet-screen .event-payout-notice.hidden {
+    display: none;
+}
+
+#games-screen .event-wallet-notice-head,
+#wallet-screen .event-wallet-notice-head,
+#games-screen .event-wallet-notice-meta,
+#wallet-screen .event-wallet-notice-meta,
+#games-screen .event-wallet-notice-actions,
+#wallet-screen .event-wallet-notice-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#games-screen .event-wallet-notice-title,
+#wallet-screen .event-wallet-notice-title {
+    color: var(--premium-text);
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+#games-screen .event-wallet-notice-sub,
+#wallet-screen .event-wallet-notice-sub,
+#games-screen .event-wallet-notice-meta,
+#wallet-screen .event-wallet-notice-meta,
+#games-screen .event-wallet-notice-deadline,
+#wallet-screen .event-wallet-notice-deadline {
+    color: var(--premium-sub);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+#games-screen .event-wallet-notice-badge,
+#wallet-screen .event-wallet-notice-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(88, 231, 208, 0.16);
+    color: var(--premium-text);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+#games-screen .event-wallet-notice-actions .btn-primary,
+#games-screen .event-wallet-notice-actions .btn-secondary,
+#wallet-screen .event-wallet-notice-actions .btn-primary,
+#wallet-screen .event-wallet-notice-actions .btn-secondary {
+    flex: 1 1 160px;
+}
+
 #games-screen .event-league-card.bronze {
     box-shadow: inset 0 0 0 1px rgba(190, 130, 90, 0.18);
 }
