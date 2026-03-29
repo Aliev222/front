@@ -4430,7 +4430,10 @@ async function prepareTonProofPayload(force = false) {
     if (!userId || !tonConnectUI?.setConnectRequestParameters) return null;
     const now = Date.now();
     if (!force && tonProofPayloadState.value && tonProofPayloadState.expiresAt - now > 60_000) {
-        tonConnectUI.setConnectRequestParameters({ state: 'ready', value: tonProofPayloadState.value });
+        tonConnectUI.setConnectRequestParameters({
+            state: 'ready',
+            value: { tonProof: tonProofPayloadState.value }
+        });
         return tonProofPayloadState.value;
     }
     try {
@@ -4445,7 +4448,10 @@ async function prepareTonProofPayload(force = false) {
             value: payload,
             expiresAt: Number(response?.expires_at || 0) * 1000
         };
-        tonConnectUI.setConnectRequestParameters({ state: 'ready', value: payload });
+        tonConnectUI.setConnectRequestParameters({
+            state: 'ready',
+            value: { tonProof: payload }
+        });
         return payload;
     } catch (err) {
         console.error('TON proof payload error:', err);
