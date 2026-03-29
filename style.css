@@ -141,6 +141,7 @@ html, body {
     overflow: hidden;
     position: fixed;
     width: 100%;
+    overscroll-behavior: none;
     font-family: 'Space Mono', monospace;
     background: transparent;
     color: var(--text-primary);
@@ -230,6 +231,9 @@ body.lite-performance .click-button {
     gap: var(--layout-gap);
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
     position: relative;
     background: transparent;
     transform: translateY(-10px);

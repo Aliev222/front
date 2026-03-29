@@ -799,6 +799,19 @@ const tr = t;
 
 if (tg) {
     tg.expand();
+    if (typeof tg.disableVerticalSwipes === 'function') {
+        try {
+            tg.disableVerticalSwipes();
+        } catch (error) {
+            console.warn('disableVerticalSwipes failed:', error);
+        }
+    } else if ('isVerticalSwipesEnabled' in tg) {
+        try {
+            tg.isVerticalSwipesEnabled = false;
+        } catch (error) {
+            console.warn('isVerticalSwipesEnabled toggle failed:', error);
+        }
+    }
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
     if (tg.initDataUnsafe?.user) {
         userId = tg.initDataUnsafe.user.id;
