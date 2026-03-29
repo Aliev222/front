@@ -48,11 +48,16 @@ const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
 let tonConnectUI = null;
 let tonWalletState = {
     connected: false,
+    verified: false,
     address: '',
     masked_address: '',
     provider: '',
     app_name: '',
     connected_at: null
+};
+let tonProofPayloadState = {
+    value: '',
+    expiresAt: 0
 };
 let pendingTonWalletNotice = null;
 const TELEGRAM_BOT_USERNAME = 'Ryoho_bot';
@@ -265,11 +270,14 @@ const I18N = {
             notConnected: 'Not connected',
             connect: 'Connect Wallet',
             disconnect: 'Disconnect',
+            verificationRequired: 'Verification required',
             connectedTitle: 'Automatic TON payouts are enabled for this account',
             disconnectedTitle: 'Connect wallet for automatic TON payouts',
+            verificationTitle: 'Connected wallet still needs ownership verification',
             noWallet: 'No wallet connected',
             connectedSub: 'Weekly rewards will be queued to this wallet after season settlement.',
-            disconnectedSub: 'Your weekly prize queue will use this address after the season is finalized.'
+            disconnectedSub: 'Your weekly prize queue will use this address after the season is finalized.',
+            verificationSub: 'Reconnect the wallet and approve verification so payouts can use this address safely.'
         },
         skins: { title: 'Skin', name: 'Skin name', description: 'Skin description', rarity: 'rarity' },
         achievements: { title: 'Achievements' }
@@ -328,6 +336,7 @@ const I18N = {
             tonWalletUnavailable: 'TON wallet connection is unavailable right now',
             tonWalletOpenError: 'Failed to open TON wallet modal',
             tonWalletDisconnectError: 'Failed to disconnect TON wallet',
+            tonWalletVerificationRequired: 'Wallet is connected, but ownership proof is still required',
             leaderboardLoadError: 'Failed to load leaderboard.'
         },
         skinsDyn: {
@@ -514,11 +523,14 @@ const I18N = {
             notConnected: 'Не подключён',
             connect: 'Подключить кошелёк',
             disconnect: 'Отключить',
+            verificationRequired: 'Нужна проверка',
             connectedTitle: 'Автоматические TON-выплаты включены для этого аккаунта',
             disconnectedTitle: 'Подключи кошелёк для автоматических TON-выплат',
+            verificationTitle: 'Подключённый кошелёк ещё не подтвердил владение',
             noWallet: 'Кошелёк не подключён',
             connectedSub: 'Недельные награды будут поставлены в очередь на этот кошелёк после завершения сезона.',
-            disconnectedSub: 'Твоя недельная очередь выплат будет использовать этот адрес после завершения сезона.'
+            disconnectedSub: 'Твоя недельная очередь выплат будет использовать этот адрес после завершения сезона.',
+            verificationSub: 'Подключи кошелёк заново и подтверди проверку, чтобы выплаты ушли на этот адрес безопасно.'
         },
         skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
         achievements: { title: 'Ачивки' },
@@ -576,6 +588,7 @@ const I18N = {
             tonWalletUnavailable: 'Подключение TON-кошелька сейчас недоступно',
             tonWalletOpenError: 'Не удалось открыть окно TON-кошелька',
             tonWalletDisconnectError: 'Не удалось отключить TON-кошелёк',
+            tonWalletVerificationRequired: 'Кошелёк подключён, но подтверждение владения ещё не завершено',
             leaderboardLoadError: 'Не удалось загрузить лидерборд.'
         },
         skinsDyn: {
@@ -4302,6 +4315,7 @@ function getEventZoneText(player) {
 function setTonWalletState(wallet = {}) {
     tonWalletState = {
         connected: !!wallet?.connected,
+        verified: !!wallet?.verified,
         address: wallet?.address || '',
         masked_address: wallet?.masked_address || '',
         provider: wallet?.provider || '',
@@ -4318,18 +4332,21 @@ function renderTonWalletState() {
     const subEl = document.getElementById('event-wallet-sub');
     const connectBtn = document.getElementById('event-wallet-connect-btn');
     const disconnectBtn = document.getElementById('event-wallet-disconnect-btn');
+    const payoutReady = tonWalletState.connected && tonWalletState.verified;
 
-    if (badgeEl) badgeEl.textContent = tonWalletState.connected ? t('wallet.connected') : t('wallet.notConnected');
-    if (titleEl) titleEl.textContent = tonWalletState.connected
+    if (badgeEl) badgeEl.textContent = payoutReady
+        ? t('wallet.connected')
+        : (tonWalletState.connected ? t('wallet.verificationRequired') : t('wallet.notConnected'));
+    if (titleEl) titleEl.textContent = payoutReady
         ? t('wallet.connectedTitle')
-        : t('wallet.disconnectedTitle');
+        : (tonWalletState.connected ? t('wallet.verificationTitle') : t('wallet.disconnectedTitle'));
     if (addressEl) addressEl.textContent = tonWalletState.connected
         ? (tonWalletState.masked_address || tonWalletState.address)
         : t('wallet.noWallet');
-    if (subEl) subEl.textContent = tonWalletState.connected
+    if (subEl) subEl.textContent = payoutReady
         ? t('wallet.connectedSub')
-        : t('wallet.disconnectedSub');
-    if (connectBtn) connectBtn.style.display = tonWalletState.connected ? 'none' : '';
+        : (tonWalletState.connected ? t('wallet.verificationSub') : t('wallet.disconnectedSub'));
+    if (connectBtn) connectBtn.style.display = payoutReady ? 'none' : '';
     if (disconnectBtn) disconnectBtn.style.display = tonWalletState.connected ? '' : 'none';
     if (connectBtn) connectBtn.textContent = t('wallet.connect');
     if (disconnectBtn) disconnectBtn.textContent = t('wallet.disconnect');
@@ -4372,7 +4389,7 @@ function renderPendingTonWalletNotice(notice = null) {
     pendingTonWalletNotice = notice || null;
     const eventNoticeEl = document.getElementById('event-payout-notice');
     const walletNoticeEl = document.getElementById('wallet-payout-notice');
-    const shouldShow = !!notice && !tonWalletState.connected;
+    const shouldShow = !!notice && !(tonWalletState.connected && tonWalletState.verified);
 
     [eventNoticeEl, walletNoticeEl].forEach((node) => {
         if (!node) return;
@@ -4396,6 +4413,34 @@ async function loadTonWalletStatus() {
     }
 }
 
+async function prepareTonProofPayload(force = false) {
+    if (!userId || !tonConnectUI?.setConnectRequestParameters) return null;
+    const now = Date.now();
+    if (!force && tonProofPayloadState.value && tonProofPayloadState.expiresAt - now > 60_000) {
+        tonConnectUI.setConnectRequestParameters({ state: 'ready', value: tonProofPayloadState.value });
+        return tonProofPayloadState.value;
+    }
+    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+    const response = await API.get(`/api/ton/wallet/proof-payload/${userId}`);
+    const payload = response?.payload || '';
+    if (!payload) {
+        tonConnectUI.setConnectRequestParameters(null);
+        return null;
+    }
+    tonProofPayloadState = {
+        value: payload,
+        expiresAt: Number(response?.expires_at || 0) * 1000
+    };
+    tonConnectUI.setConnectRequestParameters({ state: 'ready', value: payload });
+    return payload;
+}
+
+function getTonProofPayload(wallet) {
+    const proofItem = wallet?.connectItems?.tonProof;
+    if (!proofItem || !('proof' in proofItem) || !proofItem.proof) return null;
+    return proofItem.proof;
+}
+
 async function syncConnectedTonWallet(wallet) {
     const address = wallet?.account?.address || '';
     if (!userId || !address) return;
@@ -4403,7 +4448,9 @@ async function syncConnectedTonWallet(wallet) {
         user_id: userId,
         wallet_address: address,
         wallet_provider: wallet?.provider || '',
-        wallet_app_name: wallet?.device?.appName || wallet?.device?.app_name || ''
+        wallet_app_name: wallet?.device?.appName || wallet?.device?.app_name || '',
+        wallet_network: wallet?.account?.chain || '',
+        ton_proof: getTonProofPayload(wallet)
     });
     setTonWalletState(response?.wallet || {});
 }
@@ -4415,18 +4462,25 @@ async function initTonWalletBridge() {
             manifestUrl: TON_CONNECT_MANIFEST_URL,
             language: UI_LANG === 'ru' ? 'ru' : 'en'
         });
+        if (userId) {
+            prepareTonProofPayload().catch(() => {});
+        }
 
         tonConnectUI.onStatusChange(async (wallet) => {
             try {
                 if (wallet?.account?.address) {
                     await syncConnectedTonWallet(wallet);
-                    showToast(t('toasts.tonWalletConnected'), false, {
-                        title: t('toasts.walletConnectedTitle'),
-                        icon: '💎',
-                        side: 'right',
-                        key: 'ton:connected',
-                        cooldownMs: 4000
-                    });
+                    if (tonWalletState.verified) {
+                        showToast(t('toasts.tonWalletConnected'), false, {
+                            title: t('toasts.walletConnectedTitle'),
+                            icon: '💎',
+                            side: 'right',
+                            key: 'ton:connected',
+                            cooldownMs: 4000
+                        });
+                    } else {
+                        showToast(t('toasts.tonWalletVerificationRequired'), true);
+                    }
                 } else if (userId && tonWalletState.connected) {
                     const response = await API.post('/api/ton/wallet/disconnect', { user_id: userId });
                     setTonWalletState(response?.wallet || {});
@@ -4435,20 +4489,20 @@ async function initTonWalletBridge() {
                 }
             } catch (err) {
                 console.error('TON wallet sync error:', err);
-                showToast(t('toasts.tonWalletSyncError'), true);
+                setTonWalletState({});
+                if (tonConnectUI) {
+                    try {
+                        await tonConnectUI.disconnect();
+                    } catch (_) {}
+                }
+                showToast(err?.message || t('toasts.tonWalletSyncError'), true);
             }
         });
 
         if (tonConnectUI.connectionRestored && typeof tonConnectUI.connectionRestored.then === 'function') {
-            tonConnectUI.connectionRestored.then(() => {
-                if (tonConnectUI?.wallet?.account?.address) {
-                    setTonWalletState({
-                        connected: true,
-                        address: tonConnectUI.wallet.account.address,
-                        masked_address: `${tonConnectUI.wallet.account.address.slice(0, 6)}...${tonConnectUI.wallet.account.address.slice(-6)}`,
-                        provider: tonConnectUI.wallet.provider || '',
-                        app_name: tonConnectUI.wallet?.device?.appName || ''
-                    });
+            tonConnectUI.connectionRestored.then(async () => {
+                if (tonConnectUI?.wallet?.account?.address && userId) {
+                    await loadTonWalletStatus();
                 }
             }).catch(() => {});
         }
@@ -4463,6 +4517,7 @@ async function connectTonWallet() {
         return;
     }
     try {
+        await prepareTonProofPayload(true);
         const walletScreen = document.getElementById('wallet-screen');
         if (walletScreen?.classList.contains('active')) {
             closeModal('wallet-screen');
