@@ -4420,19 +4420,28 @@ async function prepareTonProofPayload(force = false) {
         tonConnectUI.setConnectRequestParameters({ state: 'ready', value: tonProofPayloadState.value });
         return tonProofPayloadState.value;
     }
-    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
-    const response = await API.get(`/api/ton/wallet/proof-payload/${userId}`);
-    const payload = response?.payload || '';
-    if (!payload) {
-        tonConnectUI.setConnectRequestParameters(null);
+    try {
+        tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+        const response = await API.get(`/api/ton/wallet/proof-payload/${userId}`);
+        const payload = response?.payload || '';
+        if (!payload) {
+            tonConnectUI.setConnectRequestParameters(null);
+            return null;
+        }
+        tonProofPayloadState = {
+            value: payload,
+            expiresAt: Number(response?.expires_at || 0) * 1000
+        };
+        tonConnectUI.setConnectRequestParameters({ state: 'ready', value: payload });
+        return payload;
+    } catch (err) {
+        console.error('TON proof payload error:', err);
+        tonProofPayloadState = { value: '', expiresAt: 0 };
+        try {
+            tonConnectUI.setConnectRequestParameters(null);
+        } catch (_) {}
         return null;
     }
-    tonProofPayloadState = {
-        value: payload,
-        expiresAt: Number(response?.expires_at || 0) * 1000
-    };
-    tonConnectUI.setConnectRequestParameters({ state: 'ready', value: payload });
-    return payload;
 }
 
 function getTonProofPayload(wallet) {
