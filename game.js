@@ -53,7 +53,8 @@ let tonWalletState = {
     masked_address: '',
     provider: '',
     app_name: '',
-    connected_at: null
+    connected_at: null,
+    verification_error: ''
 };
 let tonProofPayloadState = {
     value: '',
@@ -4333,7 +4334,8 @@ function setTonWalletState(wallet = {}) {
         masked_address: wallet?.masked_address || '',
         provider: wallet?.provider || '',
         app_name: wallet?.app_name || '',
-        connected_at: wallet?.connected_at || null
+        connected_at: wallet?.connected_at || null,
+        verification_error: wallet?.verification_error || ''
     };
     renderTonWalletState();
 }
@@ -4432,7 +4434,7 @@ async function prepareTonProofPayload(force = false) {
     if (!force && tonProofPayloadState.value && tonProofPayloadState.expiresAt - now > 60_000) {
         tonConnectUI.setConnectRequestParameters({
             state: 'ready',
-            value: { tonProof: tonProofPayloadState.value }
+            value: tonProofPayloadState.value
         });
         return tonProofPayloadState.value;
     }
@@ -4450,7 +4452,7 @@ async function prepareTonProofPayload(force = false) {
         };
         tonConnectUI.setConnectRequestParameters({
             state: 'ready',
-            value: { tonProof: payload }
+            value: payload
         });
         return payload;
     } catch (err) {
@@ -4478,6 +4480,8 @@ async function syncConnectedTonWallet(wallet) {
         wallet_provider: wallet?.provider || '',
         wallet_app_name: wallet?.device?.appName || wallet?.device?.app_name || '',
         wallet_network: wallet?.account?.chain || '',
+        wallet_public_key: wallet?.account?.publicKey || '',
+        wallet_state_init: wallet?.account?.walletStateInit || '',
         ton_proof: getTonProofPayload(wallet)
     });
     setTonWalletState(response?.wallet || {});
@@ -4507,7 +4511,7 @@ async function initTonWalletBridge() {
                             cooldownMs: 4000
                         });
                     } else {
-                        showToast(t('toasts.tonWalletVerificationRequired'), true);
+                        showToast(tonWalletState.verification_error || t('toasts.tonWalletVerificationRequired'), true);
                     }
                 } else if (userId && tonWalletState.connected) {
                     const response = await API.post('/api/ton/wallet/disconnect', { user_id: userId });
