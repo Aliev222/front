@@ -7453,7 +7453,8 @@ body.night-mode #games-screen .game-card {
     pointer-events: none;
     user-select: none;
     white-space: nowrap;
-    transform: translateY(1px);
+    transform: translateY(1px) scale(1.26);
+    transform-origin: center center;
 }
 
 body.night-mode .header-brand {
@@ -8345,6 +8346,7 @@ body.night-mode .social-completed-block {
     .header-brand {
         font-size: 20px;
         letter-spacing: 0.16em;
+        transform: translateY(1px) scale(1.14);
     }
 
     .game-container {
