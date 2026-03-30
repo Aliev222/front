@@ -378,6 +378,345 @@ body.lite-performance .click-button {
     color: inherit;
 }
 
+.prize-pool-shell {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 44;
+    pointer-events: none;
+}
+
+.prize-pool-tab,
+.prize-pool-drawer {
+    pointer-events: auto;
+}
+
+.prize-pool-tab {
+    position: absolute;
+    left: calc(100% - 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    min-height: 142px;
+    border: 1px solid rgba(118, 83, 191, 0.26);
+    border-left: 0;
+    border-radius: 0 18px 18px 0;
+    background: linear-gradient(180deg, rgba(13, 18, 34, 0.92), rgba(23, 29, 49, 0.96));
+    color: #edf2ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 8px;
+    box-shadow: 0 16px 42px rgba(7, 11, 24, 0.35);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.prize-pool-tab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(140, 96, 255, 0.18), rgba(74, 205, 255, 0.06));
+    opacity: 0.95;
+}
+
+.prize-pool-tab-arrow,
+.prize-pool-tab-text {
+    position: relative;
+    z-index: 1;
+}
+
+.prize-pool-tab-arrow {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(158, 126, 255, 0.48);
+    transition: transform 0.24s ease;
+}
+
+.prize-pool-tab-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.92;
+}
+
+.prize-pool-drawer {
+    width: min(320px, 86vw);
+    max-height: min(76vh, 680px);
+    overflow-y: auto;
+    padding: 18px 16px 16px;
+    border-radius: 0 24px 24px 0;
+    border: 1px solid rgba(131, 93, 221, 0.26);
+    border-left: 0;
+    background:
+        radial-gradient(circle at top left, rgba(149, 101, 255, 0.18), transparent 48%),
+        linear-gradient(180deg, rgba(14, 18, 34, 0.97), rgba(10, 14, 27, 0.98));
+    box-shadow: 0 26px 70px rgba(7, 11, 24, 0.44);
+    transform: translateX(calc(-100% + 18px));
+    transition: transform 0.28s ease;
+    overscroll-behavior: contain;
+}
+
+.prize-pool-shell.open .prize-pool-drawer {
+    transform: translateX(0);
+}
+
+.prize-pool-shell.open .prize-pool-tab-arrow {
+    transform: scaleX(-1);
+}
+
+.prize-pool-backdrop {
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(5, 9, 18, 0.22);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+    z-index: 43;
+}
+
+.prize-pool-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.prize-pool-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.prize-pool-drawer-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.prize-pool-kicker {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.prize-pool-drawer-head h3,
+.prize-pool-section-head h4 {
+    margin: 0;
+}
+
+.prize-pool-title {
+    margin: 0;
+}
+
+.prize-pool-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(160, 173, 210, 0.22);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.prize-pool-main-card,
+.prize-pool-section,
+.prize-pool-player-card {
+    border: 1px solid rgba(155, 169, 205, 0.14);
+    background: rgba(255, 255, 255, 0.045);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.prize-pool-main-card {
+    border-radius: 22px;
+    padding: 16px 16px 14px;
+    margin-bottom: 14px;
+}
+
+.prize-pool-amount {
+    font-family: 'Orbitron', 'Montserrat', sans-serif;
+    font-size: clamp(28px, 6vw, 36px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-bottom: 12px;
+    color: #faf8ff;
+    text-shadow: 0 0 26px rgba(153, 120, 255, 0.32);
+}
+
+.prize-pool-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(160, 173, 210, 0.1);
+}
+
+.prize-pool-meta-row + .prize-pool-meta-row {
+    margin-top: 8px;
+}
+
+.prize-pool-meta-label,
+.prize-pool-player-label {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.prize-pool-meta-value,
+.prize-pool-player-value {
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.prize-pool-section {
+    border-radius: 20px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.prize-pool-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.prize-pool-section-head h4 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.prize-pool-leagues,
+.prize-pool-rules {
+    display: grid;
+    gap: 8px;
+}
+
+.prize-pool-league-row,
+.prize-pool-rule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.prize-pool-league-name,
+.prize-pool-rule-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.prize-pool-league-share,
+.prize-pool-rule-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.prize-pool-player-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.prize-pool-player-card {
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.prize-pool-player-card-wide {
+    grid-column: 1 / -1;
+}
+
+.prize-pool-footnote {
+    margin: 12px 4px 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-dim);
+}
+
+body:not(.night-mode) .prize-pool-tab {
+    background: linear-gradient(180deg, rgba(247, 244, 255, 0.96), rgba(236, 232, 255, 0.98));
+    color: #4f2782;
+    border-color: rgba(125, 78, 190, 0.18);
+    box-shadow: 0 16px 42px rgba(111, 84, 156, 0.16);
+}
+
+body:not(.night-mode) .prize-pool-tab::before {
+    background: linear-gradient(180deg, rgba(147, 94, 255, 0.12), rgba(82, 199, 255, 0.03));
+}
+
+body:not(.night-mode) .prize-pool-drawer {
+    background:
+        radial-gradient(circle at top left, rgba(140, 96, 255, 0.12), transparent 46%),
+        linear-gradient(180deg, rgba(252, 250, 255, 0.98), rgba(246, 242, 255, 0.99));
+    border-color: rgba(125, 78, 190, 0.16);
+    box-shadow: 0 24px 62px rgba(95, 73, 136, 0.14);
+}
+
+body:not(.night-mode) .prize-pool-main-card,
+body:not(.night-mode) .prize-pool-section,
+body:not(.night-mode) .prize-pool-player-card,
+body:not(.night-mode) .prize-pool-league-row,
+body:not(.night-mode) .prize-pool-rule-row,
+body:not(.night-mode) .prize-pool-close {
+    background: rgba(122, 86, 187, 0.05);
+    border-color: rgba(125, 78, 190, 0.12);
+}
+
+body:not(.night-mode) .prize-pool-amount {
+    color: #5c2d98;
+    text-shadow: 0 0 20px rgba(140, 96, 255, 0.16);
+}
+
+body:not(.night-mode) .prize-pool-backdrop {
+    background: rgba(30, 18, 52, 0.1);
+}
+
+@media (max-width: 768px) {
+    .prize-pool-tab {
+        width: 42px;
+        min-height: 126px;
+        padding: 12px 6px;
+    }
+
+    .prize-pool-drawer {
+        width: min(312px, 86vw);
+        max-height: 72vh;
+        padding: 16px 14px 14px;
+    }
+
+    .prize-pool-amount {
+        font-size: 28px;
+    }
+}
+
 @keyframes tournamentPulse {
     0%, 100% { filter: drop-shadow(0 0 5px var(--accent)); }
     50%       { filter: drop-shadow(0 0 12px var(--accent)); }

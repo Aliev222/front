@@ -214,6 +214,18 @@ const I18N = {
             kicker: 'Weekly Prize Clash',
             heroTitle: 'Climb your league and enter the payout zone.',
             heroSubtitle: 'Only click-earned coins count. Finish inside top 50 to stay eligible.',
+            drawerTab: 'Prize',
+            drawerKicker: 'Weekly Prize Pool',
+            drawerTitle: 'Current fund',
+            drawerSeason: 'Season',
+            drawerEnds: 'Ends in',
+            drawerLeagues: 'League Distribution',
+            drawerRewards: 'Top Rewards',
+            drawerPlayer: 'Your Tournament Status',
+            drawerLeague: 'League',
+            drawerRank: 'Rank',
+            drawerStatus: 'Status',
+            drawerFootnote: 'Final reward depends on your final rank and payout eligibility.',
             tabRules: 'Rules',
             tabLeaderboard: 'Leaderboard',
             potential: 'Ends in',
@@ -469,6 +481,18 @@ const I18N = {
             kicker: 'Еженедельная схватка',
             heroTitle: 'Поднимайся по лиге и заходи в зону выплат.',
             heroSubtitle: 'В зачёт идут только монеты, заработанные кликами. Топ-50 остаётся в гонке.',
+            drawerTab: 'Фонд',
+            drawerKicker: 'Призовой фонд недели',
+            drawerTitle: 'Текущий фонд',
+            drawerSeason: 'Сезон',
+            drawerEnds: 'До конца',
+            drawerLeagues: 'Распределение по лигам',
+            drawerRewards: 'Выплаты по местам',
+            drawerPlayer: 'Твой турнирный статус',
+            drawerLeague: 'Лига',
+            drawerRank: 'Ранг',
+            drawerStatus: 'Статус',
+            drawerFootnote: 'Финальная награда зависит от итогового места и допуска к выплате.',
             tabRules: 'Правила',
             tabLeaderboard: 'Лидерборд',
             potential: 'До конца',
@@ -1146,6 +1170,16 @@ const formatTonAmount = (nano) => {
     if (value >= 100) return value.toFixed(1);
     if (value >= 1) return value.toFixed(2);
     return value.toFixed(4);
+};
+
+const formatUsdFromCents = (cents) => {
+    const value = Number(cents || 0) / 100;
+    return new Intl.NumberFormat(UI_LANG === 'ru' ? 'ru-RU' : 'en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(Number.isFinite(value) ? value : 0);
 };
 
 function formatDateTimeShort(value) {
@@ -2727,7 +2761,8 @@ function handleTap(e) {
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card'
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card, ' +
+        '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop'
     )) return;
 
     if (e.cancelable) e.preventDefault();
@@ -4319,6 +4354,7 @@ let onlineCountTimer = null;
 let eventSelectedLeague = null;
 let eventOverviewCache = null;
 let eventHubTab = 'rules';
+let prizePoolDrawerOpen = false;
 const EVENT_LEAGUE_ORDER = ['bronze', 'silver', 'gold', 'diamond'];
 const EVENT_LEAGUE_META = {
     bronze: { label: { en: 'Bronze', ru: 'Бронза' }, range: { en: 'Lvl 1-32', ru: 'Ур. 1-32' }, className: 'bronze' },
@@ -4357,6 +4393,34 @@ function switchEventHubTab(tab = 'rules') {
     rulesPanel?.classList.toggle('active', eventHubTab === 'rules');
     leaderboardPanel?.classList.toggle('active', eventHubTab === 'leaderboard');
 }
+
+function setPrizePoolDrawerOpen(nextOpen) {
+    prizePoolDrawerOpen = !!nextOpen;
+    const shell = document.getElementById('prize-pool-shell');
+    const drawer = document.getElementById('prize-pool-drawer');
+    const tab = document.getElementById('prize-pool-tab');
+    const backdrop = document.getElementById('prize-pool-backdrop');
+    shell?.classList.toggle('open', prizePoolDrawerOpen);
+    backdrop?.classList.toggle('active', prizePoolDrawerOpen);
+    drawer?.setAttribute('aria-hidden', prizePoolDrawerOpen ? 'false' : 'true');
+    tab?.setAttribute('aria-expanded', prizePoolDrawerOpen ? 'true' : 'false');
+}
+
+function openPrizePoolDrawer() {
+    setPrizePoolDrawerOpen(true);
+}
+
+function closePrizePoolDrawer() {
+    setPrizePoolDrawerOpen(false);
+}
+
+function togglePrizePoolDrawer() {
+    setPrizePoolDrawerOpen(!prizePoolDrawerOpen);
+}
+
+window.openPrizePoolDrawer = openPrizePoolDrawer;
+window.closePrizePoolDrawer = closePrizePoolDrawer;
+window.togglePrizePoolDrawer = togglePrizePoolDrawer;
 
 function formatEventTime(seconds) {
     const value = Math.max(0, Number(seconds) || 0);
@@ -4647,10 +4711,8 @@ async function disconnectTonWallet() {
     }
 }
 
-function renderEventLeagueSplits(fundSplits = {}) {
-    const host = document.getElementById('event-league-splits');
-    if (!host) return;
-    host.innerHTML = EVENT_LEAGUE_ORDER.map((league) => {
+function buildEventLeagueSplitsMarkup(fundSplits = {}) {
+    return EVENT_LEAGUE_ORDER.map((league) => {
         const meta = getEventLeagueMeta(league);
         const pct = Math.round((Number(fundSplits[league] || 0) * 100));
         return `
@@ -4663,34 +4725,47 @@ function renderEventLeagueSplits(fundSplits = {}) {
     }).join('');
 }
 
-function renderEventPayoutGrid(payoutSplits = null, top3Splits = {}, restSplit = 0) {
-    const host = document.getElementById('event-payout-grid');
+function renderEventLeagueSplits(fundSplits = {}) {
+    const host = document.getElementById('event-league-splits');
     if (!host) return;
+    host.innerHTML = buildEventLeagueSplitsMarkup(fundSplits);
+}
+
+function buildEventPayoutGridMarkup(payoutSplits = null, top3Splits = {}, restSplit = 0) {
     const top = payoutSplits?.top || top3Splits || {};
     const ranges = Array.isArray(payoutSplits?.ranges) ? payoutSplits.ranges : [];
+    const topLabel = UI_LANG === 'ru' ? 'Топ' : 'Top';
+    const ranksLabel = UI_LANG === 'ru' ? 'Места' : 'Ranks';
+    const sharedLabel = UI_LANG === 'ru' ? 'общий пул' : 'shared';
     const rules = [
-        { label: 'Top 1', value: `${Math.round(Number(top[1] || 0) * 100)}%` },
-        { label: 'Top 2', value: `${Math.round(Number(top[2] || 0) * 100)}%` },
-        { label: 'Top 3', value: `${Math.round(Number(top[3] || 0) * 100)}%` },
+        { label: `${topLabel} 1`, value: `${Math.round(Number(top[1] || 0) * 100)}%` },
+        { label: `${topLabel} 2`, value: `${Math.round(Number(top[2] || 0) * 100)}%` },
+        { label: `${topLabel} 3`, value: `${Math.round(Number(top[3] || 0) * 100)}%` },
     ];
 
     if (ranges.length) {
         ranges.forEach((range) => {
             rules.push({
-                label: `Ranks ${range.start}-${range.end}`,
-                value: `${Math.round(Number(range.share || 0) * 100)}% shared`
+                label: `${ranksLabel} ${range.start}-${range.end}`,
+                value: `${Math.round(Number(range.share || 0) * 100)}% ${sharedLabel}`
             });
         });
     } else {
-        rules.push({ label: 'Ranks 4-50', value: `${Math.round(Number(restSplit || 0) * 100)}% shared` });
+        rules.push({ label: `${ranksLabel} 4-50`, value: `${Math.round(Number(restSplit || 0) * 100)}% ${sharedLabel}` });
     }
 
-    host.innerHTML = rules.map((rule) => `
+    return rules.map((rule) => `
         <div class="event-payout-card">
             <span class="event-payout-label">${rule.label}</span>
             <span class="event-payout-value">${rule.value}</span>
         </div>
     `).join('');
+}
+
+function renderEventPayoutGrid(payoutSplits = null, top3Splits = {}, restSplit = 0) {
+    const host = document.getElementById('event-payout-grid');
+    if (!host) return;
+    host.innerHTML = buildEventPayoutGridMarkup(payoutSplits, top3Splits, restSplit);
 }
 
 function renderEventLeagueTabs(selectedLeague) {
@@ -4708,6 +4783,107 @@ function renderEventLeagueTabs(selectedLeague) {
             </button>
         `;
     }).join('');
+}
+
+function buildPrizePoolLeagueMarkup(fundSplits = {}) {
+    return EVENT_LEAGUE_ORDER.map((league) => {
+        const meta = getEventLeagueMeta(league);
+        const pct = Math.round((Number(fundSplits[league] || 0) * 100));
+        return `
+            <div class="prize-pool-league-row">
+                <span class="prize-pool-league-name">${meta.label}</span>
+                <span class="prize-pool-league-share">${pct}%</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function buildPrizePoolRuleMarkup(payoutSplits = null, top3Splits = {}, restSplit = 0) {
+    const top = payoutSplits?.top || top3Splits || {};
+    const ranges = Array.isArray(payoutSplits?.ranges) ? payoutSplits.ranges : [];
+    const topLabel = UI_LANG === 'ru' ? 'Топ' : 'Top';
+    const rules = [
+        { label: `${topLabel} 1`, value: `${Math.round(Number(top[1] || 0) * 100)}%` },
+        { label: `${topLabel} 2`, value: `${Math.round(Number(top[2] || 0) * 100)}%` },
+        { label: `${topLabel} 3`, value: `${Math.round(Number(top[3] || 0) * 100)}%` },
+    ];
+    if (ranges.length) {
+        ranges.forEach((range) => {
+            rules.push({
+                label: `${range.start}-${range.end}`,
+                value: `${Math.round(Number(range.share || 0) * 100)}%`
+            });
+        });
+    } else {
+        rules.push({ label: '4-50', value: `${Math.round(Number(restSplit || 0) * 100)}%` });
+    }
+    return rules.map((rule) => `
+        <div class="prize-pool-rule-row">
+            <span class="prize-pool-rule-label">${rule.label}</span>
+            <span class="prize-pool-rule-value">${rule.value}</span>
+        </div>
+    `).join('');
+}
+
+function renderPrizePoolDrawer(data) {
+    const tabTextEl = document.getElementById('prize-pool-tab-text');
+    const kickerEl = document.getElementById('prize-pool-kicker');
+    const titleEl = document.getElementById('prize-pool-title');
+    const amountEl = document.getElementById('prize-pool-amount');
+    const seasonLabelEl = document.getElementById('prize-pool-season-label');
+    const seasonValueEl = document.getElementById('prize-pool-season-value');
+    const endsLabelEl = document.getElementById('prize-pool-ends-label');
+    const endsValueEl = document.getElementById('prize-pool-ends-value');
+    const leaguesTitleEl = document.getElementById('prize-pool-leagues-title');
+    const leaguesHost = document.getElementById('prize-pool-leagues');
+    const rulesTitleEl = document.getElementById('prize-pool-rules-title');
+    const rulesHost = document.getElementById('prize-pool-rules');
+    const playerTitleEl = document.getElementById('prize-pool-player-title');
+    const playerLeagueLabelEl = document.getElementById('prize-pool-player-league-label');
+    const playerLeagueEl = document.getElementById('prize-pool-player-league');
+    const playerRankLabelEl = document.getElementById('prize-pool-player-rank-label');
+    const playerRankEl = document.getElementById('prize-pool-player-rank');
+    const playerZoneLabelEl = document.getElementById('prize-pool-player-zone-label');
+    const playerZoneEl = document.getElementById('prize-pool-player-zone');
+    const footnoteEl = document.getElementById('prize-pool-footnote');
+
+    if (tabTextEl) tabTextEl.textContent = tr('games.drawerTab');
+    if (kickerEl) kickerEl.textContent = tr('games.drawerKicker');
+    if (titleEl) titleEl.textContent = tr('games.drawerTitle');
+    if (seasonLabelEl) seasonLabelEl.textContent = tr('games.drawerSeason');
+    if (endsLabelEl) endsLabelEl.textContent = tr('games.drawerEnds');
+    if (leaguesTitleEl) leaguesTitleEl.textContent = tr('games.drawerLeagues');
+    if (rulesTitleEl) rulesTitleEl.textContent = tr('games.drawerRewards');
+    if (playerTitleEl) playerTitleEl.textContent = tr('games.drawerPlayer');
+    if (playerLeagueLabelEl) playerLeagueLabelEl.textContent = tr('games.drawerLeague');
+    if (playerRankLabelEl) playerRankLabelEl.textContent = tr('games.drawerRank');
+    if (playerZoneLabelEl) playerZoneLabelEl.textContent = tr('games.drawerStatus');
+    if (footnoteEl) footnoteEl.textContent = tr('games.drawerFootnote');
+
+    if (!data) {
+        if (amountEl) amountEl.textContent = formatUsdFromCents(0);
+        if (seasonValueEl) seasonValueEl.textContent = '--';
+        if (endsValueEl) endsValueEl.textContent = '--';
+        if (leaguesHost) leaguesHost.innerHTML = '';
+        if (rulesHost) rulesHost.innerHTML = '';
+        if (playerLeagueEl) playerLeagueEl.textContent = '--';
+        if (playerRankEl) playerRankEl.textContent = '--';
+        if (playerZoneEl) playerZoneEl.textContent = '--';
+        return;
+    }
+
+    const player = data?.player || null;
+    const league = player?.league || deriveEventLeague(State.game.level || 1);
+    const meta = getEventLeagueMeta(league);
+
+    if (amountEl) amountEl.textContent = formatUsdFromCents(data?.payout_fund_cents || 0);
+    if (seasonValueEl) seasonValueEl.textContent = data?.season_key || '--';
+    if (endsValueEl) endsValueEl.textContent = formatEventTime(data?.time_left_seconds || 0);
+    if (leaguesHost) leaguesHost.innerHTML = buildPrizePoolLeagueMarkup(data?.fund_splits || {});
+    if (rulesHost) rulesHost.innerHTML = buildPrizePoolRuleMarkup(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
+    if (playerLeagueEl) playerLeagueEl.textContent = meta.label;
+    if (playerRankEl) playerRankEl.textContent = player?.rank ? `#${player.rank}` : '--';
+    if (playerZoneEl) playerZoneEl.textContent = getEventZoneText(player);
 }
 
 function renderEventOverview(data) {
@@ -4730,6 +4906,7 @@ function renderEventOverview(data) {
 
     renderEventLeagueSplits(data?.fund_splits || {});
     renderEventPayoutGrid(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
+    renderPrizePoolDrawer(data);
     renderTonWalletState();
     trackTournamentToastState(player?.rank || 9999, 50);
 }
@@ -4815,6 +4992,28 @@ async function loadEventResults(league) {
     }
 }
 
+async function fetchTournamentOverview() {
+    if (!userId) return null;
+    const overview = await API.get(`/api/weekly-tournament/overview/${userId}`);
+    return overview?.success ? overview : null;
+}
+
+async function loadTournamentPrizePoolData({ silent = false } = {}) {
+    try {
+        const overview = await fetchTournamentOverview();
+        if (!overview) {
+            renderPrizePoolDrawer(null);
+            return null;
+        }
+        renderPrizePoolDrawer(overview);
+        return overview;
+    } catch (err) {
+        if (!silent) console.error('Prize pool drawer error:', err);
+        renderPrizePoolDrawer(null);
+        return null;
+    }
+}
+
 async function selectEventLeague(league) {
     eventSelectedLeague = EVENT_LEAGUE_ORDER.includes(league) ? league : 'bronze';
     renderEventLeagueTabs(eventSelectedLeague);
@@ -4889,8 +5088,8 @@ function startOnlinePresence() {
 
 async function loadTournamentData() {
     try {
-        const overview = await API.get(`/api/weekly-tournament/overview/${userId}`);
-        if (!overview?.success) return;
+        const overview = await fetchTournamentOverview();
+        if (!overview) return;
 
         renderPendingTonWalletNotice(overview?.pending_ton_notice || null);
         renderEventOverview(overview);
@@ -4909,20 +5108,28 @@ function startTournamentTimer(seconds) {
     if (tournamentTimer) clearInterval(tournamentTimer);
     
     const timerEl = document.getElementById('event-season-timer');
-    if (!timerEl) return;
+    const drawerTimerEl = document.getElementById('prize-pool-ends-value');
+    if (!timerEl && !drawerTimerEl) return;
     
     let remaining = Math.max(0, Number(seconds) || 0);
-    timerEl.textContent = formatEventTime(remaining);
+    const syncTimerText = (value) => {
+        const text = formatEventTime(value);
+        if (timerEl) timerEl.textContent = text;
+        if (drawerTimerEl) drawerTimerEl.textContent = text;
+    };
+    syncTimerText(remaining);
     
     tournamentTimer = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearInterval(tournamentTimer);
-            timerEl.textContent = 'Finished';
+            if (timerEl) timerEl.textContent = 'Finished';
+            if (drawerTimerEl) drawerTimerEl.textContent = UI_LANG === 'ru' ? 'Завершён' : 'Finished';
+            loadTournamentPrizePoolData({ silent: true });
             loadTournamentData();
             return;
         }
-        timerEl.textContent = formatEventTime(remaining);
+        syncTimerText(remaining);
     }, 1000);
 }
 
@@ -6373,7 +6580,8 @@ function setupGlobalClickHandler() {
         'button, a, .nav-item, .settings-btn, .modal-close, ' +
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button';
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button, ' +
+        '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop';
 
     if (globalTapPointerHandler) {
         document.removeEventListener('pointerdown', globalTapPointerHandler);
@@ -6433,6 +6641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userId) {
         await loadUserData();
+        await loadTournamentPrizePoolData({ silent: true });
         await loadTonWalletStatus();
         await checkOfflinePassiveIncome();
         startOnlinePresence();

@@ -112,6 +112,80 @@
             </div>
         </div>
 
+        <div class="prize-pool-shell" id="prize-pool-shell">
+            <button
+                class="prize-pool-tab"
+                id="prize-pool-tab"
+                type="button"
+                onclick="togglePrizePoolDrawer()"
+                aria-expanded="false"
+                aria-controls="prize-pool-drawer"
+            >
+                <span class="prize-pool-tab-arrow" id="prize-pool-tab-arrow">›</span>
+                <span class="prize-pool-tab-text" id="prize-pool-tab-text">Prize</span>
+            </button>
+            <aside class="prize-pool-drawer glass" id="prize-pool-drawer" aria-hidden="true">
+                <div class="prize-pool-drawer-head">
+                    <div class="prize-pool-drawer-copy">
+                        <span class="prize-pool-kicker" id="prize-pool-kicker">Weekly Prize Pool</span>
+                        <h3 id="prize-pool-title">Current fund</h3>
+                    </div>
+                    <button class="prize-pool-close" type="button" onclick="closePrizePoolDrawer()" aria-label="Close">×</button>
+                </div>
+
+                <div class="prize-pool-main-card">
+                    <div class="prize-pool-amount" id="prize-pool-amount">$0.00</div>
+                    <div class="prize-pool-meta-row">
+                        <span class="prize-pool-meta-label" id="prize-pool-season-label">Season</span>
+                        <span class="prize-pool-meta-value" id="prize-pool-season-value">--</span>
+                    </div>
+                    <div class="prize-pool-meta-row">
+                        <span class="prize-pool-meta-label" id="prize-pool-ends-label">Ends in</span>
+                        <span class="prize-pool-meta-value" id="prize-pool-ends-value">--</span>
+                    </div>
+                </div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-leagues-title">League Distribution</h4>
+                    </div>
+                    <div class="prize-pool-leagues" id="prize-pool-leagues"></div>
+                </div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-rules-title">Top Rewards</h4>
+                    </div>
+                    <div class="prize-pool-rules" id="prize-pool-rules"></div>
+                </div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-player-title">Your Tournament Status</h4>
+                    </div>
+                    <div class="prize-pool-player-grid">
+                        <div class="prize-pool-player-card">
+                            <span class="prize-pool-player-label" id="prize-pool-player-league-label">League</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-league">--</span>
+                        </div>
+                        <div class="prize-pool-player-card">
+                            <span class="prize-pool-player-label" id="prize-pool-player-rank-label">Rank</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-rank">--</span>
+                        </div>
+                        <div class="prize-pool-player-card prize-pool-player-card-wide">
+                            <span class="prize-pool-player-label" id="prize-pool-player-zone-label">Status</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-zone">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="prize-pool-footnote" id="prize-pool-footnote">
+                    Final reward depends on your final rank and payout eligibility.
+                </p>
+            </aside>
+        </div>
+        <button class="prize-pool-backdrop" id="prize-pool-backdrop" type="button" onclick="closePrizePoolDrawer()" aria-hidden="true"></button>
+
         <!-- STATS ROW -->
         <div class="stats-row">
             <div class="stat-card glass">
