@@ -7709,6 +7709,21 @@ body.night-mode .header-brand {
     padding: 0;
 }
 
+#games-screen .event-hub-tabs {
+    padding-bottom: 12px;
+}
+
+#games-screen .games-modal-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#games-screen #event-rules-panel,
+#games-screen #event-leaderboard-panel {
+    gap: 14px;
+}
+
 .nav-item-daily {
     position: relative;
 }

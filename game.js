@@ -214,6 +214,8 @@ const I18N = {
             kicker: 'Weekly Prize Clash',
             heroTitle: 'Climb your league and enter the payout zone.',
             heroSubtitle: 'Only click-earned coins count. Finish inside top 50 to stay eligible.',
+            tabRules: 'Rules',
+            tabLeaderboard: 'Leaderboard',
             potential: 'Ends in',
             tapToPlay: 'Weekly leagues',
             pullReels: 'Top 50 payouts',
@@ -467,6 +469,8 @@ const I18N = {
             kicker: 'Еженедельная схватка',
             heroTitle: 'Поднимайся по лиге и заходи в зону выплат.',
             heroSubtitle: 'В зачёт идут только монеты, заработанные кликами. Топ-50 остаётся в гонке.',
+            tabRules: 'Правила',
+            tabLeaderboard: 'Лидерборд',
             potential: 'До конца',
             tapToPlay: 'Еженедельные лиги',
             pullReels: 'Выплаты топ-50',
@@ -4133,6 +4137,8 @@ function applyStaticTranslations() {
         ['#tasks-screen .modal-header-copy h2', 'achievements.title'],
         ['#tasks-hub-tab-tasks', 'nav.tasks'],
         ['#tasks-hub-tab-achievements', 'achievements.title'],
+        ['#event-hub-tab-rules', 'games.tabRules'],
+        ['#event-hub-tab-leaderboard', 'games.tabLeaderboard'],
         ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
         ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
         ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
@@ -4255,7 +4261,10 @@ function switchTab(tab, el) {
     
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
-    if (tab === 'games') loadTournamentData();
+    if (tab === 'games') {
+        switchEventHubTab('rules');
+        loadTournamentData();
+    }
     if (tab === 'wallet') renderTonWalletState();
     if (tab === 'tasks') {
         advanceSoftOnboarding('tasks');
@@ -4309,6 +4318,7 @@ let onlineHeartbeatTimer = null;
 let onlineCountTimer = null;
 let eventSelectedLeague = null;
 let eventOverviewCache = null;
+let eventHubTab = 'rules';
 const EVENT_LEAGUE_ORDER = ['bronze', 'silver', 'gold', 'diamond'];
 const EVENT_LEAGUE_META = {
     bronze: { label: { en: 'Bronze', ru: 'Бронза' }, range: { en: 'Lvl 1-32', ru: 'Ур. 1-32' }, className: 'bronze' },
@@ -4332,6 +4342,20 @@ function deriveEventLeague(level) {
     if (numericLevel >= 66) return 'gold';
     if (numericLevel >= 33) return 'silver';
     return 'bronze';
+}
+
+function switchEventHubTab(tab = 'rules') {
+    eventHubTab = tab === 'leaderboard' ? 'leaderboard' : 'rules';
+
+    const rulesTabBtn = document.getElementById('event-hub-tab-rules');
+    const leaderboardTabBtn = document.getElementById('event-hub-tab-leaderboard');
+    const rulesPanel = document.getElementById('event-rules-panel');
+    const leaderboardPanel = document.getElementById('event-leaderboard-panel');
+
+    rulesTabBtn?.classList.toggle('active', eventHubTab === 'rules');
+    leaderboardTabBtn?.classList.toggle('active', eventHubTab === 'leaderboard');
+    rulesPanel?.classList.toggle('active', eventHubTab === 'rules');
+    leaderboardPanel?.classList.toggle('active', eventHubTab === 'leaderboard');
 }
 
 function formatEventTime(seconds) {

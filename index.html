@@ -369,83 +369,90 @@
                     <span class="games-hero-jackpot-value" id="event-season-timer">--</span>
                 </div>
             </div>
+            <div class="tasks-hub-tabs event-hub-tabs" id="event-hub-tabs">
+                <button class="tasks-hub-tab active" id="event-hub-tab-rules" onclick="switchEventHubTab('rules')">Rules</button>
+                <button class="tasks-hub-tab" id="event-hub-tab-leaderboard" onclick="switchEventHubTab('leaderboard')">Leaderboard</button>
+            </div>
             <div class="modal-content modal-content-premium games-modal-content">
                 <div class="event-payout-notice hidden" id="event-payout-notice"></div>
-                <div class="event-summary-grid">
-                    <div class="event-stat-card">
-                        <span class="event-stat-label">Your League</span>
-                        <span class="event-stat-value" id="event-player-league">Bronze</span>
-                    </div>
-                    <div class="event-stat-card">
-                        <span class="event-stat-label">Your Rank</span>
-                        <span class="event-stat-value" id="event-player-rank">--</span>
-                    </div>
-                    <div class="event-stat-card">
-                        <span class="event-stat-label">Weekly Click Coins</span>
-                        <span class="event-stat-value" id="event-player-score">0</span>
-                    </div>
-                    <div class="event-stat-card">
-                        <span class="event-stat-label">Status</span>
-                        <span class="event-stat-value event-zone-value" id="event-player-zone">Start tapping</span>
-                    </div>
-                </div>
-
-                <div class="event-section-card">
-                    <div class="event-section-head">
-                        <h3>League Splits</h3>
-                        <span>Weekly fund distribution</span>
-                    </div>
-                    <div class="event-league-splits" id="event-league-splits"></div>
-                </div>
-
-                <div class="event-section-card">
-                    <div class="event-section-head">
-                        <h3>Payout Rules</h3>
-                        <span>Inside each league</span>
-                    </div>
-                    <div class="event-payout-grid" id="event-payout-grid"></div>
-                </div>
-
-                <div class="event-section-card">
-                    <div class="event-section-head">
-                        <h3>Leaderboard</h3>
-                        <span id="event-board-subtitle">Your current league</span>
-                    </div>
-                    <div class="event-league-tabs" id="event-league-tabs"></div>
-                    <div class="leaderboard event-leaderboard">
-                        <div class="leaderboard-header">
-                            <span>#</span>
-                            <span>Player</span>
-                            <span>Score</span>
+                <div class="tasks-hub-panel active" id="event-rules-panel">
+                    <div class="event-summary-grid">
+                        <div class="event-stat-card">
+                            <span class="event-stat-label">Your League</span>
+                            <span class="event-stat-value" id="event-player-league">Bronze</span>
                         </div>
-                        <div id="event-leaderboard-list">
-                            <div class="loading">Loading...</div>
+                        <div class="event-stat-card">
+                            <span class="event-stat-label">Your Rank</span>
+                            <span class="event-stat-value" id="event-player-rank">--</span>
+                        </div>
+                        <div class="event-stat-card">
+                            <span class="event-stat-label">Weekly Click Coins</span>
+                            <span class="event-stat-value" id="event-player-score">0</span>
+                        </div>
+                        <div class="event-stat-card">
+                            <span class="event-stat-label">Status</span>
+                            <span class="event-stat-value event-zone-value" id="event-player-zone">Start tapping</span>
                         </div>
                     </div>
-                    <div class="player-rank glass event-player-highlight" id="event-player-highlight"></div>
-                </div>
 
-                <div class="event-section-card">
-                    <div class="event-section-head">
-                        <h3>Final TON</h3>
-                        <span id="event-results-subtitle">Shown after the week is finalized</span>
+                    <div class="event-section-card">
+                        <div class="event-section-head">
+                            <h3>League Splits</h3>
+                            <span>Weekly fund distribution</span>
+                        </div>
+                        <div class="event-league-splits" id="event-league-splits"></div>
                     </div>
-                    <div class="event-results-list" id="event-results-list">
-                        <div class="loading">TON rewards are shown here after the week is finalized.</div>
+
+                    <div class="event-section-card">
+                        <div class="event-section-head">
+                            <h3>Payout Rules</h3>
+                            <span>Inside each league</span>
+                        </div>
+                        <div class="event-payout-grid" id="event-payout-grid"></div>
+                    </div>
+
+                    <div class="event-section-card event-rules-card">
+                        <div class="event-section-head">
+                            <h3>How It Works</h3>
+                            <span>Simple and strict</span>
+                        </div>
+                        <ul class="event-rules-list">
+                            <li>Only click-earned coins count toward the event.</li>
+                            <li>Passive income, tasks, rewards and referrals do not count.</li>
+                            <li>League depends on your current level.</li>
+                            <li>Top 50 in each league stay in payout contention.</li>
+                        </ul>
                     </div>
                 </div>
-
-                <div class="event-section-card event-rules-card">
-                    <div class="event-section-head">
-                        <h3>How It Works</h3>
-                        <span>Simple and strict</span>
+                <div class="tasks-hub-panel" id="event-leaderboard-panel">
+                    <div class="event-section-card">
+                        <div class="event-section-head">
+                            <h3>Leaderboard</h3>
+                            <span id="event-board-subtitle">Your current league</span>
+                        </div>
+                        <div class="event-league-tabs" id="event-league-tabs"></div>
+                        <div class="leaderboard event-leaderboard">
+                            <div class="leaderboard-header">
+                                <span>#</span>
+                                <span>Player</span>
+                                <span>Score</span>
+                            </div>
+                            <div id="event-leaderboard-list">
+                                <div class="loading">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="player-rank glass event-player-highlight" id="event-player-highlight"></div>
                     </div>
-                    <ul class="event-rules-list">
-                        <li>Only click-earned coins count toward the event.</li>
-                        <li>Passive income, tasks, rewards and referrals do not count.</li>
-                        <li>League depends on your current level.</li>
-                        <li>Top 50 in each league stay in payout contention.</li>
-                    </ul>
+
+                    <div class="event-section-card">
+                        <div class="event-section-head">
+                            <h3>Final TON</h3>
+                            <span id="event-results-subtitle">Shown after the week is finalized</span>
+                        </div>
+                        <div class="event-results-list" id="event-results-list">
+                            <div class="loading">TON rewards are shown here after the week is finalized.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -506,20 +513,6 @@
 
             <div class="settings-section">
                 <div class="settings-label">
-                    <span class="settings-icon">🌐</span>
-                    <div>
-                        <div class="settings-title" id="languageTitle">Language</div>
-                        <div class="settings-sub" id="languageLabel">English</div>
-                    </div>
-                </div>
-                <div class="language-switch" id="languageSwitch">
-                    <button type="button" class="language-option" id="lang-en-btn" onclick="setLanguage('en')">EN</button>
-                    <button type="button" class="language-option" id="lang-ru-btn" onclick="setLanguage('ru')">RU</button>
-                </div>
-            </div>
-
-            <div class="settings-section">
-                <div class="settings-label">
                     <span class="settings-icon" id="soundIcon">🔊</span>
                     <div>
                         <div class="settings-title" id="soundTitle">Sound</div>
@@ -560,6 +553,20 @@
                     <div class="toggle-track active" id="vibTrack">
                         <div class="toggle-thumb" id="vibThumb"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-label">
+                    <span class="settings-icon">🌐</span>
+                    <div>
+                        <div class="settings-title" id="languageTitle">Language</div>
+                        <div class="settings-sub" id="languageLabel">English</div>
+                    </div>
+                </div>
+                <div class="language-switch" id="languageSwitch">
+                    <button type="button" class="language-option" id="lang-en-btn" onclick="setLanguage('en')">EN</button>
+                    <button type="button" class="language-option" id="lang-ru-btn" onclick="setLanguage('ru')">RU</button>
                 </div>
             </div>
 
