@@ -632,6 +632,7 @@ body.modal-open .badge-wrap {
     width: 100%;
     max-width: 700px;
     margin: 20px auto;
+    transform: translateY(-10px);
 }
 
 .click-button {
@@ -699,6 +700,7 @@ body.modal-open .badge-wrap {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transform: translateY(12px);
 }
 
 .mini-boost-button {
@@ -3689,6 +3691,7 @@ body {
     width: 100%;
     max-width: var(--content-width);
     margin: 5px auto;
+    transform: translateY(-14px);
 }
 
 .click-button {
@@ -3702,6 +3705,7 @@ body {
 .boost-corner {
     right: clamp(0px, 1vw, 8px);
     bottom: clamp(6px, 1.6dvh, 18px);
+    transform: translateY(16px);
 }
 
 .nav-bar {
@@ -7501,14 +7505,11 @@ body.night-mode #games-screen .game-card {
 
 .header .nav-item {
     width: auto !important;
+    min-width: 72px !important;
 }
 
-.header > .nav-item:first-child .nav-icon-img,
-.header > .nav-item:first-child .nav-icon {
-    width: 34px !important;
-    height: 34px !important;
-}
-
+.header > .nav-item:nth-child(1) .nav-icon-img,
+.header > .nav-item:nth-child(1) .nav-icon,
 .header > .nav-item:nth-child(2) .nav-icon-img,
 .header > .nav-item:nth-child(2) .nav-icon {
     width: 30px !important;
@@ -8396,7 +8397,7 @@ body.night-mode .social-completed-block {
         padding: 4px 2px !important;
     }
 
-    .header .nav-item span:last-child {
+    .header .header-nav-label {
         font-size: 10px !important;
         line-height: 1.15 !important;
         letter-spacing: 0.02em !important;
