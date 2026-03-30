@@ -100,6 +100,8 @@
                 <span>Reward</span>
                 <span class="daily-gift-dot"></span>
             </div>
+
+            <div class="header-brand" aria-hidden="true">Spirit</div>
             
             <div class="settings-container">
                 <button class="settings-btn" id="settingsOpenButton" onclick="openSettings()" title="Settings">
@@ -166,12 +168,16 @@
             <div class="boost-corner">
                 <button class="mini-boost-button" onclick="activateMegaBoost()" id="mega-boost-btn">
                     <span class="mini-boost-icon">
-                        <img src="imgg/rocket.png" style="width: 40px; height: 40px; vertical-align: middle;overflow: hidden;">
+                        <img src="imgg/dark icon/boostdark.svg" alt="Boost" class="boost-icon-img icon-dark">
+                        <img src="imgg/light icon/boostl.svg" alt="Boost" class="boost-icon-img icon-light">
                     </span>
                     <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
                 </button>
                 <button class="auto-boost-button" onclick="toggleAutoClick()" id="auto-boost-btn">
-                    <span class="auto-icon">🤖</span>
+                    <span class="auto-icon nav-icon-img-wrap">
+                        <img src="imgg/dark icon/autodark.svg" alt="Autoclicker" class="auto-icon-img icon-dark">
+                        <img src="imgg/light icon/autol.svg" alt="Autoclicker" class="auto-icon-img icon-light">
+                    </span>
                     <span class="auto-timer" id="auto-boost-timer"></span>
                 </button>
             </div>
