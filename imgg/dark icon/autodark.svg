@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Auto Click icon dark theme">
+  <title>Auto Click Dark</title>
+  <g fill="#F8FAFC">
+    <path d="M112 20c0-10 8-18 18-18s18 8 18 18v84l12-10c11-9 28-7 37 4 8 10 8 24 0 34l-12 15 8 2c16 4 28 19 28 36 0 21-17 39-39 39H94c-33 0-60-27-60-60v-28c0-10 8-18 18-18s18 8 18 18v12h10V64c0-10 8-18 18-18s18 8 18 18v46h8V20z"/>
+    <path d="M128 246c-46 0-84-38-84-84h24c0 33 27 60 60 60h54c8 0 15-7 15-15s-7-15-15-15h-30l29-37c3-4 3-9 0-13s-9-4-13-1l-44 36V64c0-4-4-8-8-8s-8 4-8 8v64H80v-28c0-4-4-8-8-8s-8 4-8 8v62c0 26 22 48 48 48h16v36z" opacity=".14"/>
+    <circle cx="188" cy="52" r="14"/>
+    <circle cx="220" cy="88" r="10" opacity=".92"/>
+    <circle cx="210" cy="28" r="8" opacity=".78"/>
+  </g>
+</svg>

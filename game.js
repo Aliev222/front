@@ -162,7 +162,7 @@ const I18N = {
             claimFree: 'Free',
             bonusIncome: 'Bonus: +50% income'
         },
-        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', wallet: 'Wallet', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', daily: 'Daily', wallet: 'Wallet', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
         main: { upgrade: 'Upgrade' },
         friends: {
             title: 'Friends',
@@ -415,7 +415,7 @@ const I18N = {
             claimFree: 'Бесплатно',
             bonusIncome: 'Бонус: +50% к доходу'
         },
-        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', wallet: 'Кошелёк', games: 'Ивент', skins: 'Скины', achievements: 'Достижения' },
+        nav: { main: 'Главная', friends: 'Друзья', tasks: 'Задания', daily: 'Награда', wallet: 'Кошелёк', games: 'Ивент', skins: 'Скины', achievements: 'Достижения' },
         main: { upgrade: 'Прокачка' },
         friends: {
             title: 'Друзья',
@@ -4106,6 +4106,7 @@ function setLabel(id, text) {
 function applyStaticTranslations() {
     const textMap = [
         ['.header .nav-item:nth-child(1) > span:last-child', 'nav.tasks'],
+        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.daily'],
         
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
