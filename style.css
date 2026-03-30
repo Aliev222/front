@@ -4686,6 +4686,25 @@ body.night-mode .auto-boost-button {
     -webkit-backdrop-filter: none;
 }
 
+.prize-pool-drawer.glass {
+    background:
+        radial-gradient(circle at top left, rgba(149, 101, 255, 0.18), transparent 48%),
+        linear-gradient(180deg, rgba(14, 18, 34, 0.97), rgba(10, 14, 27, 0.98)) !important;
+    border: 1px solid rgba(131, 93, 221, 0.26) !important;
+    border-left: 0 !important;
+    box-shadow: 0 26px 70px rgba(7, 11, 24, 0.44) !important;
+    backdrop-filter: blur(18px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+body:not(.night-mode) .prize-pool-drawer.glass {
+    background:
+        radial-gradient(circle at top left, rgba(140, 96, 255, 0.12), transparent 46%),
+        linear-gradient(180deg, rgba(252, 250, 255, 0.98), rgba(246, 242, 255, 0.99)) !important;
+    border-color: rgba(125, 78, 190, 0.16) !important;
+    box-shadow: 0 24px 62px rgba(95, 73, 136, 0.14) !important;
+}
+
 .header,
 .stat-card,
 .upgrade-panel,
