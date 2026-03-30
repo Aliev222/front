@@ -152,6 +152,8 @@ const I18N = {
             player: 'Player',
             score: 'Score',
             online: 'Online',
+            perHour: 'per hour',
+            perTap: 'per tap',
             claim: 'Claim',
             equip: 'Equip',
             cancel: 'Cancel',
@@ -226,6 +228,8 @@ const I18N = {
             drawerRank: 'Rank',
             drawerStatus: 'Status',
             drawerFootnote: 'Final reward depends on your final rank and payout eligibility.',
+            leaderboardTitle: 'Leaderboard',
+            finalTonTitle: 'Final TON',
             tabRules: 'Rules',
             tabLeaderboard: 'Leaderboard',
             potential: 'Ends in',
@@ -293,7 +297,17 @@ const I18N = {
             disconnectedSub: 'Your weekly prize queue will use this address after the season is finalized.',
             verificationSub: 'Reconnect the wallet and approve verification so payouts can use this address safely.'
         },
-        skins: { title: 'Skin', name: 'Skin name', description: 'Skin description', rarity: 'rarity' },
+        skins: {
+            title: 'Skin',
+            name: 'Skin name',
+            description: 'Skin description',
+            rarity: 'rarity',
+            all: 'All',
+            common: 'Common',
+            rare: 'Rare',
+            legendary: 'Legendary',
+            super: 'Super'
+        },
         achievements: { title: 'Achievements' }
         ,
         toasts: {
@@ -419,6 +433,8 @@ const I18N = {
             player: 'Игрок',
             score: 'Счёт',
             online: 'Онлайн',
+            perHour: 'в час',
+            perTap: 'за тап',
             claim: 'Получить',
             equip: 'Надеть',
             cancel: 'Отмена',
@@ -493,6 +509,8 @@ const I18N = {
             drawerRank: 'Ранг',
             drawerStatus: 'Статус',
             drawerFootnote: 'Финальная награда зависит от итогового места и допуска к выплате.',
+            leaderboardTitle: 'Лидерборд',
+            finalTonTitle: 'Финальный TON',
             tabRules: 'Правила',
             tabLeaderboard: 'Лидерборд',
             potential: 'До конца',
@@ -560,7 +578,17 @@ const I18N = {
             disconnectedSub: 'Твоя недельная очередь выплат будет использовать этот адрес после завершения сезона.',
             verificationSub: 'Подключи кошелёк заново и подтверди проверку, чтобы выплаты ушли на этот адрес безопасно.'
         },
-        skins: { title: 'Скин', name: 'Название скина', description: 'Описание скина', rarity: 'редкость' },
+        skins: {
+            title: 'Скин',
+            name: 'Название скина',
+            description: 'Описание скина',
+            rarity: 'редкость',
+            all: 'Все',
+            common: 'Обычные',
+            rare: 'Редкие',
+            legendary: 'Легендарные',
+            super: 'Супер'
+        },
         achievements: { title: 'Достижения' },
         toasts: {
             loadDataError: '⚠️ Ошибка загрузки данных',
@@ -2225,9 +2253,7 @@ function setGhostBoostState(active, expiresAt = null) {
 async function syncGhostBoostStatus() {
     if (!userId) return;
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/ghost-boost-status/${userId}`);
-        if (!res.ok) return;
-        const data = await res.json();
+        const data = await API.get(`/api/ghost-boost-status/${userId}`);
         setGhostBoostState(!!data.active, data.expires_at || null);
     } catch (err) {
         console.error('Ghost boost status error:', err);
@@ -2656,17 +2682,7 @@ async function syncEnergyWithServer() {
     if (!userId) return;
 
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/sync-energy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
+        const data = await API.post('/api/sync-energy', { user_id: userId });
 
         applyServerEnergySnapshot(data);
         updateUI();
@@ -2679,12 +2695,7 @@ async function fullSyncWithServer() {
     if (!userId) return;
 
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/user/${userId}`);
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
+        const data = await API.get(`/api/user/${userId}`);
 
         State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
         State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
@@ -2713,27 +2724,11 @@ async function sendClickBatch() {
     State.temp.pendingClickBatchId = batchId;
 
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/clicks`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId,
-                clicks,
-                batch_id: batchId
-            })
-        });
-
-        if (res.status === 409) {
-            State.temp.pendingClickBatchId = null;
-            await fullSyncWithServer();
-            return;
-        }
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
+        const data = await API.post('/api/clicks', {
+            user_id: userId,
+            clicks,
+            batch_id: batchId
+        }, { idempotent: true });
 
         if (data.success) {
             State.temp.pendingClickBatchId = null;
@@ -2746,6 +2741,11 @@ async function sendClickBatch() {
             updateUI();
         }
     } catch (err) {
+        if (err?.status === 409) {
+            State.temp.pendingClickBatchId = null;
+            await fullSyncWithServer();
+            return;
+        }
         console.error('Click batch error:', err);
         State.temp.clickBuffer += clicks;
         State.temp.clickValueBuffer += optimisticGain;
@@ -4150,6 +4150,8 @@ function applyStaticTranslations() {
     const textMap = [
         ['.header .nav-item:nth-child(1) > .header-nav-label', 'nav.tasks'],
         ['.header .nav-item:nth-child(2) > .header-nav-label', 'nav.daily'],
+        ['.stats-row .stat-card:nth-child(1) .stat-label', 'common.perHour'],
+        ['.stats-row .stat-card:nth-child(2) .stat-label', 'common.perTap'],
         
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
@@ -4172,8 +4174,6 @@ function applyStaticTranslations() {
         ['#tasks-screen .modal-header-copy h2', 'achievements.title'],
         ['#tasks-hub-tab-tasks', 'nav.tasks'],
         ['#tasks-hub-tab-achievements', 'achievements.title'],
-        ['#event-hub-tab-rules', 'games.tabRules'],
-        ['#event-hub-tab-leaderboard', 'games.tabLeaderboard'],
         ['#tasks-screen .tasks-hero-title', 'tasks.heroTitle'],
         ['#tasks-screen .tasks-hero-subtitle', 'tasks.heroSubtitle'],
         ['#tasks-screen .tasks-hero-badge-label', 'tasks.heroLabel'],
@@ -4189,6 +4189,20 @@ function applyStaticTranslations() {
         ['#games-screen .games-hero-title', 'games.heroTitle'],
         ['#games-screen .games-hero-subtitle', 'games.heroSubtitle'],
         ['#games-screen .games-hero-jackpot-label', 'games.potential'],
+        ['#prize-pool-tab-text', 'games.drawerTab'],
+        ['#prize-pool-kicker', 'games.drawerKicker'],
+        ['#prize-pool-title', 'games.drawerTitle'],
+        ['#prize-pool-season-label', 'games.drawerSeason'],
+        ['#prize-pool-ends-label', 'games.drawerEnds'],
+        ['#prize-pool-leagues-title', 'games.drawerLeagues'],
+        ['#prize-pool-rules-title', 'games.drawerRewards'],
+        ['#prize-pool-player-title', 'games.drawerPlayer'],
+        ['#prize-pool-player-league-label', 'games.drawerLeague'],
+        ['#prize-pool-player-rank-label', 'games.drawerRank'],
+        ['#prize-pool-player-zone-label', 'games.drawerStatus'],
+        ['#prize-pool-footnote', 'games.drawerFootnote'],
+        ['#event-leaderboard-panel .event-section-card:nth-child(1) .event-section-head h3', 'games.leaderboardTitle'],
+        ['#event-leaderboard-panel .event-section-card:nth-child(2) .event-section-head h3', 'games.finalTonTitle'],
         ['#games-screen .game-card:nth-child(1) .game-enter', 'games.tapToPlay'],
         ['#games-screen .game-card:nth-child(2) .game-enter', 'games.pullReels'],
         ['#games-screen .game-card:nth-child(3) .game-enter', 'games.rollIt'],
@@ -4213,6 +4227,11 @@ function applyStaticTranslations() {
         ['#confirm-action-text', 'common.select'],
         ['#confirm-modal .modal-tip', 'common.closeHint'],
         ['.skins-title', 'skins.title'],
+        ['.skin-filters .filter-btn:nth-child(1)', 'skins.all'],
+        ['.skin-filters .filter-btn:nth-child(2)', 'skins.common'],
+        ['.skin-filters .filter-btn:nth-child(3)', 'skins.rare'],
+        ['.skin-filters .filter-btn:nth-child(4)', 'skins.legendary'],
+        ['.skin-filters .filter-btn:nth-child(5)', 'skins.super'],
         ['#skin-detail-name', 'skins.name'],
         ['#skin-detail-description', 'skins.description'],
         ['#skin-detail-rarity', 'skins.rarity'],
@@ -4261,6 +4280,10 @@ function applyStaticTranslations() {
     if (referralLink && referralLink.textContent.trim().toLowerCase() === 'loading...') {
         referralLink.textContent = t('common.loading');
     }
+
+    document.querySelectorAll('#event-leaderboard-list .loading, #event-results-list .loading').forEach((el) => {
+        el.textContent = t('common.loading');
+    });
 }
 
 // ==================== НАВИГАЦИЯ ====================
@@ -4297,7 +4320,6 @@ function switchTab(tab, el) {
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'games') {
-        switchEventHubTab('rules');
         loadTournamentData();
     }
     if (tab === 'wallet') renderTonWalletState();
@@ -4380,18 +4402,18 @@ function deriveEventLeague(level) {
     return 'bronze';
 }
 
-function switchEventHubTab(tab = 'rules') {
-    eventHubTab = tab === 'leaderboard' ? 'leaderboard' : 'rules';
+function switchEventHubTab(tab = 'leaderboard') {
+    eventHubTab = 'leaderboard';
 
     const rulesTabBtn = document.getElementById('event-hub-tab-rules');
     const leaderboardTabBtn = document.getElementById('event-hub-tab-leaderboard');
     const rulesPanel = document.getElementById('event-rules-panel');
     const leaderboardPanel = document.getElementById('event-leaderboard-panel');
 
-    rulesTabBtn?.classList.toggle('active', eventHubTab === 'rules');
-    leaderboardTabBtn?.classList.toggle('active', eventHubTab === 'leaderboard');
-    rulesPanel?.classList.toggle('active', eventHubTab === 'rules');
-    leaderboardPanel?.classList.toggle('active', eventHubTab === 'leaderboard');
+    rulesTabBtn?.classList.remove('active');
+    leaderboardTabBtn?.classList.add('active');
+    rulesPanel?.classList.remove('active');
+    leaderboardPanel?.classList.add('active');
 }
 
 function setPrizePoolDrawerOpen(nextOpen) {
@@ -5357,53 +5379,50 @@ async function checkBoostStatus() {
     if (!userId) return;
     
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/mega-boost-status/${userId}`);
-        if (res.ok) {
-            const data = await res.json();
-            megaBoostCooldownUntil = parseServerDate(data.cooldown_until) || null;
-            setAdCooldownFromIso('mega_boost', data?.cooldown_until || null);
-            if (data.active) {
-                boostEndTime = parseServerDate(data.expires_at);
-                const boostBtn = document.getElementById('mega-boost-btn');
-                if (boostBtn) boostBtn.classList.add('active');
-                updateMegaBoostButtonState(boostBtn);
+        const data = await API.get(`/api/mega-boost-status/${userId}`);
+        megaBoostCooldownUntil = parseServerDate(data.cooldown_until) || null;
+        setAdCooldownFromIso('mega_boost', data?.cooldown_until || null);
+        if (data.active) {
+            boostEndTime = parseServerDate(data.expires_at);
+            const boostBtn = document.getElementById('mega-boost-btn');
+            if (boostBtn) boostBtn.classList.add('active');
+            updateMegaBoostButtonState(boostBtn);
+            
+            const timerEl = document.getElementById('mega-boost-timer');
+            updateMegaBoostTimerLabel(timerEl);
+            
+            showBoostIndicator();
+            
+            const energyBar = document.querySelector('.energy-bar-bg');
+            if (energyBar) energyBar.classList.add('boost-active');
+            
+            if (boostInterval) clearInterval(boostInterval);
+            boostInterval = setInterval(() => {
+                const now = new Date();
+                const diff = boostEndTime - now;
                 
-                const timerEl = document.getElementById('mega-boost-timer');
-                updateMegaBoostTimerLabel(timerEl);
-                
-                showBoostIndicator();
-                
-                const energyBar = document.querySelector('.energy-bar-bg');
-                if (energyBar) energyBar.classList.add('boost-active');
-                
-                if (boostInterval) clearInterval(boostInterval);
-                boostInterval = setInterval(() => {
-                    const now = new Date();
-                    const diff = boostEndTime - now;
-                    
-                    if (diff <= 0) {
-                        clearInterval(boostInterval);
-                        if (boostBtn) boostBtn.classList.remove('active');
-                        document.querySelector('.mega-boost-indicator')?.remove();
-                        if (energyBar) energyBar.classList.remove('boost-active');
-                        updateMegaBoostButtonState(boostBtn);
-                        boostEndTime = null;
-                        updateMegaBoostTimerLabel(timerEl);
-                        return;
-                    }
-                    
+                if (diff <= 0) {
+                    clearInterval(boostInterval);
+                    if (boostBtn) boostBtn.classList.remove('active');
+                    document.querySelector('.mega-boost-indicator')?.remove();
+                    if (energyBar) energyBar.classList.remove('boost-active');
+                    updateMegaBoostButtonState(boostBtn);
+                    boostEndTime = null;
                     updateMegaBoostTimerLabel(timerEl);
-                }, 200);
-            } else {
-                boostEndTime = null;
-                const boostBtn = document.getElementById('mega-boost-btn');
-                const timerEl = document.getElementById('mega-boost-timer');
-                if (boostBtn) boostBtn.classList.remove('active');
-                updateMegaBoostButtonState(boostBtn);
+                    return;
+                }
+                
                 updateMegaBoostTimerLabel(timerEl);
-                document.querySelector('.mega-boost-indicator')?.remove();
-                document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
-            }
+            }, 200);
+        } else {
+            boostEndTime = null;
+            const boostBtn = document.getElementById('mega-boost-btn');
+            const timerEl = document.getElementById('mega-boost-timer');
+            if (boostBtn) boostBtn.classList.remove('active');
+            updateMegaBoostButtonState(boostBtn);
+            updateMegaBoostTimerLabel(timerEl);
+            document.querySelector('.mega-boost-indicator')?.remove();
+            document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
         }
         await syncGhostBoostStatus();
     } catch (err) {
@@ -5425,17 +5444,15 @@ const miniGameLocks = {
 };
 
 async function postMiniGameRequest(endpoint, payload) {
-    const res = await fetch(`${CONFIG.API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) {
-        throw new Error(data.detail || data.message || 'Server error');
+    try {
+        const data = await API.post(endpoint, payload);
+        if (data.success === false) {
+            throw new Error(data.detail || data.message || 'Server error');
+        }
+        return data;
+    } catch (err) {
+        throw new Error(err?.detail || err?.message || 'Server error');
     }
-    return data;
 }
 
 function openGame(game) {
@@ -7198,19 +7215,12 @@ function initBadgePhysics() {
 const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
     if (!userId) return;
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/passive-income`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            if (data.income > 0) {
-                State.game.coins = data.coins;
-                updateUI();
-                if (!silent) {
-                    showToast(data.message || `+${formatNumber(data.income)} passive income`);
-                }
+        const data = await API.post('/api/passive-income', { user_id: userId });
+        if (data.income > 0) {
+            State.game.coins = data.coins;
+            updateUI();
+            if (!silent) {
+                showToast(data.message || `+${formatNumber(data.income)} passive income`);
             }
         }
     } catch (e) {
