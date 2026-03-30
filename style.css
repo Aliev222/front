@@ -385,6 +385,7 @@ body.lite-performance .click-button {
     transform: translateY(-50%);
     z-index: 44;
     pointer-events: none;
+    width: 0;
 }
 
 .prize-pool-tab,
@@ -394,7 +395,7 @@ body.lite-performance .click-button {
 
 .prize-pool-tab {
     position: absolute;
-    left: calc(100% - 2px);
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 46px;
@@ -448,6 +449,10 @@ body.lite-performance .click-button {
 }
 
 .prize-pool-drawer {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(-100%, -50%);
     width: min(320px, 86vw);
     max-height: min(76vh, 680px);
     overflow-y: auto;
@@ -459,13 +464,12 @@ body.lite-performance .click-button {
         radial-gradient(circle at top left, rgba(149, 101, 255, 0.18), transparent 48%),
         linear-gradient(180deg, rgba(14, 18, 34, 0.97), rgba(10, 14, 27, 0.98));
     box-shadow: 0 26px 70px rgba(7, 11, 24, 0.44);
-    transform: translateX(calc(-100% + 18px));
     transition: transform 0.28s ease;
     overscroll-behavior: contain;
 }
 
 .prize-pool-shell.open .prize-pool-drawer {
-    transform: translateX(0);
+    transform: translate(0, -50%);
 }
 
 .prize-pool-shell.open .prize-pool-tab-arrow {
