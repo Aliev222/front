@@ -6676,14 +6676,18 @@ function initAutoClicker() {
                 autoState.enabledUntil = 0;
                 const cooldownLeft = getCooldownRemainingMs();
                 if (timerLabel) {
-                    timerLabel.textContent = cooldownLeft > 0 ? `CD ${formatCooldownClock(cooldownLeft / 1000)}` : 'OFF';
+                    timerLabel.textContent = cooldownLeft > 0 ? `CD ${formatCooldownClock(cooldownLeft / 1000)}` : '';
+                    timerLabel.style.display = cooldownLeft > 0 ? 'block' : 'none';
                 }
                 updateAutoButtonState();
                 updateEffect();
             } else {
                 const remaining = Math.max(0, autoState.enabledUntil - Date.now());
                 const sec = Math.ceil(remaining / 1000);
-                if (timerLabel) timerLabel.textContent = sec + 's';
+                if (timerLabel) {
+                    timerLabel.textContent = sec + 's';
+                    timerLabel.style.display = 'block';
+                }
                 updateAutoButtonState();
                 if (autoState.fingerDown) {
                     handleTap({
@@ -6760,6 +6764,7 @@ function initAutoClicker() {
     document.addEventListener('pointermove', pointerMove);
     document.addEventListener('pointerup', pointerUp);
     document.addEventListener('pointercancel', pointerUp);
+    if (timerLabel) timerLabel.style.display = 'none';
     updateAutoButtonState();
     loop();
 }

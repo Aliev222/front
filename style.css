@@ -686,6 +686,7 @@ body.modal-open .badge-wrap {
     transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
     position: relative;
     box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
 }
 .mini-boost-button.active::after {
     content: '';
@@ -718,6 +719,7 @@ body.modal-open .badge-wrap {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    transform: translateY(-6px);
 }
 
 .auto-boost-button {
@@ -736,6 +738,7 @@ body.modal-open .badge-wrap {
     gap: 2px;
     position: relative;
     transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    overflow: hidden;
 }
 .auto-boost-button.active {
     border-color: rgba(108,92,231,0.8);
@@ -754,8 +757,13 @@ body.modal-open .badge-wrap {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    transform: translateY(-6px);
 }
-.auto-timer { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+.auto-timer {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
 
 @keyframes spinRing { to { transform: rotate(360deg); } }
 .auto-boost-button.active::after {
@@ -792,23 +800,55 @@ body.modal-open .badge-wrap {
 
 .mini-boost-timer {
     position: absolute;
-    top: -25px;
+    bottom: 5px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--accent);
-    color: white;
-    font-size: 11px;
+    min-width: calc(100% - 10px);
+    text-align: center;
+    background: rgba(127, 73, 180, 0.16);
+    border: 1px solid rgba(127, 73, 180, 0.22);
+    color: var(--text-primary);
+    font-size: 9px;
     font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 12px;
+    line-height: 1.1;
+    padding: 3px 6px;
+    border-radius: 10px;
     white-space: nowrap;
-    animation: pulse 1s infinite;
-    font-family: 'Space Mono', monospace;
+    font-family: 'Montserrat', sans-serif;
+    display: none;
+    z-index: 2;
+    backdrop-filter: blur(6px);
 }
 
 .mini-boost-timer.urgent {
     background: var(--danger);
     animation: urgentPulse 0.5s infinite;
+}
+
+.auto-timer {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: calc(100% - 10px);
+    text-align: center;
+    background: rgba(127, 73, 180, 0.16);
+    border: 1px solid rgba(127, 73, 180, 0.22);
+    color: var(--text-primary);
+    line-height: 1.1;
+    padding: 3px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    display: none;
+    z-index: 2;
+    backdrop-filter: blur(6px);
+}
+
+body.night-mode .mini-boost-timer,
+body.night-mode .auto-timer {
+    background: rgba(127, 73, 180, 0.22);
+    border-color: rgba(207, 184, 255, 0.24);
+    color: #f4ecff;
 }
 
 @keyframes pulse {
@@ -7436,7 +7476,11 @@ body.night-mode #games-screen .game-card {
 }
 
 .header > .nav-item:first-child .nav-icon-img,
-.header > .nav-item:first-child .nav-icon,
+.header > .nav-item:first-child .nav-icon {
+    width: 34px !important;
+    height: 34px !important;
+}
+
 .header > .nav-item:nth-child(2) .nav-icon-img,
 .header > .nav-item:nth-child(2) .nav-icon {
     width: 30px !important;
@@ -7445,9 +7489,15 @@ body.night-mode #games-screen .game-card {
 
 .header > .nav-item:first-child span:last-child,
 .header > .nav-item:nth-child(2) span:last-child {
+    display: block !important;
+    min-height: 12px;
+    margin-top: 4px !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 700 !important;
     font-size: 10px !important;
-    line-height: 1.15 !important;
+    line-height: 1 !important;
     letter-spacing: 0.08em !important;
+    text-align: center;
 }
 
 .header-brand {
@@ -8431,7 +8481,11 @@ body.night-mode .social-completed-block {
     }
 
     .header > .nav-item:first-child .nav-icon-img,
-    .header > .nav-item:first-child .nav-icon,
+    .header > .nav-item:first-child .nav-icon {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
     .header > .nav-item:nth-child(2) .nav-icon-img,
     .header > .nav-item:nth-child(2) .nav-icon {
         width: 28px !important;
