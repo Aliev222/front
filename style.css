@@ -7435,7 +7435,23 @@ body.night-mode #games-screen .game-card {
     width: auto !important;
 }
 
+.header > .nav-item:first-child .nav-icon-img,
+.header > .nav-item:first-child .nav-icon,
+.header > .nav-item:nth-child(2) .nav-icon-img,
+.header > .nav-item:nth-child(2) .nav-icon {
+    width: 30px !important;
+    height: 30px !important;
+}
+
+.header > .nav-item:first-child span:last-child,
+.header > .nav-item:nth-child(2) span:last-child {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.08em !important;
+}
+
 .header-brand {
+    position: relative;
     justify-self: center;
     align-self: center;
     font-family: 'Orbitron', 'Montserrat', sans-serif !important;
@@ -7449,12 +7465,37 @@ body.night-mode #games-screen .game-card {
         0 0 4px rgba(138, 86, 217, 0.6),
         0 0 14px rgba(138, 86, 217, 0.5),
         0 0 28px rgba(138, 86, 217, 0.3);
-    animation: spiritNeonFlicker 3.8s ease-in-out infinite;
+    animation: spiritNeonFlicker 3.1s ease-in-out infinite;
     pointer-events: none;
     user-select: none;
     white-space: nowrap;
     transform: translateY(1px) scale(1.26);
     transform-origin: center center;
+}
+
+.header-brand::before,
+.header-brand::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+}
+
+.header-brand::before {
+    color: rgba(111, 228, 255, 0.8);
+    text-shadow: 0 0 12px rgba(111, 228, 255, 0.45);
+    transform: translate3d(-1px, 0, 0);
+    animation: spiritGlitchLeft 2.1s steps(2, end) infinite;
+}
+
+.header-brand::after {
+    color: rgba(255, 94, 181, 0.78);
+    text-shadow: 0 0 12px rgba(255, 94, 181, 0.4);
+    transform: translate3d(1px, 0, 0);
+    animation: spiritGlitchRight 2.1s steps(2, end) infinite;
 }
 
 body.night-mode .header-brand {
@@ -7477,6 +7518,52 @@ body.night-mode .header-brand {
     60% {
         opacity: 1;
         filter: brightness(1.16);
+    }
+}
+
+@keyframes spiritGlitchLeft {
+    0%, 78%, 100% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0);
+        clip-path: inset(0 0 0 0);
+    }
+    79% {
+        opacity: 0.95;
+        transform: translate3d(-2px, -1px, 0);
+        clip-path: inset(8% 0 56% 0);
+    }
+    81% {
+        opacity: 0.55;
+        transform: translate3d(-3px, 1px, 0);
+        clip-path: inset(42% 0 18% 0);
+    }
+    83% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0);
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes spiritGlitchRight {
+    0%, 74%, 100% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0);
+        clip-path: inset(0 0 0 0);
+    }
+    75% {
+        opacity: 0.92;
+        transform: translate3d(2px, 1px, 0);
+        clip-path: inset(18% 0 48% 0);
+    }
+    77% {
+        opacity: 0.48;
+        transform: translate3d(3px, -1px, 0);
+        clip-path: inset(58% 0 8% 0);
+    }
+    79% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0);
+        clip-path: inset(0 0 0 0);
     }
 }
 
@@ -8341,6 +8428,14 @@ body.night-mode .social-completed-block {
 @media (max-width: 430px) {
     .header {
         grid-template-columns: auto auto 1fr auto !important;
+    }
+
+    .header > .nav-item:first-child .nav-icon-img,
+    .header > .nav-item:first-child .nav-icon,
+    .header > .nav-item:nth-child(2) .nav-icon-img,
+    .header > .nav-item:nth-child(2) .nav-icon {
+        width: 28px !important;
+        height: 28px !important;
     }
 
     .header-brand {
