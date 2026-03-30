@@ -1071,7 +1071,8 @@ const State = {
         adsWatched: 0,
         friendsInvited: 0,
         data: [],
-        videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}')
+        videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}'),
+        selectInFlight: false
     },
     tasks: {
         social: {}
@@ -2996,6 +2997,8 @@ function selectSkin(id) {
 
 async function selectActiveSkin(id) {
     if (!userId) return;
+    if (State.skins.selectInFlight || State.skins.selected === id) return;
+    State.skins.selectInFlight = true;
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: id });
         State.skins.selected = id;
@@ -3004,6 +3007,8 @@ async function selectActiveSkin(id) {
         showToast(tr('toasts.skinSelected'));
     } catch (err) {
         showToast(tr('toasts.skinSelectError'), true);
+    } finally {
+        State.skins.selectInFlight = false;
     }
 }
 
@@ -3023,8 +3028,10 @@ async function unlockSkin(id) {
 }
 
 function openSkins() {
-    renderSkins();
     openModal('skins-screen');
+    requestAnimationFrame(() => {
+        renderSkins();
+    });
 }
 
 function getSkinEffect(skinId) {
@@ -3045,107 +3052,108 @@ function openSkinDetail(skinId) {
     
     const modal = document.getElementById('skin-detail-modal');
     if (!modal) return;
-    
-    const isOwned = State.skins.owned.includes(skin.id);
-    const isSelected = State.skins.selected === skin.id;
-    
-    const detailImg = document.getElementById('skin-detail-img');
-    detailImg.src = skin.image || 'imgg/clickimg.png';
-    detailImg.dataset.skinId = skin.id;
-    document.getElementById('skin-detail-name').textContent = skin.name || tr('skins.title');
-    
-    const rarityEl = document.getElementById('skin-detail-rarity');
-    rarityEl.textContent = skin.rarity || 'common';
-    rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
-    
-    document.getElementById('skin-detail-description').textContent = skin.description || tr('skinsDyn.noDescription');
-    
-    const bonusEl = document.getElementById('skin-detail-bonus');
-    if (skin.bonus) {
-        if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = tr('skinsDyn.incomeBonus', { value: skin.bonus.value });
-        else bonusEl.innerHTML = `⚡ +${skin.bonus.value || 0}`;
-    } else {
-        bonusEl.innerHTML = tr('skinsDyn.noBonus');
-    }
-    
-    const reqBlock = document.getElementById('skin-requirement-block');
-    const reqText = document.getElementById('skin-requirement-text');
-    const reqProgress = document.getElementById('skin-requirement-progress');
-    const progressText = document.getElementById('requirement-progress-text');
-    const progressFill = document.getElementById('requirement-progress-fill');
-    const actionBtn = document.getElementById('skin-action-btn');
-    actionBtn.disabled = false;
-    
-    if (isOwned) {
-        reqBlock.style.display = 'none';
-        actionBtn.textContent = isSelected ? tr('skinsDyn.selected') : tr('skinsDyn.select');
-        actionBtn.onclick = isSelected ? closeSkinDetail : () => selectSkinFromDetail(skin.id);
-    } else {
-        reqBlock.style.display = 'block';
-        
-        if (skin.requirement?.type === 'level') {
-            const current = getDisplayLevel(State.game.levels.multitap);
-            const value = skin.requirement.value || 1;
-            const percent = Math.min(100, (current / value) * 100);
-            
-            reqText.textContent = tr('skinsDyn.reqLevel', { value });
-            progressText.textContent = `${current}/${value}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-            
-            actionBtn.textContent = current >= value ? tr('skinsDyn.claim') : tr('skinsDyn.upgrade');
-            actionBtn.onclick = current >= value ? () => unlockSkinFromDetail(skin.id) : () => {
-                closeSkinDetail();
-                switchTab('main');
-            };
-        } else if (skin.requirement?.type === 'ads') {
-            const current = State.skins.adsWatched || 0;
-            const count = skin.requirement.count || 1;
-            const percent = Math.min(100, (current / count) * 100);
-            
-            reqText.textContent = tr('skinsDyn.reqWatch', { count });
-            progressText.textContent = `${current}/${count}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-            
-            actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
-            actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
-        } else if (skin.requirement?.type === 'videos') {
-            const key = skin.requirement.progressKey || skin.id;
-            const current = State.skins.videoViews[key] || 0;
-            const count = skin.requirement.count || 10;
-            const percent = Math.min(100, (current / count) * 100);
-            const cooldownRemainingMs = getAdCooldownRemainingMs(`skin:${key}`);
-
-            reqText.textContent = tr('skinsDyn.reqWatchSkin', { count });
-            progressText.textContent = `${current}/${count}`;
-            progressFill.style.width = percent + '%';
-            reqProgress.style.display = 'flex';
-
-            if (current >= count) {
-                actionBtn.textContent = tr('skinsDyn.claim');
-                actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
-            } else if (cooldownRemainingMs > 0) {
-                actionBtn.textContent = `Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`;
-                actionBtn.onclick = null;
-                actionBtn.disabled = true;
-            } else {
-                actionBtn.textContent = tr('skinsDyn.watchVideo');
-                actionBtn.onclick = () => watchAdForSkin(skin.id);
-            }
-        } else if (skin.requirement?.type === 'stars') {
-            reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
-            reqProgress.style.display = 'none';
-            actionBtn.textContent = tr('skinsDyn.buy');
-            actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
-        } else {
-            reqText.textContent = tr('skinsDyn.reqSpecial');
-            reqProgress.style.display = 'none';
-            actionBtn.textContent = tr('skinsDyn.unavailable');
-        }
-    }
-    
     modal.classList.add('active');
+    
+    requestAnimationFrame(() => {
+        const isOwned = State.skins.owned.includes(skin.id);
+        const isSelected = State.skins.selected === skin.id;
+        
+        const detailImg = document.getElementById('skin-detail-img');
+        detailImg.src = skin.image || 'imgg/clickimg.png';
+        detailImg.dataset.skinId = skin.id;
+        document.getElementById('skin-detail-name').textContent = skin.name || tr('skins.title');
+        
+        const rarityEl = document.getElementById('skin-detail-rarity');
+        rarityEl.textContent = skin.rarity || 'common';
+        rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
+        
+        document.getElementById('skin-detail-description').textContent = skin.description || tr('skinsDyn.noDescription');
+        
+        const bonusEl = document.getElementById('skin-detail-bonus');
+        if (skin.bonus) {
+            if (skin.bonus.type === 'multiplier') bonusEl.innerHTML = tr('skinsDyn.incomeBonus', { value: skin.bonus.value });
+            else bonusEl.innerHTML = `⚡ +${skin.bonus.value || 0}`;
+        } else {
+            bonusEl.innerHTML = tr('skinsDyn.noBonus');
+        }
+        
+        const reqBlock = document.getElementById('skin-requirement-block');
+        const reqText = document.getElementById('skin-requirement-text');
+        const reqProgress = document.getElementById('skin-requirement-progress');
+        const progressText = document.getElementById('requirement-progress-text');
+        const progressFill = document.getElementById('requirement-progress-fill');
+        const actionBtn = document.getElementById('skin-action-btn');
+        actionBtn.disabled = false;
+        
+        if (isOwned) {
+            reqBlock.style.display = 'none';
+            actionBtn.textContent = isSelected ? tr('skinsDyn.selected') : tr('skinsDyn.select');
+            actionBtn.onclick = isSelected ? closeSkinDetail : () => selectSkinFromDetail(skin.id);
+        } else {
+            reqBlock.style.display = 'block';
+            
+            if (skin.requirement?.type === 'level') {
+                const current = getDisplayLevel(State.game.levels.multitap);
+                const value = skin.requirement.value || 1;
+                const percent = Math.min(100, (current / value) * 100);
+                
+                reqText.textContent = tr('skinsDyn.reqLevel', { value });
+                progressText.textContent = `${current}/${value}`;
+                progressFill.style.width = percent + '%';
+                reqProgress.style.display = 'flex';
+                
+                actionBtn.textContent = current >= value ? tr('skinsDyn.claim') : tr('skinsDyn.upgrade');
+                actionBtn.onclick = current >= value ? () => unlockSkinFromDetail(skin.id) : () => {
+                    closeSkinDetail();
+                    switchTab('main');
+                };
+            } else if (skin.requirement?.type === 'ads') {
+                const current = State.skins.adsWatched || 0;
+                const count = skin.requirement.count || 1;
+                const percent = Math.min(100, (current / count) * 100);
+                
+                reqText.textContent = tr('skinsDyn.reqWatch', { count });
+                progressText.textContent = `${current}/${count}`;
+                progressFill.style.width = percent + '%';
+                reqProgress.style.display = 'flex';
+                
+                actionBtn.textContent = current >= count ? tr('skinsDyn.claim') : tr('skinsDyn.watchVideo');
+                actionBtn.onclick = current >= count ? () => unlockSkinFromDetail(skin.id) : () => watchAdForSkin(skin.id);
+            } else if (skin.requirement?.type === 'videos') {
+                const key = skin.requirement.progressKey || skin.id;
+                const current = State.skins.videoViews[key] || 0;
+                const count = skin.requirement.count || 10;
+                const percent = Math.min(100, (current / count) * 100);
+                const cooldownRemainingMs = getAdCooldownRemainingMs(`skin:${key}`);
+
+                reqText.textContent = tr('skinsDyn.reqWatchSkin', { count });
+                progressText.textContent = `${current}/${count}`;
+                progressFill.style.width = percent + '%';
+                reqProgress.style.display = 'flex';
+
+                if (current >= count) {
+                    actionBtn.textContent = tr('skinsDyn.claim');
+                    actionBtn.onclick = () => unlockSkinFromDetail(skin.id);
+                } else if (cooldownRemainingMs > 0) {
+                    actionBtn.textContent = `Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`;
+                    actionBtn.onclick = null;
+                    actionBtn.disabled = true;
+                } else {
+                    actionBtn.textContent = tr('skinsDyn.watchVideo');
+                    actionBtn.onclick = () => watchAdForSkin(skin.id);
+                }
+            } else if (skin.requirement?.type === 'stars') {
+                reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
+                reqProgress.style.display = 'none';
+                actionBtn.textContent = tr('skinsDyn.buy');
+                actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
+            } else {
+                reqText.textContent = tr('skinsDyn.reqSpecial');
+                reqProgress.style.display = 'none';
+                actionBtn.textContent = tr('skinsDyn.unavailable');
+            }
+        }
+    });
 }
 
 function closeSkinDetail() {
@@ -3154,6 +3162,8 @@ function closeSkinDetail() {
 
 async function selectSkinFromDetail(skinId) {
     if (!userId) return showToast(tr('toasts.authRequired'), true);
+    if (State.skins.selectInFlight || State.skins.selected === skinId) return;
+    State.skins.selectInFlight = true;
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
         State.skins.selected = skinId;
@@ -3163,6 +3173,8 @@ async function selectSkinFromDetail(skinId) {
         renderSkins();
     } catch (err) {
         showToast(tr('toasts.skinSelectError'), true);
+    } finally {
+        State.skins.selectInFlight = false;
     }
 }
 
@@ -4731,9 +4743,6 @@ async function connectTonWallet() {
 
 async function disconnectTonWallet() {
     try {
-        if (tonConnectUI) {
-            await tonConnectUI.disconnect();
-        }
         if (userId) {
             const response = await API.post('/api/ton/wallet/disconnect', { user_id: userId });
             setTonWalletState(response?.wallet || {});
@@ -4743,6 +4752,15 @@ async function disconnectTonWallet() {
     } catch (err) {
         console.error('TON wallet disconnect error:', err);
         showToast(t('toasts.tonWalletDisconnectError'), true);
+        return;
+    }
+
+    if (tonConnectUI) {
+        try {
+            await tonConnectUI.disconnect();
+        } catch (err) {
+            console.warn('TON Connect SDK disconnect error:', err);
+        }
     }
 }
 
