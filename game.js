@@ -4678,10 +4678,23 @@ async function connectTonWallet() {
         return;
     }
     try {
-        const hasFreshProof = tonProofPayloadState.value && tonProofPayloadState.expiresAt - Date.now() > 60_000;
-        if (!hasFreshProof) {
-            prepareTonProofPayload().catch(() => {});
+        const restoredWalletAddress = tonConnectUI?.wallet?.account?.address || '';
+        if (restoredWalletAddress && tonWalletState.connected && !tonWalletState.verified) {
+            try {
+                await tonConnectUI.disconnect();
+            } catch (_) {}
         }
+
+        const hasFreshProof = tonProofPayloadState.value && tonProofPayloadState.expiresAt - Date.now() > 60_000;
+        let proofPayload = tonProofPayloadState.value;
+        if (!hasFreshProof || !tonWalletState.verified) {
+            proofPayload = await prepareTonProofPayload(true);
+        }
+        if (!proofPayload && !tonWalletState.verified) {
+            showToast(t('toasts.tonWalletUnavailable'), true);
+            return;
+        }
+
         const walletScreen = document.getElementById('wallet-screen');
         if (walletScreen?.classList.contains('active')) {
             closeModal('wallet-screen');
