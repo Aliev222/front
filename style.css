@@ -152,6 +152,34 @@ body.modal-open {
     overflow: hidden;
 }
 
+html,
+body,
+.game-container,
+.header,
+.clicker-area,
+.upgrade-panel,
+.nav-bar,
+.modal-screen,
+.modal-screen > .glass,
+.settings-modal,
+.skins-modal,
+.achievements-modal,
+.game-modal-content,
+.modal-content,
+.nav-item,
+button,
+.btn,
+.task-item,
+.task-card,
+.achievement-item,
+.achievement-card {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 /* ==================== BACKGROUND ==================== */
 .space-bg {
     position: fixed;
