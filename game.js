@@ -4103,8 +4103,8 @@ function setLabel(id, text) {
 
 function applyStaticTranslations() {
     const textMap = [
-        ['.header .nav-item:nth-child(1) > span:last-child', 'nav.tasks'],
-        ['.header .nav-item:nth-child(2) > span:last-child', 'nav.daily'],
+        ['.header .nav-item:nth-child(1) > .header-nav-label', 'nav.tasks'],
+        ['.header .nav-item:nth-child(2) > .header-nav-label', 'nav.daily'],
         
         ['.upgrade-panel-title', 'main.upgrade'],
         ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],

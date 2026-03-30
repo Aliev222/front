@@ -7487,17 +7487,17 @@ body.night-mode #games-screen .game-card {
     height: 30px !important;
 }
 
-.header > .nav-item:first-child span:last-child,
-.header > .nav-item:nth-child(2) span:last-child {
+.header .header-nav-label {
     display: block !important;
     min-height: 12px;
-    margin-top: 4px !important;
+    margin-top: 2px !important;
     font-family: 'Montserrat', sans-serif !important;
     font-weight: 700 !important;
     font-size: 10px !important;
     line-height: 1 !important;
     letter-spacing: 0.08em !important;
     text-align: center;
+    text-transform: uppercase;
 }
 
 .header-brand {
@@ -7711,8 +7711,8 @@ body.night-mode .settings-btn {
 
 .daily-gift-dot {
     position: absolute;
-    top: 2px;
-    right: 6px;
+    top: 4px;
+    right: 10px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -8545,6 +8545,21 @@ body.night-mode .social-completed-block {
 .auto-icon-img {
     width: 34px !important;
     height: 34px !important;
+}
+
+.boost-icon-img.icon-dark,
+.auto-icon-img.icon-dark {
+    display: none;
+}
+
+body.night-mode .boost-icon-img.icon-dark,
+body.night-mode .auto-icon-img.icon-dark {
+    display: block;
+}
+
+body.night-mode .boost-icon-img.icon-light,
+body.night-mode .auto-icon-img.icon-light {
+    display: none;
 }
 
 .nav-bar .nav-icon-img {
