@@ -127,15 +127,13 @@ function renderMobileOnlyGate() {
         <div class="device-lock-screen">
             <div class="device-lock-card">
                 <div class="device-lock-kicker">Spirit Clicker</div>
-                <h1>${UI_LANG === 'ru' ? 'Игра только на телефоне' : 'Game is available only on phone'}</h1>
-                <p>${UI_LANG === 'ru'
-                    ? `Открой <strong>@${TELEGRAM_BOT_USERNAME}</strong> в Telegram на телефоне или просто отсканируй QR-код ниже.`
-                    : `Open <strong>@${TELEGRAM_BOT_USERNAME}</strong> in Telegram on your phone or scan the QR code below.`}</p>
+                <h1>Game is available only on phone</h1>
+                <p>Open <strong>@${TELEGRAM_BOT_USERNAME}</strong> in Telegram on your phone or scan the QR code below.</p>
                 <div class="device-lock-qr-wrap">
                     <img class="device-lock-qr" src="${qrSrc}" alt="QR code to open @${TELEGRAM_BOT_USERNAME}">
                 </div>
                 <div class="device-lock-handle">@${TELEGRAM_BOT_USERNAME}</div>
-                <a class="device-lock-link" href="${botLink}" target="_blank" rel="noopener noreferrer">${UI_LANG === 'ru' ? 'Открыть бота' : 'Open bot'}</a>
+                <a class="device-lock-link" href="${botLink}" target="_blank" rel="noopener noreferrer">Open bot</a>
             </div>
         </div>
     `;
