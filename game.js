@@ -160,7 +160,7 @@ const I18N = {
             claimFree: 'Free',
             bonusIncome: 'Bonus: +50% income'
         },
-        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', daily: 'Daily', wallet: 'Wallet', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
+        nav: { main: 'Main', friends: 'Friends', tasks: 'Tasks', daily: 'Reward', wallet: 'Wallet', games: 'Event', skins: 'Skins', achievements: 'Achievements' },
         main: { upgrade: 'Upgrade' },
         friends: {
             title: 'Friends',
@@ -1023,6 +1023,7 @@ const State = {
     daily: {
         claimedDays: 0,
         claimAvailable: false,
+        loaded: false,
         nextDay: 1,
         infiniteEnergyActive: false,
         infiniteEnergyExpiresAt: null
@@ -2426,9 +2427,10 @@ function renderDailyRewardButton() {
     const button = document.getElementById('dailyRewardsButton');
     if (!button) return;
     const dot = button.querySelector('.daily-gift-dot');
-    button.title = State.daily.claimAvailable ? t('daily.ready') : t('daily.wait');
-    button.classList.toggle('ready', !!State.daily.claimAvailable);
-    if (dot) dot.style.display = State.daily.claimAvailable ? 'block' : 'none';
+    const showReady = !!State.daily.loaded && !!State.daily.claimAvailable;
+    button.title = showReady ? t('daily.ready') : t('daily.wait');
+    button.classList.toggle('ready', showReady);
+    if (dot) dot.style.display = showReady ? 'block' : 'none';
 }
 
 function renderDailyRewardsModal() {
@@ -2483,6 +2485,7 @@ async function loadDailyRewardStatus() {
         const response = await API.get(`/api/daily-reward/status/${userId}`);
         State.daily.claimedDays = response.claimed_days || 0;
         State.daily.claimAvailable = !!response.claim_available;
+        State.daily.loaded = true;
         State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
         State.daily.infiniteEnergyActive = !!response.infinite_energy_active;
         State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at || null;
@@ -2497,6 +2500,9 @@ async function loadDailyRewardStatus() {
         updateCollectionProgress();
     } catch (err) {
         console.warn('Daily reward status failed', err);
+        State.daily.loaded = false;
+        State.daily.claimAvailable = false;
+        renderDailyRewardButton();
     }
 }
 
