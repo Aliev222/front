@@ -7438,20 +7438,22 @@ body.night-mode #games-screen .game-card {
 .header-brand {
     justify-self: center;
     align-self: center;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
+    font-family: 'Orbitron', 'Montserrat', sans-serif !important;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: #8a56d9;
     opacity: 0.96;
     text-shadow:
-        0 0 4px rgba(138, 86, 217, 0.55),
-        0 0 12px rgba(138, 86, 217, 0.45),
-        0 0 22px rgba(138, 86, 217, 0.25);
+        0 0 4px rgba(138, 86, 217, 0.6),
+        0 0 14px rgba(138, 86, 217, 0.5),
+        0 0 28px rgba(138, 86, 217, 0.3);
     animation: spiritNeonFlicker 3.8s ease-in-out infinite;
     pointer-events: none;
     user-select: none;
     white-space: nowrap;
+    transform: translateY(1px);
 }
 
 body.night-mode .header-brand {
@@ -8341,8 +8343,8 @@ body.night-mode .social-completed-block {
     }
 
     .header-brand {
-        font-size: 16px;
-        letter-spacing: 0.12em;
+        font-size: 20px;
+        letter-spacing: 0.16em;
     }
 
     .game-container {
