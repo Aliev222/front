@@ -1,5 +1,5 @@
 ﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-window.API_URL = 'https://ryoho.onrender.com';
+window.API_URL = 'https://real-ears-sort.loca.lt';
 window.recoveryInterval = null;
 
 'use strict';
