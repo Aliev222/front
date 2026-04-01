@@ -14,7 +14,7 @@
 
 // === НАСТРОЙКИ ===
 window.API_V2_ENABLED = true;
-window.API_URL = 'https://lovely-readers-like.loca.lt'; // <-- поменяй на URL где работает v2
+window.API_URL = 'https://light-snakes-check.loca.lt'; // <-- поменяй на URL где работает v2
 
 // === МАППИНГ СТАРЫХ ENDPOINT'ОВ НА V2 ===
 const V2_ENDPOINT_MAP = {
