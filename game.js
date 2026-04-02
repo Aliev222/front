@@ -2841,7 +2841,11 @@ function handleTap(e) {
         advanceSoftOnboarding('tap');
     }
 
-    // СНАЧАЛА проверяем энергию
+    // Energy check: only prevent tap if truly out of energy.
+    // Do NOT decrement energy locally — the server response is the only
+    // authoritative source. This prevents upward energy correction jumps
+    // when the server accepts fewer clicks than requested (rate limiting,
+    // overshoot protection, etc.).
     if (!megaBoostActive && !dailyInfiniteEnergyActive && !ghostBoostActive) {
         const currentVisualEnergy = getVisualEnergy();
 
@@ -2849,10 +2853,6 @@ function handleTap(e) {
             showEnergyRecoveryModal();
             return;
         }
-
-        State.temp.serverEnergyBase = Math.max(0, currentVisualEnergy - 1);
-        State.temp.serverEnergySyncedAtMs = Date.now();
-        State.game.energy = State.temp.serverEnergyBase;
     }
 
 
