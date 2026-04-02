@@ -1924,7 +1924,7 @@ function refreshEnergyUIOnly() {
 
     if (visualEnergy !== State.game.energy) {
         State.game.energy = visualEnergy;
-        updateUI();
+        updateEnergyUIImmediate();
     }
 }
 
@@ -2713,6 +2713,19 @@ async function claimDailyReward() {
 // ==================== UI ОБНОВЛЕНИЕ ====================
 let pendingUI = false;
 
+function updateEnergyUIImmediate() {
+    const energyFill = document.getElementById('energyFill');
+    const energyText = document.getElementById('energyText');
+    const maxEnergyEl = document.getElementById('maxEnergyText');
+    if (!energyFill || !energyText || !maxEnergyEl) return;
+    const visualEnergy = getVisualEnergy();
+    const maxEnergy = State.game.maxEnergy || 1;
+    const percent = (visualEnergy / maxEnergy) * 100;
+    energyFill.style.width = percent + '%';
+    energyText.textContent = Math.floor(visualEnergy);
+    maxEnergyEl.textContent = maxEnergy;
+}
+
 function updateUI() {
     if (pendingUI) return;
     pendingUI = true;
@@ -2733,16 +2746,7 @@ function updateUI() {
             : State.game.profitPerTap;
         if (tapEl) tapEl.textContent = displayTap;
 
-        const energyFill = document.getElementById('energyFill');
-        const energyText = document.getElementById('energyText');
-        const maxEnergyEl = document.getElementById('maxEnergyText');
-        
-        if (energyFill && energyText && maxEnergyEl) {
-            const percent = (State.game.energy / State.game.maxEnergy) * 100;
-            energyFill.style.width = percent + '%';
-            energyText.textContent = Math.floor(State.game.energy);
-            maxEnergyEl.textContent = State.game.maxEnergy;
-        }
+        updateEnergyUIImmediate();
 
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) {
@@ -2994,6 +2998,7 @@ function handleTap(e) {
         // Decrement visual energy immediately by 1 — this is the player-facing
         // UX. We do NOT touch serverEnergyBase; instead we track pending spend.
         State.temp.pendingEnergySpend += 1;
+        updateEnergyUIImmediate();
     }
 
 
