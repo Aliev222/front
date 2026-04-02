@@ -2060,7 +2060,7 @@ async function loadUserData() {
         State.skins.adsWatched = data.ads_watched || 0;
         State.skins.videoViews = data.skin_ad_progress || {};
         localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
-        setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
+        applyBoostStateFromPayload(data);
         setTonWalletState(data.ton_wallet || {});
         if (data.daily_infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
@@ -2190,11 +2190,56 @@ function isDailyInfiniteEnergyActive() {
     return expiresAt.getTime() > Date.now();
 }
 
+function isMegaBoostActive() {
+    return !!(boostEndTime && boostEndTime > new Date());
+}
+
 function isGhostBoostActive() {
     if (!State.temp.ghostBoostExpiresAt) return false;
     const expiresAt = parseServerDate(State.temp.ghostBoostExpiresAt);
     if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
     return expiresAt.getTime() > Date.now();
+}
+
+function isFreeEnergyActive() {
+    return isMegaBoostActive() || isDailyInfiniteEnergyActive() || isGhostBoostActive();
+}
+
+function syncMegaBoostUi() {
+    const boostBtn = document.getElementById('mega-boost-btn');
+    const timerEl = document.getElementById('mega-boost-timer');
+    const energyBar = document.querySelector('.energy-bar-bg');
+    if (isMegaBoostActive()) {
+        if (boostBtn) boostBtn.classList.add('active');
+        showBoostIndicator();
+        if (energyBar) energyBar.classList.add('boost-active');
+    } else {
+        if (boostBtn) boostBtn.classList.remove('active');
+        document.querySelector('.mega-boost-indicator')?.remove();
+        if (energyBar) energyBar.classList.remove('boost-active');
+    }
+    updateMegaBoostButtonState(boostBtn);
+    updateMegaBoostTimerLabel(timerEl);
+}
+
+function applyBoostStateFromPayload(payload) {
+    if (!payload) return;
+    if (typeof payload.mega_boost_active === 'boolean') {
+        if (payload.mega_boost_active && payload.mega_boost_expires_at) {
+            boostEndTime = parseServerDate(payload.mega_boost_expires_at);
+        } else if (!payload.mega_boost_active) {
+            boostEndTime = null;
+        }
+        syncMegaBoostUi();
+    }
+    if (payload.daily_infinite_energy_expires_at) {
+        State.daily.infiniteEnergyExpiresAt = payload.daily_infinite_energy_expires_at;
+    } else if (payload.daily_infinite_energy_active === false) {
+        State.daily.infiniteEnergyExpiresAt = null;
+    }
+    if (typeof payload.ghost_boost_active === 'boolean') {
+        setGhostBoostState(!!payload.ghost_boost_active, payload.ghost_boost_expires_at || null);
+    }
 }
 
 function getRandomGhostCooldownMs() {
@@ -2745,6 +2790,7 @@ async function fullSyncWithServer() {
         State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
         State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
 
+        applyBoostStateFromPayload(data);
         applyServerEnergySnapshot(data);
         updateUI();
     } catch (e) {
@@ -2800,7 +2846,7 @@ async function sendClickBatch() {
             State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
-            setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
+            applyBoostStateFromPayload(data);
 
             // FIX: Reconcile energy. The server's energy_after includes the deduction
             // for this batch. We remove the batch's spend from pending so it's not
@@ -2859,10 +2905,10 @@ function handleTap(e) {
         clientY = e.clientY;
     }
 
-    const megaBoostActive =
-        document.getElementById('mega-boost-btn')?.classList.contains('active') || false;
+    const megaBoostActive = isMegaBoostActive();
     const dailyInfiniteEnergyActive = isDailyInfiniteEnergyActive();
     const ghostBoostActive = isGhostBoostActive();
+    const freeEnergyActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
 
     let previewGain = State.game.profitPerTap;
 
@@ -2891,7 +2937,7 @@ function handleTap(e) {
     }
 
     // Energy check using visual energy (authoritative + regen - pending spend)
-    if (!megaBoostActive && !dailyInfiniteEnergyActive && !ghostBoostActive) {
+    if (!freeEnergyActive) {
         const currentVisualEnergy = getVisualEnergy();
 
         if (currentVisualEnergy < 1) {
@@ -7448,7 +7494,3 @@ window.connectTonWallet = connectTonWallet;
 window.disconnectTonWallet = disconnectTonWallet;
 
 console.log('? Все функции определены');
-
-
-
-
