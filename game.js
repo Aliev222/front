@@ -2065,26 +2065,25 @@ async function loadUserData() {
         if (data.daily_infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
         }
-        
-        const secondaryLoads = await Promise.allSettled([
+
+        applySavedSkin();
+        updateUI();
+        startPerfectEnergySystem();
+
+        Promise.allSettled([
             loadPrices(),
             loadSkinsList(),
             loadReferralData(),
             checkBoostStatus(),
             loadDailyRewardStatus()
-        ]);
-
-        secondaryLoads.forEach((result, index) => {
-            if (result.status === 'rejected') {
-                const labels = ['prices', 'skins', 'referrals', 'boost-status', 'daily-reward'];
-                console.warn(`Deferred startup load failed: ${labels[index]}`, result.reason);
-            }
+        ]).then((secondaryLoads) => {
+            secondaryLoads.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    const labels = ['prices', 'skins', 'referrals', 'boost-status', 'daily-reward'];
+                    console.warn(`Deferred startup load failed: ${labels[index]}`, result.reason);
+                }
+            });
         });
-
-        
-        applySavedSkin();
-        updateUI();
-        startPerfectEnergySystem();
         
         
     } catch (err) {
