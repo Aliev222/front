@@ -2697,6 +2697,14 @@ function startPerfectEnergySystem() {
 async function syncEnergyWithServer() {
     if (!userId) return;
 
+    // SUPPRESSION: Do not sync if there is active tapping or a batch in flight.
+    // - pendingEnergySpend > 0: Local taps are pending; server energy is stale (too high).
+    // - clickBatchInFlight: Batch sent but response not received; server energy is stale.
+    // Syncing during these states causes visible upward energy jumps.
+    if (State.temp.pendingEnergySpend > 0 || State.temp.clickBatchInFlight) {
+        return;
+    }
+
     try {
         const data = await API.post('/api/sync-energy', { user_id: userId });
 
@@ -2710,11 +2718,6 @@ async function syncEnergyWithServer() {
             State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
-        // Sync-energy response already includes server-side regen.
-        // Clear pending spend — the server's energy is the new authoritative base.
-        // Any taps that happened after this request was sent will be in pendingEnergySpend,
-        // but since sync-energy is read-only and doesn't confirm clicks, we keep pending spend
-        // intact. The visual model will correctly show: server_energy + future_regen - pending.
         applyServerEnergySnapshot(data);
         updateUI();
     } catch (e) {
