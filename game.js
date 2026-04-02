@@ -2220,6 +2220,35 @@ function syncMegaBoostUi() {
     }
     updateMegaBoostButtonState(boostBtn);
     updateMegaBoostTimerLabel(timerEl);
+    ensureMegaBoostTimer();
+}
+
+function ensureMegaBoostTimer() {
+    const boostBtn = document.getElementById('mega-boost-btn');
+    const timerEl = document.getElementById('mega-boost-timer');
+    const energyBar = document.querySelector('.energy-bar-bg');
+    if (!isMegaBoostActive()) {
+        if (boostInterval) clearInterval(boostInterval);
+        boostInterval = null;
+        return;
+    }
+    if (boostInterval) return;
+    boostInterval = setInterval(() => {
+        const now = new Date();
+        const diff = boostEndTime - now;
+        if (diff <= 0) {
+            clearInterval(boostInterval);
+            boostInterval = null;
+            if (boostBtn) boostBtn.classList.remove('active');
+            document.querySelector('.mega-boost-indicator')?.remove();
+            if (energyBar) energyBar.classList.remove('boost-active');
+            boostEndTime = null;
+            updateMegaBoostButtonState(boostBtn);
+            updateMegaBoostTimerLabel(timerEl);
+            return;
+        }
+        updateMegaBoostTimerLabel(timerEl);
+    }, 200);
 }
 
 function applyBoostStateFromPayload(payload) {
@@ -2228,17 +2257,29 @@ function applyBoostStateFromPayload(payload) {
         if (payload.mega_boost_active && payload.mega_boost_expires_at) {
             boostEndTime = parseServerDate(payload.mega_boost_expires_at);
         } else if (!payload.mega_boost_active) {
-            boostEndTime = null;
+            if (!boostEndTime || boostEndTime <= new Date()) {
+                boostEndTime = null;
+            }
         }
         syncMegaBoostUi();
     }
     if (payload.daily_infinite_energy_expires_at) {
         State.daily.infiniteEnergyExpiresAt = payload.daily_infinite_energy_expires_at;
     } else if (payload.daily_infinite_energy_active === false) {
-        State.daily.infiniteEnergyExpiresAt = null;
+        const localDaily = parseServerDate(State.daily.infiniteEnergyExpiresAt);
+        if (!localDaily || localDaily.getTime() <= Date.now()) {
+            State.daily.infiniteEnergyExpiresAt = null;
+        }
     }
     if (typeof payload.ghost_boost_active === 'boolean') {
-        setGhostBoostState(!!payload.ghost_boost_active, payload.ghost_boost_expires_at || null);
+        if (payload.ghost_boost_active && payload.ghost_boost_expires_at) {
+            setGhostBoostState(true, payload.ghost_boost_expires_at);
+        } else if (!payload.ghost_boost_active) {
+            const localGhost = parseServerDate(State.temp.ghostBoostExpiresAt);
+            if (!localGhost || localGhost.getTime() <= Date.now()) {
+                setGhostBoostState(false, null);
+            }
+        }
     }
 }
 
@@ -2315,7 +2356,10 @@ async function syncGhostBoostStatus() {
     if (!userId) return;
     try {
         const data = await API.get(`/api/ghost-boost-status/${userId}`);
-        setGhostBoostState(!!data.active, data.expires_at || null);
+        applyBoostStateFromPayload({
+            ghost_boost_active: !!data.active,
+            ghost_boost_expires_at: data.expires_at || null
+        });
     } catch (err) {
         console.error('Ghost boost status error:', err);
     }
@@ -2612,8 +2656,10 @@ async function loadDailyRewardStatus() {
         State.daily.claimAvailable = !!response.claim_available;
         State.daily.loaded = true;
         State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
-        State.daily.infiniteEnergyActive = !!response.infinite_energy_active;
-        State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at || null;
+        applyBoostStateFromPayload({
+            daily_infinite_energy_active: !!response.infinite_energy_active,
+            daily_infinite_energy_expires_at: response.infinite_energy_expires_at || null
+        });
         State.skins.data.forEach((skin) => {
             if (skin.requirement?.type === 'daily') {
                 skin.requirement.current = State.daily.claimedDays || 0;
@@ -5559,48 +5605,10 @@ async function checkBoostStatus() {
         const data = await API.get(`/api/mega-boost-status/${userId}`);
         megaBoostCooldownUntil = parseServerDate(data.cooldown_until) || null;
         setAdCooldownFromIso('mega_boost', data?.cooldown_until || null);
-        if (data.active) {
-            boostEndTime = parseServerDate(data.expires_at);
-            const boostBtn = document.getElementById('mega-boost-btn');
-            if (boostBtn) boostBtn.classList.add('active');
-            updateMegaBoostButtonState(boostBtn);
-            
-            const timerEl = document.getElementById('mega-boost-timer');
-            updateMegaBoostTimerLabel(timerEl);
-            
-            showBoostIndicator();
-            
-            const energyBar = document.querySelector('.energy-bar-bg');
-            if (energyBar) energyBar.classList.add('boost-active');
-            
-            if (boostInterval) clearInterval(boostInterval);
-            boostInterval = setInterval(() => {
-                const now = new Date();
-                const diff = boostEndTime - now;
-                
-                if (diff <= 0) {
-                    clearInterval(boostInterval);
-                    if (boostBtn) boostBtn.classList.remove('active');
-                    document.querySelector('.mega-boost-indicator')?.remove();
-                    if (energyBar) energyBar.classList.remove('boost-active');
-                    updateMegaBoostButtonState(boostBtn);
-                    boostEndTime = null;
-                    updateMegaBoostTimerLabel(timerEl);
-                    return;
-                }
-                
-                updateMegaBoostTimerLabel(timerEl);
-            }, 200);
-        } else {
-            boostEndTime = null;
-            const boostBtn = document.getElementById('mega-boost-btn');
-            const timerEl = document.getElementById('mega-boost-timer');
-            if (boostBtn) boostBtn.classList.remove('active');
-            updateMegaBoostButtonState(boostBtn);
-            updateMegaBoostTimerLabel(timerEl);
-            document.querySelector('.mega-boost-indicator')?.remove();
-            document.querySelector('.energy-bar-bg')?.classList.remove('boost-active');
-        }
+        applyBoostStateFromPayload({
+            mega_boost_active: !!data.active,
+            mega_boost_expires_at: data.expires_at || null
+        });
         await syncGhostBoostStatus();
     } catch (err) {
         console.error('Boost status error:', err);
