@@ -1124,6 +1124,7 @@ const State = {
         serverEnergySyncedAtMs: 0,
         energyRegenMs: 5000,
         lastTapAt: 0,
+        lastStateUpdatedAtMs: 0,
         toastLayerReady: false,
         toastContextTimer: null,
         toastCooldowns: {},
@@ -2685,6 +2686,16 @@ async function syncEnergyWithServer() {
     try {
         const data = await API.post('/api/sync-energy', { user_id: userId });
 
+        // Ordering check: ignore stale responses
+        const incomingTs = data.state_updated_at || data.state_version || 0;
+        const currentTs = State.temp.lastStateUpdatedAtMs || 0;
+        if (incomingTs > 0 && incomingTs <= currentTs) {
+            return; // stale response, ignore
+        }
+        if (incomingTs > 0) {
+            State.temp.lastStateUpdatedAtMs = incomingTs;
+        }
+
         applyServerEnergySnapshot(data);
         updateUI();
     } catch (e) {
@@ -2697,6 +2708,16 @@ async function fullSyncWithServer() {
 
     try {
         const data = await API.get(`/api/user/${userId}`);
+
+        // Ordering check: ignore stale responses
+        const incomingTs = data.state_updated_at || data.state_version || 0;
+        const currentTs = State.temp.lastStateUpdatedAtMs || 0;
+        if (incomingTs > 0 && incomingTs <= currentTs) {
+            return; // stale response, ignore entirely
+        }
+        if (incomingTs > 0) {
+            State.temp.lastStateUpdatedAtMs = incomingTs;
+        }
 
         State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
         State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
@@ -2733,6 +2754,17 @@ async function sendClickBatch() {
 
         if (data.success) {
             State.temp.pendingClickBatchId = null;
+
+            // Ordering check: ignore stale responses for all state fields
+            const incomingTs = data.state_updated_at || data.state_version || 0;
+            const currentTs = State.temp.lastStateUpdatedAtMs || 0;
+            if (incomingTs > 0 && incomingTs <= currentTs) {
+                return; // stale response, ignore entirely
+            }
+            if (incomingTs > 0) {
+                State.temp.lastStateUpdatedAtMs = incomingTs;
+            }
+
             State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
