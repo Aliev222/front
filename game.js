@@ -3198,13 +3198,17 @@ async function selectActiveSkin(id) {
     if (!userId) return;
     if (State.skins.selectInFlight || State.skins.selected === id) return;
     State.skins.selectInFlight = true;
+    const prevSelected = State.skins.selected;
+    State.skins.selected = id;
+    applySavedSkin();
+    renderSkins();
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: id });
-        State.skins.selected = id;
-        applySavedSkin();
-        renderSkins();
         showToast(tr('toasts.skinSelected'));
     } catch (err) {
+        State.skins.selected = prevSelected;
+        applySavedSkin();
+        renderSkins();
         showToast(tr('toasts.skinSelectError'), true);
     } finally {
         State.skins.selectInFlight = false;
@@ -3363,14 +3367,18 @@ async function selectSkinFromDetail(skinId) {
     if (!userId) return showToast(tr('toasts.authRequired'), true);
     if (State.skins.selectInFlight || State.skins.selected === skinId) return;
     State.skins.selectInFlight = true;
+    const prevSelected = State.skins.selected;
+    State.skins.selected = skinId;
+    applySavedSkin();
+    renderSkins();
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
-        State.skins.selected = skinId;
-        applySavedSkin();
         showToast(tr('toasts.skinSelected'));
         closeSkinDetail();
-        renderSkins();
     } catch (err) {
+        State.skins.selected = prevSelected;
+        applySavedSkin();
+        renderSkins();
         showToast(tr('toasts.skinSelectError'), true);
     } finally {
         State.skins.selectInFlight = false;
@@ -4052,27 +4060,29 @@ async function loadVideoTasks() {
     const container = document.getElementById('tasks-list');
     if (!container) return;
 
-    await loadSocialTasksStatus();
+    renderVideoTasks();
 
-    if (userId) {
-        try {
-            const response = await API.get(`/api/video-tasks/status/${userId}`);
+    Promise.allSettled([
+        loadSocialTasksStatus(),
+        userId ? API.get(`/api/video-tasks/status/${userId}`) : Promise.resolve(null)
+    ]).then(([socialResult, videoResult]) => {
+        if (videoResult.status === 'fulfilled' && videoResult.value) {
+            const response = videoResult.value;
             const taskMap = new Map((response.tasks || []).map((task) => [task.task_id, task]));
             VIDEO_TASKS.forEach((task) => {
                 const serverTask = taskMap.get(task.id);
                 task.available = serverTask ? !!serverTask.available : true;
                 task.remainingSeconds = serverTask ? Number(serverTask.remaining_seconds || 0) : 0;
             });
-        } catch (err) {
-            console.warn('Video task status failed', err);
+        } else if (videoResult.status === 'rejected') {
+            console.warn('Video task status failed', videoResult.reason);
             VIDEO_TASKS.forEach((task) => {
                 task.available = true;
                 task.remainingSeconds = 0;
             });
         }
-    }
-
-    renderVideoTasks();
+        renderVideoTasks();
+    });
 }
 
 function persistTasksState() {
@@ -5302,6 +5312,8 @@ async function selectEventLeague(league) {
     eventSelectedLeague = EVENT_LEAGUE_ORDER.includes(league) ? league : 'bronze';
     renderEventLeagueTabs(eventSelectedLeague);
     try {
+        const list = document.getElementById('event-leaderboard-list');
+        if (list) list.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
         const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
         renderEventLeaderboard(response?.players || [], eventSelectedLeague);
         await loadEventResults(eventSelectedLeague);
@@ -5372,6 +5384,10 @@ function startOnlinePresence() {
 
 async function loadTournamentData() {
     try {
+        const list = document.getElementById('event-leaderboard-list');
+        const resultsList = document.getElementById('event-results-list');
+        if (list) list.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
+        if (resultsList) resultsList.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
         const overview = await fetchTournamentOverview();
         if (!overview) return;
 
@@ -6878,6 +6894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupGlobalClickHandler();
     initTonWalletBridge();
     initBgm();
+    initAdsgramController();
     initAutoClicker();
     initBadgePhysics();
 
