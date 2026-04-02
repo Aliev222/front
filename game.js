@@ -2763,6 +2763,7 @@ async function sendClickBatch() {
     // Safety: exactly one in-flight batch is guaranteed by the
     // clickBatchInFlight guard at the top of this function.
     // pendingEnergySpend is atomically moved from "current" to "in-flight" here.
+    const pendingSpendForThisBatch = State.temp.pendingEnergySpend;
     State.temp.pendingEnergySpend = 0;
 
     State.temp.clickBuffer = 0;
@@ -2784,10 +2785,9 @@ async function sendClickBatch() {
             const incomingTs = data.state_updated_at || data.state_version || 0;
             const currentTs = State.temp.lastStateUpdatedAtMs || 0;
             if (incomingTs > 0 && incomingTs <= currentTs) {
-                // Stale response — the batch was not newer than our current state.
-                // This should not happen in normal flow, but if it does, the
-                // pending spend we cleared is lost (it was for a stale batch).
-                // No restore needed since the server already has the correct energy.
+                // Stale response — the server already processed this batch earlier.
+                // Restore pending spend since this response doesn't confirm new energy.
+                State.temp.pendingEnergySpend += pendingSpendForThisBatch;
                 return;
             }
             if (incomingTs > 0) {
@@ -2807,13 +2807,27 @@ async function sendClickBatch() {
         }
     } catch (err) {
         if (err?.status === 409) {
+            // 409 Duplicate: server already processed this batch_id.
+            // Restore pending spend — the energy was already accounted for
+            // in the original successful response.
             State.temp.pendingClickBatchId = null;
+            State.temp.pendingEnergySpend += pendingSpendForThisBatch;
             await fullSyncWithServer();
             return;
         }
+        if (err?.status === 500 || err?.status === 502 || err?.status === 503 || err?.status === 504) {
+            // Backend 5xx: server may or may not have processed the batch.
+            // Restore pending spend to be safe — the next batch or sync will reconcile.
+            State.temp.pendingEnergySpend += pendingSpendForThisBatch;
+            console.error('Click batch server error:', err);
+            State.temp.clickBuffer += clicks;
+            State.temp.clickValueBuffer += optimisticGain;
+            return;
+        }
+        // Network failure / timeout / aborted: server definitely did not process.
+        // Restore everything to pre-send state.
+        State.temp.pendingEnergySpend += pendingSpendForThisBatch;
         console.error('Click batch error:', err);
-        // Restore click buffers on error — pending energy spend is NOT restored
-        // because the batch was already sent; the server will have the correct energy.
         State.temp.clickBuffer += clicks;
         State.temp.clickValueBuffer += optimisticGain;
     } finally {
@@ -3497,7 +3511,16 @@ async function upgradeBoost(type, internal = false) {
             // Upgrade refills energy to max — update authoritative base
             State.temp.serverEnergyBase = result.max_energy;
             State.temp.serverMaxEnergy = result.max_energy;
-            State.temp.serverEnergySyncedAtMs = Date.now();
+            // Use server_time if available, otherwise fall back to Date.now()
+            if (result.server_time) {
+                try {
+                    State.temp.serverEnergySyncedAtMs = new Date(result.server_time).getTime();
+                } catch (_) {
+                    State.temp.serverEnergySyncedAtMs = Date.now();
+                }
+            } else {
+                State.temp.serverEnergySyncedAtMs = Date.now();
+            }
             State.temp.pendingEnergySpend = 0;
             State.game.energy = result.max_energy;
         }
@@ -3570,7 +3593,17 @@ async function upgradeAll(internal = false) {
         State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
         // Energy refill sets energy to max — update authoritative base
         State.temp.serverEnergyBase = result.max_energy ?? State.game.maxEnergy;
-        State.temp.serverEnergySyncedAtMs = Date.now();
+        State.temp.serverMaxEnergy = result.max_energy ?? State.game.maxEnergy;
+        // Use server_time if available, otherwise fall back to Date.now()
+        if (result.server_time) {
+            try {
+                State.temp.serverEnergySyncedAtMs = new Date(result.server_time).getTime();
+            } catch (_) {
+                State.temp.serverEnergySyncedAtMs = Date.now();
+            }
+        } else {
+            State.temp.serverEnergySyncedAtMs = Date.now();
+        }
         State.temp.pendingEnergySpend = 0;
         State.game.energy = State.game.maxEnergy;
         trackAchievementProgress('upgrades', 3);
@@ -3994,11 +4027,11 @@ function giveRandomReward() {
             showToast(`🎁 +${random.value} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'energy':
-            // Energy reward — add to authoritative base, clear pending spend
-            State.temp.serverEnergyBase = Math.min(State.game.maxEnergy, State.temp.serverEnergyBase + random.value);
-            State.temp.serverEnergySyncedAtMs = Date.now();
-            State.temp.pendingEnergySpend = 0;
-            State.game.energy = getVisualEnergy();
+            // Visual-only energy reward (task/ad bonus). Does NOT affect
+            // authoritative gameplay energy — just a temporary visual bonus.
+            // Do NOT clear pendingEnergySpend — that would lose track of
+            // real gameplay energy spent on taps.
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
             showToast(`🎁 +${random.value} energy!`);
             break;
         case 'boost':
