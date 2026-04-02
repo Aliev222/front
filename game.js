@@ -6876,6 +6876,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateToastViewportOffset();
     loadAchievementsFromStorage();
     loadSettings();
+    setupGlobalClickHandler();
     initTonWalletBridge();
     initBgm();
     initAutoClicker();
@@ -6894,7 +6895,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateUI();
     }
 
-    setupGlobalClickHandler();
     setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
     setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
     startAmbientToastLoop();
