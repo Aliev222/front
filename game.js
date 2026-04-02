@@ -1142,6 +1142,8 @@ const State = {
         ghostBoostInterval: null,
         ghostSpawnVisible: false,
         ghostNextSpawnAt: 0,
+        adInputBlocked: false,
+        adBlockerEl: null,
         tournamentLastRank: null,
         tournamentLastTopLimit: 0,
         tournamentDropWarned: false,
@@ -2351,6 +2353,28 @@ function setGhostBoostState(active, expiresAt = null) {
     }, 1000);
 }
 
+function setAdInputBlocked(blocked) {
+    State.temp.adInputBlocked = !!blocked;
+    let overlay = State.temp.adBlockerEl;
+    if (blocked) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'ad-input-blocker';
+            overlay.style.position = 'fixed';
+            overlay.style.inset = '0';
+            overlay.style.zIndex = '2147483647';
+            overlay.style.pointerEvents = 'all';
+            overlay.style.background = 'transparent';
+            overlay.style.touchAction = 'none';
+            document.body.appendChild(overlay);
+            State.temp.adBlockerEl = overlay;
+        }
+    } else if (overlay) {
+        overlay.remove();
+        State.temp.adBlockerEl = null;
+    }
+}
+
 async function syncGhostBoostStatus() {
     if (!userId) return;
     try {
@@ -2388,6 +2412,7 @@ async function showRewardedAd(adSessionId = null) {
     }
 
     try {
+        setAdInputBlocked(true);
         const result = await controller.show();
         if (result?.done === false) {
             throw new Error(result?.description || 'Ad was not completed');
@@ -2399,6 +2424,8 @@ async function showRewardedAd(adSessionId = null) {
             throw new Error(detail);
         }
         throw err;
+    } finally {
+        setAdInputBlocked(false);
     }
 }
 
@@ -2932,6 +2959,7 @@ async function sendClickBatch() {
 }
 
 function handleTap(e) {
+    if (State.temp.adInputBlocked) return;
     const isAutoTap = !!e?.syntheticAuto;
     const target = (e && e.target && e.target.closest) ? e.target : null;
     if (target && target.closest(
@@ -7186,7 +7214,7 @@ function initAutoClicker() {
                     timerLabel.style.display = 'block';
                 }
                 updateAutoButtonState();
-                if (autoState.fingerDown) {
+                if (autoState.fingerDown && !State.temp.adInputBlocked) {
                     handleTap({
                         clientX: autoState.point.x,
                         clientY: autoState.point.y,
