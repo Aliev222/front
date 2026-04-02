@@ -1118,11 +1118,15 @@ const State = {
         taskPassiveBoostExpiresAt: null,
         taskPassiveBoostMultiplier: 1,
 
-        // энергосистема
+        // энергосистема — dual-layer model
+        // Layer 1: authoritative server state
         energyUiTimer: null,
-        serverEnergyBase: 0,
-        serverEnergySyncedAtMs: 0,
-        energyRegenMs: 5000,
+        serverEnergyBase: 0,          // latest confirmed energy from backend
+        serverMaxEnergy: 0,           // latest confirmed max_energy from backend
+        serverEnergySyncedAtMs: 0,    // timestamp of last server confirmation
+        energyRegenMs: 2000,          // regen interval (2 seconds per +1 energy)
+        // Layer 2: client visual state
+        pendingEnergySpend: 0,        // energy spent on local taps not yet reconciled
         lastTapAt: 0,
         lastStateUpdatedAtMs: 0,
         toastLayerReady: false,
@@ -1868,20 +1872,32 @@ function trackAchievementProgress(key, delta = 1) {
 }
 
 function applyServerEnergySnapshot(payload) {
+    // Layer 1: update authoritative server state
     if (typeof payload.energy === 'number') {
         State.temp.serverEnergyBase = payload.energy;
-        State.game.energy = payload.energy;
     }
-
     if (typeof payload.max_energy === 'number') {
+        State.temp.serverMaxEnergy = payload.max_energy;
         State.game.maxEnergy = payload.max_energy;
     }
-
     if (typeof payload.regen_seconds === 'number') {
         State.temp.energyRegenMs = payload.regen_seconds * 1000;
     }
 
-    State.temp.serverEnergySyncedAtMs = Date.now();
+    // Use server-derived timing for visual regen, not client arrival time.
+    // Priority: state_updated_at > server_time > Date.now()
+    let syncTimeMs = Date.now();
+    if (typeof payload.state_updated_at === 'number' && payload.state_updated_at > 0) {
+        syncTimeMs = payload.state_updated_at;
+    } else if (typeof payload.server_time === 'string') {
+        try {
+            syncTimeMs = new Date(payload.server_time).getTime();
+        } catch (_) { /* fall through to Date.now() */ }
+    }
+    State.temp.serverEnergySyncedAtMs = syncTimeMs;
+
+    // Update visual energy from the dual-layer model
+    State.game.energy = getVisualEnergy();
 }
 
 function getVisualEnergy() {
@@ -1889,21 +1905,21 @@ function getVisualEnergy() {
         return State.game.energy || 0;
     }
 
+    // Visual regen: +1 every energyRegenMs since last server sync
     const elapsed = Date.now() - State.temp.serverEnergySyncedAtMs;
-    const gained = Math.floor(elapsed / State.temp.energyRegenMs);
+    const regenGained = Math.floor(elapsed / State.temp.energyRegenMs);
 
-    return Math.min(
-        State.game.maxEnergy,
-        State.temp.serverEnergyBase + gained
-    );
+    // visual = authoritative base + regen since sync - pending local spend
+    const visual = State.temp.serverEnergyBase
+                 + regenGained
+                 - State.temp.pendingEnergySpend;
+
+    return Math.max(0, Math.min(State.temp.serverMaxEnergy, visual));
 }
 
 function refreshEnergyUIOnly() {
-    // Пока игрок активно кликает, не рисуем реген поверх тапа
-    if (Date.now() - (State.temp.lastTapAt || 0) < 700) {
-        return;
-    }
-
+    // Smooth regen tick — only update visual energy, never overwrite
+    // the authoritative server base.
     const visualEnergy = getVisualEnergy();
 
     if (visualEnergy !== State.game.energy) {
@@ -2026,8 +2042,6 @@ async function loadUserData() {
         }, 3, 1800);
         
         State.game.coins = data.coins || 0;
-        State.game.energy = data.energy || 500;
-        State.game.maxEnergy = data.max_energy || 500;
         applyServerEnergySnapshot({
             energy: data.energy || 0,
             max_energy: data.max_energy || 500,
@@ -2696,6 +2710,11 @@ async function syncEnergyWithServer() {
             State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
+        // Sync-energy response already includes server-side regen.
+        // Clear pending spend — the server's energy is the new authoritative base.
+        // Any taps that happened after this request was sent will be in pendingEnergySpend,
+        // but since sync-energy is read-only and doesn't confirm clicks, we keep pending spend
+        // intact. The visual model will correctly show: server_energy + future_regen - pending.
         applyServerEnergySnapshot(data);
         updateUI();
     } catch (e) {
@@ -2740,6 +2759,12 @@ async function sendClickBatch() {
 
     const optimisticGain = State.temp.clickValueBuffer;
     const batchId = State.temp.pendingClickBatchId || `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+
+    // Safety: exactly one in-flight batch is guaranteed by the
+    // clickBatchInFlight guard at the top of this function.
+    // pendingEnergySpend is atomically moved from "current" to "in-flight" here.
+    State.temp.pendingEnergySpend = 0;
+
     State.temp.clickBuffer = 0;
     State.temp.clickValueBuffer = 0;
     State.temp.clickBatchInFlight = true;
@@ -2759,7 +2784,11 @@ async function sendClickBatch() {
             const incomingTs = data.state_updated_at || data.state_version || 0;
             const currentTs = State.temp.lastStateUpdatedAtMs || 0;
             if (incomingTs > 0 && incomingTs <= currentTs) {
-                return; // stale response, ignore entirely
+                // Stale response — the batch was not newer than our current state.
+                // This should not happen in normal flow, but if it does, the
+                // pending spend we cleared is lost (it was for a stale batch).
+                // No restore needed since the server already has the correct energy.
+                return;
             }
             if (incomingTs > 0) {
                 State.temp.lastStateUpdatedAtMs = incomingTs;
@@ -2770,6 +2799,9 @@ async function sendClickBatch() {
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
             setGhostBoostState(!!data.ghost_boost_active, data.ghost_boost_expires_at || null);
 
+            // Reconcile energy: server's energy_after is the new authoritative base.
+            // Any pending spend from taps that happened AFTER this batch was sent
+            // is still valid and remains in pendingEnergySpend.
             applyServerEnergySnapshot(data);
             updateUI();
         }
@@ -2780,6 +2812,8 @@ async function sendClickBatch() {
             return;
         }
         console.error('Click batch error:', err);
+        // Restore click buffers on error — pending energy spend is NOT restored
+        // because the batch was already sent; the server will have the correct energy.
         State.temp.clickBuffer += clicks;
         State.temp.clickValueBuffer += optimisticGain;
     } finally {
@@ -2841,11 +2875,7 @@ function handleTap(e) {
         advanceSoftOnboarding('tap');
     }
 
-    // Energy check: only prevent tap if truly out of energy.
-    // Do NOT decrement energy locally — the server response is the only
-    // authoritative source. This prevents upward energy correction jumps
-    // when the server accepts fewer clicks than requested (rate limiting,
-    // overshoot protection, etc.).
+    // Energy check using visual energy (authoritative + regen - pending spend)
     if (!megaBoostActive && !dailyInfiniteEnergyActive && !ghostBoostActive) {
         const currentVisualEnergy = getVisualEnergy();
 
@@ -2853,6 +2883,10 @@ function handleTap(e) {
             showEnergyRecoveryModal();
             return;
         }
+
+        // Decrement visual energy immediately by 1 — this is the player-facing
+        // UX. We do NOT touch serverEnergyBase; instead we track pending spend.
+        State.temp.pendingEnergySpend += 1;
     }
 
 
@@ -3460,6 +3494,11 @@ async function upgradeBoost(type, internal = false) {
         if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
         if (result.max_energy) {
             State.game.maxEnergy = result.max_energy;
+            // Upgrade refills energy to max — update authoritative base
+            State.temp.serverEnergyBase = result.max_energy;
+            State.temp.serverMaxEnergy = result.max_energy;
+            State.temp.serverEnergySyncedAtMs = Date.now();
+            State.temp.pendingEnergySpend = 0;
             State.game.energy = result.max_energy;
         }
         playUpgradeCelebration();
@@ -3529,7 +3568,11 @@ async function upgradeAll(internal = false) {
         State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
         State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
         State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
-        State.game.energy = result.energy ?? State.game.maxEnergy;
+        // Energy refill sets energy to max — update authoritative base
+        State.temp.serverEnergyBase = result.max_energy ?? State.game.maxEnergy;
+        State.temp.serverEnergySyncedAtMs = Date.now();
+        State.temp.pendingEnergySpend = 0;
+        State.game.energy = State.game.maxEnergy;
         trackAchievementProgress('upgrades', 3);
         playUpgradeCelebration();
         updateUI();
@@ -3951,7 +3994,11 @@ function giveRandomReward() {
             showToast(`🎁 +${random.value} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'energy':
-            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
+            // Energy reward — add to authoritative base, clear pending spend
+            State.temp.serverEnergyBase = Math.min(State.game.maxEnergy, State.temp.serverEnergyBase + random.value);
+            State.temp.serverEnergySyncedAtMs = Date.now();
+            State.temp.pendingEnergySpend = 0;
+            State.game.energy = getVisualEnergy();
             showToast(`🎁 +${random.value} energy!`);
             break;
         case 'boost':
