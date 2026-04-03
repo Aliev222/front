@@ -2720,6 +2720,12 @@ async function claimDailyReward() {
     if (!userId || !State.daily.claimAvailable) return;
 
     try {
+        const actionButton = document.getElementById('dailyRewardAction');
+        const prevText = actionButton?.textContent || '';
+        if (actionButton) {
+            actionButton.textContent = t('common.loading');
+            actionButton.disabled = true;
+        }
         const response = await API.post('/api/daily-reward/claim', { user_id: userId });
         State.game.coins = response.coins ?? State.game.coins;
         if (response.skin_id) {
@@ -2736,6 +2742,11 @@ async function claimDailyReward() {
         await loadDailyRewardStatus();
     } catch (err) {
         showToast(err?.detail || tr('toasts.serverError'), true);
+        const actionButton = document.getElementById('dailyRewardAction');
+        if (actionButton) {
+            actionButton.textContent = t('daily.ready');
+            actionButton.disabled = false;
+        }
     }
 }
 
@@ -4609,6 +4620,7 @@ function switchTab(tab, el) {
     if (tab === 'wallet') renderTonWalletState();
     if (tab === 'tasks') {
         advanceSoftOnboarding('tasks');
+        renderVideoTasks();
         loadVideoTasks();
     }
 }
