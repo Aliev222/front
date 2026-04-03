@@ -7478,7 +7478,8 @@ const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
     try {
         const data = await API.post('/api/passive-income', { user_id: userId });
         if (data.income > 0) {
-            State.game.coins = data.coins;
+            // Apply passive income as a delta to avoid overwriting newer realtime coins.
+            State.game.coins += data.income;
             updateUI();
             if (!silent) {
                 showToast(data.message || `+${formatNumber(data.income)} passive income`);
