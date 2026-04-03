@@ -1,7 +1,6 @@
 ﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
-window.DEBUG_COINS = true;
 
 'use strict';
 
@@ -2029,78 +2028,12 @@ const API = {
     }
 };
 
-// ==================== COINS TRACE (TEMP) ====================
-let coinDebugPanel = null;
-const coinDebugLogs = [];
-
-function ensureCoinDebugPanel() {
-    if (!window.DEBUG_COINS) return null;
-    if (coinDebugPanel) return coinDebugPanel;
-    if (!document?.body) return null;
-    coinDebugPanel = document.createElement('div');
-    coinDebugPanel.style.position = 'fixed';
-    coinDebugPanel.style.top = '10px';
-    coinDebugPanel.style.right = '10px';
-    coinDebugPanel.style.zIndex = '999999';
-    coinDebugPanel.style.background = 'rgba(0,0,0,0.8)';
-    coinDebugPanel.style.color = '#0f0';
-    coinDebugPanel.style.fontSize = '10px';
-    coinDebugPanel.style.padding = '6px';
-    coinDebugPanel.style.maxWidth = '220px';
-    coinDebugPanel.style.maxHeight = '200px';
-    coinDebugPanel.style.overflowY = 'auto';
-    coinDebugPanel.style.pointerEvents = 'none';
-    coinDebugPanel.style.fontFamily = 'monospace';
-    coinDebugPanel.textContent = '[coins]';
-    document.body.appendChild(coinDebugPanel);
-    return coinDebugPanel;
-}
-
-function pushCoinDebug(line) {
-    if (!window.DEBUG_COINS) return;
-    ensureCoinDebugPanel();
-    coinDebugLogs.unshift(line);
-    if (coinDebugLogs.length > 20) coinDebugLogs.pop();
-    if (coinDebugPanel) {
-        coinDebugPanel.innerHTML = '[coins]<br>' + coinDebugLogs.join('<br>');
-    }
-}
-
-function formatClockTime(ts = Date.now()) {
-    const d = new Date(ts);
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-}
-
-function traceCoinsWrite(label, next, payload = null) {
-    const prev = State.game.coins;
-    const now = Date.now();
-    const payloadCoins = payload && typeof payload.coins === 'number' ? payload.coins : null;
-    const payloadIncome = payload && typeof payload.income === 'number' ? payload.income : null;
-    pushCoinDebug(`${formatClockTime(now)} ${label}: ${prev} -> ${next}`);
-    console.log('[coins]', {
-        label,
-        prev,
-        next,
-        payloadCoins,
-        payloadIncome,
-        state_updated_at: payload?.state_updated_at ?? null,
-        state_version: payload?.state_version ?? null,
-        lastStateUpdatedAtMs: State.temp.lastStateUpdatedAtMs || 0,
-        at: now
-    });
-}
-
-function setCoins(label, next, payload = null) {
-    traceCoinsWrite(label, next, payload);
+function setCoins(_label, next, _payload = null) {
     State.game.coins = next;
 }
 
-function addCoins(label, delta, payload = null) {
+function addCoins(_label, delta, _payload = null) {
     const next = State.game.coins + delta;
-    traceCoinsWrite(label, next, payload);
     State.game.coins = next;
 }
 
