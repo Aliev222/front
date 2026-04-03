@@ -2523,12 +2523,14 @@ async function claimLuckyGhost(event) {
             duration: 3200
         });
         await showRewardedAd(adSessionId);
+        const optimisticExpires = new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
+        setGhostBoostState(true, optimisticExpires);
         await confirmAdsgramAdSession(adSessionId);
         const activation = await claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
-        const expiresAt = activation?.expires_at || new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
+        const expiresAt = activation?.expires_at || optimisticExpires;
         setGhostBoostState(true, expiresAt);
         removeLuckyGhost();
         showToast(`x${activation?.multiplier || GHOST_BOOST_MULTIPLIER} taps and infinite energy for 1 minute.`, false, {
@@ -2540,6 +2542,7 @@ async function claimLuckyGhost(event) {
         });
     } catch (err) {
         console.error('Ghost claim error:', err);
+        setGhostBoostState(false, null);
         removeLuckyGhost();
         showToast(
             resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
@@ -5601,6 +5604,9 @@ async function activateMegaBoost() {
     (async () => {
         const adSessionId = await startAdActionSession('mega_boost');
         await showRewardedAd(adSessionId);
+        boostEndTime = new Date(Date.now() + MEGA_BOOST_DURATION_MS);
+        if (boostBtn) boostBtn.classList.add('active');
+        syncMegaBoostUi();
         await confirmAdsgramAdSession(adSessionId);
         const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
             user_id: userId,
@@ -5610,44 +5616,17 @@ async function activateMegaBoost() {
         if (activation?.already_active && activation.expires_at) {
             boostEndTime = parseServerDate(activation.expires_at);
         } else {
-            boostEndTime = parseServerDate(activation?.expires_at) || new Date(Date.now() + MEGA_BOOST_DURATION_MS);
+            boostEndTime = parseServerDate(activation?.expires_at) || boostEndTime;
         }
         megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
         setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
         
-        if (boostBtn) boostBtn.classList.add('active');
-        updateMegaBoostButtonState(boostBtn);
-        
-        const timerEl = document.getElementById('mega-boost-timer');
-        updateMegaBoostTimerLabel(timerEl);
-        
-        showBoostIndicator();
-        
-        const energyBar = document.querySelector('.energy-bar-bg');
-        if (energyBar) energyBar.classList.add('boost-active');
-        
-        if (boostInterval) clearInterval(boostInterval);
-        boostInterval = setInterval(() => {
-            const now = new Date();
-            const diff = boostEndTime - now;
-            
-            if (diff <= 0) {
-                clearInterval(boostInterval);
-                if (boostBtn) boostBtn.classList.remove('active');
-                document.querySelector('.mega-boost-indicator')?.remove();
-                if (energyBar) energyBar.classList.remove('boost-active');
-                updateMegaBoostButtonState(boostBtn);
-                boostEndTime = null;
-                updateMegaBoostTimerLabel(timerEl);
-                showToast(tr('toasts.boostFinished'));
-                return;
-            }
-            
-            updateMegaBoostTimerLabel(timerEl);
-        }, 1000);
+        syncMegaBoostUi();
         
         showToast(tr('toasts.megaBoostActivated'));
     })().catch((err) => {
+        boostEndTime = null;
+        syncMegaBoostUi();
         showToast(
             resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
             true
@@ -7173,6 +7152,19 @@ function initAutoClicker() {
         autoBtn.disabled = autoState.enabledUntil > Date.now() || getCooldownRemainingMs() > 0;
     };
 
+    const disableAutoLocal = () => {
+        autoState.enabledUntil = 0;
+        autoBtn.classList.remove('active');
+        if (timerLabel) {
+            timerLabel.textContent = '';
+            timerLabel.style.display = 'none';
+        }
+        updateAutoButtonState();
+        updateEffect();
+        if (autoState.timer) clearInterval(autoState.timer);
+        autoState.timer = null;
+    };
+
     const ensureEffect = () => {
         if (autoState.effect) return autoState.effect;
         const el = document.createElement('div');
@@ -7256,13 +7248,14 @@ function initAutoClicker() {
         try {
             const adSessionId = await startAdActionSession('autoclicker');
             await showRewardedAd(adSessionId);
+            enable();
             await confirmAdsgramAdSession(adSessionId);
             await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                 user_id: userId,
                 ad_session_id: adSessionId
             }));
-            enable();
         } catch (e) {
+            disableAutoLocal();
             showToast(
                 resolveRewardedAdErrorMessage(e, tr('toasts.autoTapError')),
                 true
