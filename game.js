@@ -1,6 +1,7 @@
 ﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 window.API_URL = 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
+window.DEBUG_COINS = true;
 
 'use strict';
 
@@ -2028,6 +2029,81 @@ const API = {
     }
 };
 
+// ==================== COINS TRACE (TEMP) ====================
+let coinDebugPanel = null;
+const coinDebugLogs = [];
+
+function ensureCoinDebugPanel() {
+    if (!window.DEBUG_COINS) return null;
+    if (coinDebugPanel) return coinDebugPanel;
+    if (!document?.body) return null;
+    coinDebugPanel = document.createElement('div');
+    coinDebugPanel.style.position = 'fixed';
+    coinDebugPanel.style.top = '10px';
+    coinDebugPanel.style.right = '10px';
+    coinDebugPanel.style.zIndex = '999999';
+    coinDebugPanel.style.background = 'rgba(0,0,0,0.8)';
+    coinDebugPanel.style.color = '#0f0';
+    coinDebugPanel.style.fontSize = '10px';
+    coinDebugPanel.style.padding = '6px';
+    coinDebugPanel.style.maxWidth = '220px';
+    coinDebugPanel.style.maxHeight = '200px';
+    coinDebugPanel.style.overflowY = 'auto';
+    coinDebugPanel.style.pointerEvents = 'none';
+    coinDebugPanel.style.fontFamily = 'monospace';
+    coinDebugPanel.textContent = '[coins]';
+    document.body.appendChild(coinDebugPanel);
+    return coinDebugPanel;
+}
+
+function pushCoinDebug(line) {
+    if (!window.DEBUG_COINS) return;
+    ensureCoinDebugPanel();
+    coinDebugLogs.unshift(line);
+    if (coinDebugLogs.length > 20) coinDebugLogs.pop();
+    if (coinDebugPanel) {
+        coinDebugPanel.innerHTML = '[coins]<br>' + coinDebugLogs.join('<br>');
+    }
+}
+
+function formatClockTime(ts = Date.now()) {
+    const d = new Date(ts);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+function traceCoinsWrite(label, next, payload = null) {
+    const prev = State.game.coins;
+    const now = Date.now();
+    const payloadCoins = payload && typeof payload.coins === 'number' ? payload.coins : null;
+    const payloadIncome = payload && typeof payload.income === 'number' ? payload.income : null;
+    pushCoinDebug(`${formatClockTime(now)} ${label}: ${prev} -> ${next}`);
+    console.log('[coins]', {
+        label,
+        prev,
+        next,
+        payloadCoins,
+        payloadIncome,
+        state_updated_at: payload?.state_updated_at ?? null,
+        state_version: payload?.state_version ?? null,
+        lastStateUpdatedAtMs: State.temp.lastStateUpdatedAtMs || 0,
+        at: now
+    });
+}
+
+function setCoins(label, next, payload = null) {
+    traceCoinsWrite(label, next, payload);
+    State.game.coins = next;
+}
+
+function addCoins(label, delta, payload = null) {
+    const next = State.game.coins + delta;
+    traceCoinsWrite(label, next, payload);
+    State.game.coins = next;
+}
+
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadUserData() {
     if (!userId) return;
@@ -2053,7 +2129,7 @@ async function loadUserData() {
             State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
-        State.game.coins = data.coins || 0;
+        setCoins('loadUserData', data.coins || 0, data);
         applyServerEnergySnapshot({
             energy: data.energy || 0,
             max_energy: data.max_energy || 500,
@@ -2737,7 +2813,7 @@ async function claimDailyReward() {
             actionButton.disabled = true;
         }
         const response = await API.post('/api/daily-reward/claim', { user_id: userId });
-        State.game.coins = response.coins ?? State.game.coins;
+        setCoins('claimDailyReward', response.coins ?? State.game.coins, response);
         if (response.skin_id) {
             State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
             await loadSkinsList();
@@ -2886,7 +2962,7 @@ async function fullSyncWithServer() {
             State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
-        State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
+        setCoins('fullSyncWithServer', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
         State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
         State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
 
@@ -2943,7 +3019,7 @@ async function sendClickBatch() {
                 State.temp.lastStateUpdatedAtMs = incomingTs;
             }
 
-            State.game.coins = (data.coins || 0) + (State.temp.clickValueBuffer || 0);
+            setCoins('sendClickBatch', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
             State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
             State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
             applyBoostStateFromPayload(data);
@@ -3056,7 +3132,7 @@ function handleTap(e) {
     // И только потом считаем клик успешным
     State.temp.clickBuffer += 1;
     State.temp.clickValueBuffer += previewGain;
-    State.game.coins += previewGain;
+    addCoins('handleTap', previewGain, { previewGain });
     maybeSpawnLuckyGhost(isAutoTap);
 
     trackAchievementProgress('clicks', 1);
@@ -3673,7 +3749,7 @@ async function upgradeBoost(type, internal = false) {
         });
         
         if (result) {
-            State.game.coins = result.coins;
+            setCoins('upgradeBoost', result.coins, result);
             State.game.levels.multitap = result.levels?.multitap ?? result.new_level ?? State.game.levels.multitap;
             State.game.levels.profit = result.levels?.profit ?? result.new_level ?? State.game.levels.profit;
             State.game.levels.energy = result.levels?.energy ?? result.new_level ?? State.game.levels.energy;
@@ -3756,7 +3832,7 @@ async function upgradeAll(internal = false) {
             return;
         }
 
-        State.game.coins = result.coins;
+        setCoins('upgradeAll', result.coins, result);
         State.game.levels.multitap = result.levels?.multitap ?? State.game.levels.multitap;
         State.game.levels.profit = result.levels?.profit ?? State.game.levels.profit;
         State.game.levels.energy = result.levels?.energy ?? State.game.levels.energy;
@@ -4057,7 +4133,7 @@ async function claimSocialTask(taskId) {
         persistSocialTasksState();
 
         if (typeof response.coins === 'number') {
-            State.game.coins = response.coins;
+            setCoins('claimSocialTask', response.coins, response);
         }
 
         if (response.skin_id) {
@@ -4204,7 +4280,7 @@ function giveRandomReward() {
     
     switch(random.type) {
         case 'coins':
-            State.game.coins += random.value;
+            addCoins('randomReward', random.value, { reward: random.value });
             showToast(`?? +${random.value} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'energy':
@@ -4264,7 +4340,7 @@ async function watchVideoForTask(taskId) {
         const response = await claimAdActionWithRetry(() => claimVideoReward(task, adSessionId));
 
         if (typeof response?.coins === 'number') {
-            State.game.coins = response.coins;
+            setCoins('watchVideoForTask', response.coins, response);
         }
 
         applyTaskBoostPayload(response);
@@ -5923,7 +5999,7 @@ async function playCoinflip() {
                 }
                 
                 resultEl.textContent = data.message || tr('minigames.coinflipPlayed');
-                State.game.coins = data.coins;
+                setCoins('coinflip', data.coins, data);
                 trackAchievementProgress('games', 1);
                 checkAchievements();
                 updateUI();
@@ -5932,7 +6008,7 @@ async function playCoinflip() {
                 const win = Math.random() < 0.5;
                 coin.classList.remove('flipping');
                 if (win) {
-                    State.game.coins += bet;
+                    addCoins('coinflipLocalWin', bet, { bet });
                     coin.classList.add('win');
                     setTimeout(() => coin.classList.remove('win'), 1000);
                     resultEl.textContent = tr('minigames.coinflipWin', { bet });
@@ -5940,7 +6016,7 @@ async function playCoinflip() {
                     spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'win');
                     playSound('win');
                 } else {
-                    State.game.coins -= bet;
+                    addCoins('coinflipLocalLose', -bet, { bet });
                     resultEl.textContent = tr('minigames.coinflipLose');
                     shakeGameModal('coinflip');
                     spawnGameParticles(document.querySelector('#game-coinflip .coin-3d'), 'lose');
@@ -6011,7 +6087,7 @@ async function playSlots() {
                         playSound('lose');
                     }
                     
-                    State.game.coins = data.coins;
+                    setCoins('slots', data.coins, data);
                     updateUI();
                 })
                 .catch(err => {
@@ -6034,7 +6110,7 @@ async function playSlots() {
                 
                 if (s1 === s2 && s2 === s3) {
                     const win = bet * 5;
-                    State.game.coins += win;
+                    addCoins('slotsLocalWin', win, { bet, win });
                     trackAchievementProgress('games', 1);
                     resultEl.textContent = tr('minigames.slotsJackpot', { win });
                     playSound('win');
@@ -6042,7 +6118,7 @@ async function playSlots() {
                     spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'win');
                     checkAchievements();
                 } else {
-                    State.game.coins -= bet;
+                    addCoins('slotsLocalLose', -bet, { bet });
                     resultEl.textContent = tr('minigames.slotsLose');
                     shakeGameModal('slots');
                     spawnGameParticles(document.querySelector('#game-slots .slots-container'), 'lose');
@@ -6113,7 +6189,7 @@ async function playDice() {
                     
                     trackAchievementProgress('games', 1);
                     checkAchievements();
-                    State.game.coins = data.coins;
+                    setCoins('dice', data.coins, data);
                     updateUI();
                 })
                 .catch(err => {
@@ -6142,14 +6218,14 @@ async function playDice() {
                 
                 if (win) {
                     const multiplier = pred === '7' ? 5 : 2;
-                    State.game.coins += bet * multiplier;
+                    addCoins('diceLocalWin', bet * multiplier, { bet, multiplier });
                     resultEl.textContent = tr('minigames.diceWin', { multiplier });
                     playSound('win');
                     spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'win');
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                 } else {
-                    State.game.coins -= bet;
+                    addCoins('diceLocalLose', -bet, { bet });
                     resultEl.textContent = tr('minigames.diceLose');
                     shakeGameModal('dice');
                     spawnGameParticles(document.querySelector('#game-dice .dice-container'), 'lose');
@@ -6219,7 +6295,7 @@ async function playWheel() {
                     playSound('lose');
                 }
                 
-                State.game.coins = data.coins;
+                setCoins('roulette', data.coins, data);
                 trackAchievementProgress('games', 1);
                 checkAchievements();
                 updateUI();
@@ -6248,14 +6324,14 @@ async function playWheel() {
                 
                 if (win) {
                     const multiplier = betType === 'number' || betType === 'green' ? 35 : 2;
-                    State.game.coins += bet * multiplier;
+                    addCoins('rouletteLocalWin', bet * multiplier, { bet, multiplier });
                     resultEl.textContent = tr('minigames.rouletteWin', { number: landedNumber, multiplier });
                     playSound('win');
                     spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'win');
                     trackAchievementProgress('games', 1);
                     checkAchievements();
                 } else {
-                    State.game.coins -= bet;
+                    addCoins('rouletteLocalLose', -bet, { bet });
                     resultEl.textContent = tr('minigames.rouletteLose', { number: landedNumber });
                     shakeGameModal('wheel');
                     spawnGameParticles(document.querySelector('#game-wheel .roulette-container'), 'lose');
@@ -6425,11 +6501,11 @@ function playLuckyBox(boxIndex) {
                 payout = Number(data.payout ?? Math.floor(bet * multiplier));
                 outcomeType = data.outcome || outcomeType;
                 if (typeof data.coins === 'number') {
-                    State.game.coins = data.coins;
+                    setCoins('luckybox', data.coins, data);
                 }
                 resultEl.textContent = data.message || resultEl.textContent;
             } else {
-                State.game.coins = State.game.coins - bet + payout;
+                setCoins('luckyboxLocal', State.game.coins - bet + payout, { bet, payout });
             }
 
             cards.forEach((card, index) => {
@@ -6556,7 +6632,7 @@ function finalizeCrashGhostRound(result = {}) {
     crashGhostState.settled = true;
 
     if (typeof result.coins === 'number') {
-        State.game.coins = result.coins;
+        setCoins('crashFinalize', result.coins, result);
     }
 
     if (cashedOut) {
@@ -6625,7 +6701,7 @@ async function startCrashGhost() {
         crashGhostState.crashAt = null;
 
         if (typeof response.coins === 'number') {
-            State.game.coins = response.coins;
+            setCoins('crashCashout', response.coins, response);
             updateUI();
         }
 
@@ -7489,7 +7565,7 @@ const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
         const data = await API.post('/api/passive-income', { user_id: userId });
         if (data.income > 0) {
             // Apply passive income as a delta to avoid overwriting newer realtime coins.
-            State.game.coins += data.income;
+            addCoins('passiveIncome', data.income, data);
             updateUI();
             if (!silent) {
                 showToast(data.message || `+${formatNumber(data.income)} passive income`);
