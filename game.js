@@ -2043,6 +2043,16 @@ async function loadUserData() {
             return API.get(`/api/user/${userId}`);
         }, 3, 1800);
         
+        // Ordering check: ignore stale user snapshots
+        const incomingTs = data.state_updated_at || data.state_version || 0;
+        const currentTs = State.temp.lastStateUpdatedAtMs || 0;
+        if (incomingTs > 0 && incomingTs <= currentTs) {
+            return; // stale response, ignore
+        }
+        if (incomingTs > 0) {
+            State.temp.lastStateUpdatedAtMs = incomingTs;
+        }
+
         State.game.coins = data.coins || 0;
         applyServerEnergySnapshot({
             energy: data.energy || 0,
