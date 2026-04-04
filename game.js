@@ -1259,7 +1259,7 @@ const AMBIENT_TOAST_VARIANTS = [
         icon: '??',
         title: 'Focus line',
         body: () => State.game.level > 0
-            ? `Level ${State.game.level} already looks dangerous. Keep stacking clean taps.`
+            ? `Level ${getDisplayLevel(State.game.level)} already looks dangerous. Keep stacking clean taps.`
             : 'The first levels come fast. Build momentum before the grind settles.',
         side: 'right',
         variant: 'info'
@@ -1608,7 +1608,7 @@ function initSoftOnboarding() {
     const isFreshAccount =
         (State.game.coins || 0) <= 0 &&
         (State.daily.claimedDays || 0) === 0 &&
-        Math.max(State.game.levels.multitap || 0, State.game.levels.profit || 0, State.game.levels.energy || 0) === 0;
+        (Number(State.game.level || 0) === 0);
 
     if (!isFreshAccount && !saved?.step) {
         writeSoftOnboardingState({ step: 'done', completed: true });
@@ -1919,7 +1919,7 @@ function checkAchievements() {
         clicks: State.achievements.clicks || 0,
         upgrades: State.achievements.upgrades || 0,
         games: State.achievements.games || 0,
-        level: Number(State.game.level || 1),
+        level: Number(getDisplayLevel(State.game.level) || 1),
         referrals: State.skins.friendsInvited || 0,
         adsWatched: State.skins.adsWatched || 0
     };
@@ -2050,20 +2050,23 @@ Object.assign(StateActions, {
         }
     },
     applyProgressSnapshot(payload = {}) {
-        let nextMultitapLevel = Number(State.game.levels.multitap || 0);
-        if (typeof payload.multitap_level === 'number') {
-            nextMultitapLevel = payload.multitap_level;
-            Store.set('game.levels.multitap', payload.multitap_level);
+        const legacyFallback = Math.max(
+            Number(payload.multitap_level ?? 0),
+            Number(payload.profit_level ?? 0),
+            Number(payload.energy_level ?? 0)
+        );
+        let nextLevel = Number(State.game.level || 0);
+        if (typeof payload.level === 'number') {
+            nextLevel = payload.level;
+        } else if (legacyFallback > 0 || nextLevel <= 0) {
+            nextLevel = legacyFallback;
         }
-        if (typeof payload.profit_level === 'number') {
-            Store.set('game.levels.profit', payload.profit_level);
-        }
-        if (typeof payload.energy_level === 'number') {
-            Store.set('game.levels.energy', payload.energy_level);
-        }
-        // Main progression level must follow tap progression (multitap) to stay
-        // consistent with profit_per_tap and avoid fake/global desync.
-        Store.set('game.level', getDisplayLevel(nextMultitapLevel));
+        nextLevel = Math.max(0, Number(nextLevel || 0));
+        Store.set('game.level', nextLevel);
+        // Deprecated mirrors stay aligned for backward compatibility.
+        Store.set('game.levels.multitap', nextLevel);
+        Store.set('game.levels.profit', nextLevel);
+        Store.set('game.levels.energy', nextLevel);
         if (typeof payload.rebirth_count === 'number') {
             Store.set('game.rebirthCount', Math.max(0, payload.rebirth_count));
         }
@@ -2071,15 +2074,20 @@ Object.assign(StateActions, {
     applyProfitSnapshot(payload = {}) {
         if (typeof payload.profit_per_tap === 'number') {
             const nextTap = Math.max(1, Number(payload.profit_per_tap || 0));
-            const baseLevelForGuard = typeof payload.multitap_level === 'number'
-                ? payload.multitap_level
-                : Number(State.game.levels.multitap || 0);
-            const expectedMinTap = Math.max(1, getDisplayLevel(baseLevelForGuard));
+            const legacyFallback = Math.max(
+                Number(payload.multitap_level ?? 0),
+                Number(payload.profit_level ?? 0),
+                Number(payload.energy_level ?? 0)
+            );
+            const baseLevelForGuard = typeof payload.level === 'number'
+                ? payload.level
+                : (legacyFallback > 0 ? legacyFallback : Number(State.game.level || 0));
+            const expectedMinTap = Math.max(1, Number(baseLevelForGuard || 0) + 1);
             const nextRebirthCount = typeof payload.rebirth_count === 'number'
                 ? Math.max(0, Number(payload.rebirth_count || 0))
                 : Number(State.game.rebirthCount || 0);
             const isProgressResetPayload =
-                (typeof payload.multitap_level === 'number' && payload.multitap_level < Number(State.game.levels.multitap || 0)) ||
+                (typeof payload.level === 'number' && payload.level < Number(State.game.level || 0)) ||
                 (typeof payload.rebirth_count === 'number' && nextRebirthCount > Number(State.game.rebirthCount || 0));
 
             // Guard against stale/partial snapshots that can regress tap to 1
@@ -2189,17 +2197,17 @@ async function loadUserData() {
         StateActions.applyProfitSnapshot({
             profit_per_tap: (typeof data.profit_per_tap === 'number') ? data.profit_per_tap : State.game.profitPerTap,
             profit_per_hour: (typeof data.profit_per_hour === 'number') ? data.profit_per_hour : State.game.profitPerHour,
+            level: (typeof data.level === 'number') ? data.level : data.multitap_level,
             multitap_level: data.multitap_level,
             rebirth_count: data.rebirth_count
         });
         StateActions.applyProgressSnapshot({
-            level: data.level || 0,
+            level: (typeof data.level === 'number') ? data.level : undefined,
             multitap_level: data.multitap_level || 0,
             profit_level: data.profit_level || 0,
             energy_level: data.energy_level || 0,
             rebirth_count: data.rebirth_count || 0
         });
-        State.game.level = getDisplayLevel(State.game.levels.multitap);
         applyTaskBoostPayload(data);
         
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
@@ -2319,7 +2327,7 @@ async function loadSkinsList() {
     
     State.skins.data.forEach(skin => {
         if (skin.requirement?.type === 'level') {
-            skin.requirement.current = getDisplayLevel(State.game.levels.multitap);
+            skin.requirement.current = getDisplayLevel(State.game.level);
         } else if (skin.requirement?.type === 'videos') {
             const key = skin.requirement.progressKey || skin.id;
             skin.requirement.current = State.skins.videoViews[key] || 0;
@@ -2875,10 +2883,9 @@ function updateUI() {
 
         if (bottomPanelUi) {
             const bottomViewModel = bottomPanelUi.buildViewModel({
-                rawLevel: State.game.levels.multitap,
+                rawLevel: State.game.level,
                 globalPrice: State.game.prices.global || 0
             });
-            State.game.level = bottomViewModel.displayLevel;
             bottomPanelUi.render(bottomViewModel);
         }
 
@@ -3270,7 +3277,7 @@ function openSkinDetail(skinId) {
             reqBlock.style.display = 'block';
             
             if (skin.requirement?.type === 'level') {
-                const current = getDisplayLevel(State.game.levels.multitap);
+                const current = getDisplayLevel(State.game.level);
                 const value = skin.requirement.value || 1;
                 const percent = Math.min(100, (current / value) * 100);
                 
@@ -3515,9 +3522,15 @@ async function upgradeBoost(type, internal = false) {
         
         if (result) {
             setCoins('upgradeBoost', result.coins, result);
-            State.game.levels.multitap = result.levels?.multitap ?? result.new_level ?? State.game.levels.multitap;
-            State.game.levels.profit = result.levels?.profit ?? result.new_level ?? State.game.levels.profit;
-            State.game.levels.energy = result.levels?.energy ?? result.new_level ?? State.game.levels.energy;
+            State.game.level = Number(
+                result.level
+                ?? result.new_level
+                ?? result.levels?.multitap
+                ?? State.game.level
+            );
+            State.game.levels.multitap = State.game.level;
+            State.game.levels.profit = State.game.level;
+            State.game.levels.energy = State.game.level;
             State.game.prices.global = result.next_cost || 0;
             State.game.prices.multitap = result.next_cost || 0;
             State.game.prices.profit = result.next_cost || 0;
@@ -3598,9 +3611,15 @@ async function upgradeAll(internal = false) {
         }
 
         setCoins('upgradeAll', result.coins, result);
-        State.game.levels.multitap = result.levels?.multitap ?? State.game.levels.multitap;
-        State.game.levels.profit = result.levels?.profit ?? State.game.levels.profit;
-        State.game.levels.energy = result.levels?.energy ?? State.game.levels.energy;
+        State.game.level = Number(
+            result.level
+            ?? result.new_level
+            ?? result.levels?.multitap
+            ?? State.game.level
+        );
+        State.game.levels.multitap = State.game.level;
+        State.game.levels.profit = State.game.level;
+        State.game.levels.energy = State.game.level;
         State.game.prices = { ...State.game.prices, ...(result.prices || {}) };
         if (result.next_cost) {
             State.game.prices.global = result.next_cost;
@@ -4898,7 +4917,7 @@ function renderPrizePoolDrawer(data) {
     }
 
     const player = data?.player || null;
-    const league = player?.league || deriveEventLeague(State.game.level || 1);
+    const league = player?.league || deriveEventLeague(getDisplayLevel(State.game.level) || 1);
     const meta = getEventLeagueMeta(league);
 
     if (amountEl) amountEl.textContent = formatUsdFromCents(data?.payout_fund_cents || 0);
@@ -4914,7 +4933,7 @@ function renderPrizePoolDrawer(data) {
 function renderEventOverview(data) {
     eventOverviewCache = data || null;
     const player = data?.player || null;
-    const league = player?.league || deriveEventLeague(State.game.level || 1);
+    const league = player?.league || deriveEventLeague(getDisplayLevel(State.game.level) || 1);
     const meta = getEventLeagueMeta(league);
 
     const leagueEl = document.getElementById('event-player-league');

@@ -91,7 +91,7 @@
                     setCoins((data.coins || 0) + (state.temp.clickValueBuffer || 0));
                     if (typeof data.profit_per_tap === 'number') {
                         const nextTap = Math.max(1, Number(data.profit_per_tap || 0));
-                        const expectedMinTap = Math.max(1, Number(state.game.levels.multitap || 0) + 1);
+                        const expectedMinTap = Math.max(1, Number(state.game.level || 0) + 1);
                         if (nextTap >= expectedMinTap) {
                             store.set('game.profitPerTap', nextTap);
                         }

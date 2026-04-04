@@ -19,7 +19,7 @@
         let rebirthInFlight = false;
 
         function getRawGlobalLevel() {
-            return Number(State.game.levels.multitap || 0);
+            return Number(State.game.level || 0);
         }
 
         function canRebirth() {
@@ -59,16 +59,14 @@
             const nextProfitPerHour = Number(payload?.profit_per_hour ?? State.game.profitPerHour);
             const nextMaxEnergy = Number(payload?.max_energy ?? State.game.maxEnergy);
             const nextEnergy = Number(payload?.energy ?? State.game.energy);
-            const nextProfitLevel = Number(payload?.profit_level ?? State.game.levels.profit);
-            const nextEnergyLevel = Number(payload?.energy_level ?? State.game.levels.energy);
 
             StateActions.setCoins(nextCoins);
             StateActions.setRebirthCount(nextRebirthCount);
             StateActions.applyProgressSnapshot({
                 level: 0,
                 multitap_level: 0,
-                profit_level: nextProfitLevel,
-                energy_level: nextEnergyLevel
+                profit_level: 0,
+                energy_level: 0
             });
             StateActions.applyProfitSnapshot({
                 profit_per_tap: nextProfitPerTap,
