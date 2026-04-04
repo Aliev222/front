@@ -89,7 +89,13 @@
                     }
 
                     setCoins((data.coins || 0) + (state.temp.clickValueBuffer || 0));
-                    store.set('game.profitPerTap', data.profit_per_tap ?? state.game.profitPerTap);
+                    if (typeof data.profit_per_tap === 'number') {
+                        const nextTap = Math.max(1, Number(data.profit_per_tap || 0));
+                        const expectedMinTap = Math.max(1, Number(state.game.levels.multitap || 0) + 1);
+                        if (nextTap >= expectedMinTap) {
+                            store.set('game.profitPerTap', nextTap);
+                        }
+                    }
                     store.set('game.profitPerHour', data.profit_per_hour ?? state.game.profitPerHour);
                     applyBoostStateFromPayload(data);
 

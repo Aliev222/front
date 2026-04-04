@@ -2057,7 +2057,31 @@ Object.assign(StateActions, {
     },
     applyProfitSnapshot(payload = {}) {
         if (typeof payload.profit_per_tap === 'number') {
-            Store.set('game.profitPerTap', payload.profit_per_tap);
+            const nextTap = Math.max(1, Number(payload.profit_per_tap || 0));
+            const baseLevelForGuard = typeof payload.multitap_level === 'number'
+                ? payload.multitap_level
+                : Number(State.game.levels.multitap || 0);
+            const expectedMinTap = Math.max(1, getDisplayLevel(baseLevelForGuard));
+            const nextRebirthCount = typeof payload.rebirth_count === 'number'
+                ? Math.max(0, Number(payload.rebirth_count || 0))
+                : Number(State.game.rebirthCount || 0);
+            const isProgressResetPayload =
+                (typeof payload.multitap_level === 'number' && payload.multitap_level < Number(State.game.levels.multitap || 0)) ||
+                (typeof payload.rebirth_count === 'number' && nextRebirthCount > Number(State.game.rebirthCount || 0));
+
+            // Guard against stale/partial snapshots that can regress tap to 1
+            // after hydration while progression level is already high.
+            if (!isProgressResetPayload && nextTap < expectedMinTap) {
+                if (DEBUG) {
+                    console.warn('Ignoring regressive profit_per_tap snapshot', {
+                        nextTap,
+                        expectedMinTap,
+                        payload
+                    });
+                }
+            } else {
+                Store.set('game.profitPerTap', nextTap);
+            }
         }
         if (typeof payload.profit_per_hour === 'number') {
             Store.set('game.profitPerHour', payload.profit_per_hour);
@@ -2150,8 +2174,10 @@ async function loadUserData() {
             regen_seconds: data.regen_seconds || 2
         });
         StateActions.applyProfitSnapshot({
-            profit_per_tap: data.profit_per_tap || 1,
-            profit_per_hour: data.profit_per_hour || 100
+            profit_per_tap: (typeof data.profit_per_tap === 'number') ? data.profit_per_tap : State.game.profitPerTap,
+            profit_per_hour: (typeof data.profit_per_hour === 'number') ? data.profit_per_hour : State.game.profitPerHour,
+            multitap_level: data.multitap_level,
+            rebirth_count: data.rebirth_count
         });
         StateActions.applyProgressSnapshot({
             level: data.level || 0,
