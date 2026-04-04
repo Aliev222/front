@@ -3187,6 +3187,7 @@ function handleTap(e) {
         dailyInfiniteEnergyActive,
         megaBoostActive
     });
+    done(true, { autoTap: isAutoTap, previewGain, freeEnergyActive });
 }
 
 function queueTapFeedback({
@@ -3265,7 +3266,6 @@ function queueTapFeedback({
         if (isAutoTap && allowAutoFeedback) {
             State.temp.lastAutoFeedbackAt = nowMs;
         }
-        done(true, { autoTap: isAutoTap, previewGain, freeEnergyActive });
     });
 }
 
