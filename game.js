@@ -2037,7 +2037,9 @@ Object.assign(StateActions, {
         }
     },
     applyProgressSnapshot(payload = {}) {
+        let nextMultitapLevel = Number(State.game.levels.multitap || 0);
         if (typeof payload.multitap_level === 'number') {
+            nextMultitapLevel = payload.multitap_level;
             Store.set('game.levels.multitap', payload.multitap_level);
         }
         if (typeof payload.profit_level === 'number') {
@@ -2046,9 +2048,9 @@ Object.assign(StateActions, {
         if (typeof payload.energy_level === 'number') {
             Store.set('game.levels.energy', payload.energy_level);
         }
-        if (typeof payload.level === 'number') {
-            Store.set('game.level', payload.level);
-        }
+        // Main progression level must follow tap progression (multitap) to stay
+        // consistent with profit_per_tap and avoid fake/global desync.
+        Store.set('game.level', getDisplayLevel(nextMultitapLevel));
         if (typeof payload.rebirth_count === 'number') {
             Store.set('game.rebirthCount', Math.max(0, payload.rebirth_count));
         }
