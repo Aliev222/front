@@ -87,6 +87,16 @@ let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_K
 let apiSessionRefreshPromise = null;
 let adsgramController = null;
 let adsgramInitializedBlockId = '';
+const AD_SESSION_PREFETCH_MAX_AGE_MS = 120000;
+const AD_SESSION_PREFETCH_ACTIONS = [
+    'mega_boost',
+    'autoclicker',
+    'energy_refill_max',
+    'ads_increment',
+    'video_task',
+    'ghost_boost'
+];
+const adSessionPrefetch = new Map();
 const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
     ? `${window.location.origin}/tonconnect-manifest.json`
     : 'https://spirix.vercel.app/tonconnect-manifest.json';
@@ -2494,13 +2504,15 @@ async function syncGhostBoostStatus() {
     }
 }
 
-async function startAdActionSession(action) {
-    debugLog('ads', 'ad click', { action });
+async function requestAdActionSession(action, { logClick = true, source = 'interactive' } = {}) {
+    if (logClick) {
+        debugLog('ads', 'ad click', { action });
+    }
     if (!userId) {
         throw new Error(tr('toasts.authRequired'));
     }
 
-    const done = debugPerfStart('ads', 'start ad session', { action });
+    const done = debugPerfStart('ads', 'start ad session', { action, source });
     const response = await API.post('/api/ad-action/start', {
         user_id: userId,
         action
@@ -2513,6 +2525,51 @@ async function startAdActionSession(action) {
 
     done(true, { action, adSessionId: response.ad_session_id });
     return response.ad_session_id;
+}
+
+async function startAdActionSession(action) {
+    return requestAdActionSession(action, { logClick: true, source: 'interactive' });
+}
+
+function prewarmAdActionSession(action) {
+    if (!userId || !action) return;
+    const now = Date.now();
+    const existing = adSessionPrefetch.get(action);
+    if (existing && (now - existing.createdAt) < AD_SESSION_PREFETCH_MAX_AGE_MS) {
+        return;
+    }
+
+    const promise = requestAdActionSession(action, { logClick: false, source: 'prefetch' })
+        .then((adSessionId) => {
+            const current = adSessionPrefetch.get(action);
+            if (current && current.promise === promise) {
+                current.adSessionId = adSessionId;
+            }
+            return adSessionId;
+        })
+        .catch((err) => {
+            const current = adSessionPrefetch.get(action);
+            if (current && current.promise === promise) {
+                adSessionPrefetch.delete(action);
+            }
+            throw err;
+        });
+
+    adSessionPrefetch.set(action, {
+        createdAt: now,
+        promise,
+        adSessionId: null
+    });
+}
+
+async function consumeAdActionSession(action) {
+    const now = Date.now();
+    const existing = adSessionPrefetch.get(action);
+    if (existing && (now - existing.createdAt) < AD_SESSION_PREFETCH_MAX_AGE_MS) {
+        adSessionPrefetch.delete(action);
+        return await existing.promise;
+    }
+    return await startAdActionSession(action);
 }
 
 async function showRewardedAd(adSessionId = null) {
@@ -2545,6 +2602,14 @@ async function showRewardedAd(adSessionId = null) {
     } finally {
         setAdInputBlocked(false);
     }
+}
+
+async function openRewardedAdWithSession(action) {
+    const adSessionId = await consumeAdActionSession(action);
+    // Keep the next click fast without affecting current correctness.
+    prewarmAdActionSession(action);
+    await showRewardedAd(adSessionId);
+    return adSessionId;
 }
 
 async function confirmAdsgramAdSession(adSessionId, attempts = 6, delayMs = 1500) {
@@ -2651,7 +2716,6 @@ async function claimLuckyGhost(event) {
     }
 
     try {
-        const adSessionId = await startAdActionSession('ghost_boost');
         showToast('Catch the ad and the ghost pays back with x5 taps and infinite energy.', false, {
             title: 'Lucky ghost',
             icon: '??',
@@ -2659,7 +2723,7 @@ async function claimLuckyGhost(event) {
             variant: 'weird',
             duration: 3200
         });
-        await showRewardedAd(adSessionId);
+        const adSessionId = await openRewardedAdWithSession('ghost_boost');
         const optimisticExpires = new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
         setGhostBoostState(true, optimisticExpires);
         debugLog('ads', 'reward applied in UI', {
@@ -3692,8 +3756,7 @@ async function watchAdForSkin(skinId) {
     showToast(tr('toasts.adLoading'));
 
     try {
-        const adSessionId = await startAdActionSession('ads_increment');
-        await showRewardedAd(adSessionId);
+        const adSessionId = await openRewardedAdWithSession('ads_increment');
         await confirmAdsgramAdSession(adSessionId);
         const adsSync = await claimAdActionWithRetry(() => API.post('/api/ads/increment', {
             user_id: userId,
@@ -4415,8 +4478,7 @@ async function watchVideoForTask(taskId) {
     showToast(tr('toasts.videoLoading'));
     
     try {
-        const adSessionId = await startAdActionSession('video_task');
-        await showRewardedAd(adSessionId);
+        const adSessionId = await openRewardedAdWithSession('video_task');
         await confirmAdsgramAdSession(adSessionId);
         trackAchievementProgress('adsWatched', 1);
 
@@ -5690,9 +5752,8 @@ async function recoverEnergyWithAd() {
     }
 
     try {
-        const adSessionId = await startAdActionSession('energy_refill_max');
         showToast(tr('toasts.adLoading'));
-        await showRewardedAd(adSessionId);
+        const adSessionId = await openRewardedAdWithSession('energy_refill_max');
         await confirmAdsgramAdSession(adSessionId);
         const data = await claimAdActionWithRetry(() => API.post('/api/update-energy', {
             user_id: userId,
@@ -5790,8 +5851,7 @@ async function activateMegaBoost() {
     showToast(tr('toasts.adLoading'));
 
     (async () => {
-        const adSessionId = await startAdActionSession('mega_boost');
-        await showRewardedAd(adSessionId);
+        const adSessionId = await openRewardedAdWithSession('mega_boost');
         boostEndTime = new Date(Date.now() + MEGA_BOOST_DURATION_MS);
         if (boostBtn) boostBtn.classList.add('active');
         syncMegaBoostUi();
@@ -7104,6 +7164,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTonWalletBridge();
     initBgm();
     initAdsgramController();
+    setTimeout(() => {
+        if (userId && isAdsgramReady()) {
+            AD_SESSION_PREFETCH_ACTIONS.forEach((action) => prewarmAdActionSession(action));
+        }
+    }, 0);
     initAutoClicker();
     initBadgePhysics();
 
@@ -7455,8 +7520,7 @@ function initAutoClicker() {
         }
         showToast(tr('toasts.adLoading'));
         try {
-            const adSessionId = await startAdActionSession('autoclicker');
-            await showRewardedAd(adSessionId);
+            const adSessionId = await openRewardedAdWithSession('autoclicker');
             enable();
             debugLog('ads', 'reward applied in UI', {
                 flow: 'autoclicker',
