@@ -2090,24 +2090,45 @@ async function loadUserData() {
     try {
         const data = await runWithRetry(async () => {
             await ensureApiSession();
-            const doneRegister = debugPerfStart('perf', 'startup/register');
+            const doneUser = debugPerfStart('perf', 'startup/api_user');
             try {
-                await API.post('/api/register', {
+                let userData = await API.get(`/api/user/${userId}`);
+                doneUser(true);
+
+                // Keep register side-effects (username sync / one-time referral attach),
+                // but do not block first hydration for already existing users.
+                const doneRegister = debugPerfStart('perf', 'startup/register');
+                API.post('/api/register', {
                     user_id: userId,
                     username,
                     referrer_id: referrerId
+                }).then(() => {
+                    doneRegister(true, { deferred: true });
+                }).catch((registerErr) => {
+                    doneRegister(false, {
+                        deferred: true,
+                        error: String(registerErr?.message || registerErr || '')
+                    });
+                    console.warn('Deferred register failed:', registerErr);
                 });
-                doneRegister(true);
-            } catch (err) {
-                doneRegister(false, { error: String(err?.message || err || '') });
-                throw err;
-            }
-            const doneUser = debugPerfStart('perf', 'startup/api_user');
-            try {
-                const userData = await API.get(`/api/user/${userId}`);
-                doneUser(true);
+
                 return userData;
             } catch (err) {
+                // New users can hit /api/user before account exists.
+                // In that case, register once and retry /api/user immediately.
+                if (err?.status === 404) {
+                    const doneRegister = debugPerfStart('perf', 'startup/register');
+                    await API.post('/api/register', {
+                        user_id: userId,
+                        username,
+                        referrer_id: referrerId
+                    });
+                    doneRegister(true, { deferred: false, reason: 'api_user_404' });
+
+                    const retried = await API.get(`/api/user/${userId}`);
+                    doneUser(true, { retriedAfterRegister: true });
+                    return retried;
+                }
                 doneUser(false, { error: String(err?.message || err || '') });
                 throw err;
             }
@@ -7067,9 +7088,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userId) {
         await loadUserData();
-        await loadTournamentPrizePoolData({ silent: true });
-        await loadTonWalletStatus();
-        await checkOfflinePassiveIncome();
+        // Non-critical startup requests are intentionally deferred so
+        // first hydration / first interaction are not blocked by them.
+        Promise.allSettled([
+            loadTournamentPrizePoolData({ silent: true }),
+            loadTonWalletStatus(),
+            checkOfflinePassiveIncome()
+        ]).catch((err) => {
+            console.warn('Deferred post-hydration startup failed:', err);
+        });
         startOnlinePresence();
         setInterval(sendClickBatch, 1500);
     } else {
