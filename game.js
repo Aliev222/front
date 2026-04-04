@@ -88,14 +88,6 @@ let apiSessionRefreshPromise = null;
 let adsgramController = null;
 let adsgramInitializedBlockId = '';
 const AD_SESSION_PREFETCH_MAX_AGE_MS = 120000;
-const AD_SESSION_PREFETCH_ACTIONS = [
-    'mega_boost',
-    'autoclicker',
-    'energy_refill_max',
-    'ads_increment',
-    'video_task',
-    'ghost_boost'
-];
 const adSessionPrefetch = new Map();
 const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
     ? `${window.location.origin}/tonconnect-manifest.json`
@@ -2552,7 +2544,11 @@ function prewarmAdActionSession(action) {
             if (current && current.promise === promise) {
                 adSessionPrefetch.delete(action);
             }
-            throw err;
+            debugLog('ads', 'prefetch skipped', {
+                action,
+                error: err?.detail || err?.message || String(err)
+            });
+            return null;
         });
 
     adSessionPrefetch.set(action, {
@@ -2770,6 +2766,7 @@ async function claimLuckyGhost(event) {
 
 function spawnLuckyGhost() {
     if (State.temp.ghostSpawnVisible || document.hidden || document.body.classList.contains('modal-open')) return;
+    if (isAdsgramReady()) prewarmAdActionSession('ghost_boost');
 
     scheduleNextGhostSpawn();
     State.temp.ghostSpawnVisible = true;
@@ -5768,6 +5765,7 @@ function startTournamentTimer(seconds) {
 // ==================== ЭНЕРГИЯ - МОДАЛКА ====================
 function showEnergyRecoveryModal() {
     if (document.querySelector('.energy-recovery-modal')) return;
+    if (isAdsgramReady()) prewarmAdActionSession('energy_refill_max');
     const cooldownRemainingMs = getAdCooldownRemainingMs('energy_refill');
     
     const modal = document.createElement('div');
@@ -5870,6 +5868,7 @@ async function activateMegaBoost() {
         showToast(tr('toasts.authRequired'), true);
         return;
     }
+    if (isAdsgramReady()) prewarmAdActionSession('mega_boost');
     
     const boostBtn = document.getElementById('mega-boost-btn');
     if (boostBtn?.classList.contains('active')) {
@@ -7215,11 +7214,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTonWalletBridge();
     initBgm();
     initAdsgramController();
-    setTimeout(() => {
-        if (userId && isAdsgramReady()) {
-            AD_SESSION_PREFETCH_ACTIONS.forEach((action) => prewarmAdActionSession(action));
-        }
-    }, 0);
     initAutoClicker();
     initBadgePhysics();
 
@@ -7556,6 +7550,7 @@ function initAutoClicker() {
     window.toggleAutoClick = async function toggleAutoClick() {
         if (!autoBtn) return;
         if (autoState.enabledUntil > Date.now()) return; // уже активен
+        if (isAdsgramReady()) prewarmAdActionSession('autoclicker');
         const cooldownRemainingMs = getCooldownRemainingMs();
         if (cooldownRemainingMs > 0) {
             showToast(`Auto click cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
