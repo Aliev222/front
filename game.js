@@ -1121,6 +1121,10 @@ const State = window.SpiritStore.createInitialState({
 });
 const Store = window.SpiritStore.createStore(State);
 let clickDomain = null;
+let tapDomain = null;
+let tapFeedbackRenderer = null;
+let socialTasksDomain = null;
+let walletEventUi = null;
 
 window.State = State;
 window.state = State;
@@ -1971,6 +1975,32 @@ clickDomain = window.SpiritClickDomain.createClickDomain({
     updateUI,
     fullSyncWithServer
 });
+tapDomain = window.SpiritTapDomain.createTapDomain({
+    clickDomain,
+    stateActions: StateActions,
+    registerTapRhythm,
+    advanceSoftOnboarding,
+    isMegaBoostActive,
+    isDailyInfiniteEnergyActive,
+    isGhostBoostActive,
+    isTaskTapBoostActive,
+    ghostBoostMultiplier: GHOST_BOOST_MULTIPLIER,
+    getVisualEnergy,
+    updateEnergyUIImmediate,
+    showEnergyRecoveryModal,
+    maybeSpawnLuckyGhost,
+    trackAchievementProgress,
+    checkAchievements,
+    updateUI
+});
+tapFeedbackRenderer = window.SpiritTapFeedbackRenderer.createTapFeedbackRenderer({
+    State,
+    store: Store,
+    isLitePerformanceMode,
+    getAudioContextForSfx,
+    tg,
+    autoFeedbackIntervalMs: AUTO_CLICK_FEEDBACK_INTERVAL_MS
+});
 adsDomain = window.SpiritAdsDomain.createAdsDomain({
     sleep,
     debugLog,
@@ -2008,6 +2038,16 @@ const StateActions = {
     },
     markTapTimestamp(ts) {
         Store.set('temp.lastTapAt', ts);
+    },
+    setSocialTasks(next) {
+        Store.set('tasks.social', next || {});
+    },
+    patchSocialTask(taskId, patch = {}) {
+        const prev = State.tasks.social?.[taskId] || { started: false, completed: false };
+        Store.set(`tasks.social.${taskId}`, { ...prev, ...patch });
+    },
+    setOwnedSkins(owned) {
+        Store.set('skins.owned', owned || []);
     }
 };
 
@@ -2869,6 +2909,26 @@ async function sendClickBatch() {
     await clickDomain.sendClickBatch();
 }
 
+function buildTapInputContext(e) {
+    const target = (e && e.target && e.target.closest) ? e.target : null;
+    if (target && target.closest(
+        'button, a, .nav-item, .settings-btn, .modal-close, ' +
+        '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
+        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
+        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card, ' +
+        '.skin-detail-modal, .energy-recovery-modal, .ad-input-blocker, ' +
+        '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop'
+    )) return null;
+
+    if (e.cancelable) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+
+    if (e.touches && e.touches[0]) {
+        return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+    }
+    return { clientX: e.clientX, clientY: e.clientY };
+}
+
 function handleTap(e) {
     const done = debugPerfStart('ui', 'handleTap');
     if (!DEBUG_BOOT.firstInteractiveLogged) {
@@ -2878,80 +2938,26 @@ function handleTap(e) {
     if (State.temp.adInputBlocked) return;
     if (hasBlockingOverlayActive()) return;
     const isAutoTap = !!e?.syntheticAuto;
-    const target = (e && e.target && e.target.closest) ? e.target : null;
-    if (target && target.closest(
-        'button, a, .nav-item, .settings-btn, .modal-close, ' +
-        '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
-        '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
-        '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card, ' +
-        '.skin-detail-modal, .energy-recovery-modal, .ad-input-blocker, ' +
-        '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop'
-    )) return;
-
-    if (e.cancelable) e.preventDefault();
-    if (e.stopPropagation) e.stopPropagation();
-
-    let clientX, clientY;
-    if (e.touches && e.touches[0]) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-    }
-
-    const tapSnapshot = clickDomain.computeTapPreviewGain({
-        isMegaBoostActive,
-        isDailyInfiniteEnergyActive,
-        isGhostBoostActive,
-        isTaskTapBoostActive,
-        ghostBoostMultiplier: GHOST_BOOST_MULTIPLIER
-    });
-    const {
-        previewGain,
-        freeEnergyActive,
-        megaBoostActive,
-        dailyInfiniteEnergyActive,
-        ghostBoostActive
-    } = tapSnapshot;
+    const coords = buildTapInputContext(e);
+    if (!coords) return;
 
     const tapTime = Date.now();
-    StateActions.markTapTimestamp(tapTime);
-    registerTapRhythm(tapTime, isAutoTap);
-    if (!isAutoTap) {
-        advanceSoftOnboarding('tap');
-    }
-
-    const applyTap = clickDomain.applyTapLocalMutation({
-        previewGain,
-        freeEnergyActive,
-        getVisualEnergy,
-        updateEnergyUIImmediate
+    const result = tapDomain.processTap({
+        isAutoTap,
+        tapTime,
+        coords
     });
-    if (!applyTap.ok) {
-        done(false, { reason: applyTap.reason || 'tap_blocked' });
-        if (applyTap.reason === 'no_energy') {
-            showEnergyRecoveryModal();
-        }
+    if (!result?.ok) {
+        done(false, { reason: result?.reason || 'tap_blocked' });
         return;
     }
 
-    maybeSpawnLuckyGhost(isAutoTap);
-
-    trackAchievementProgress('clicks', 1);
-    checkAchievements();
-    updateUI();
-
-    queueTapFeedback({
-        clientX,
-        clientY,
-        isAutoTap,
-        previewGain,
-        ghostBoostActive,
-        dailyInfiniteEnergyActive,
-        megaBoostActive
+    queueTapFeedback(result.payload);
+    done(true, {
+        autoTap: isAutoTap,
+        previewGain: result.payload.previewGain,
+        freeEnergyActive: result.payload.freeEnergyActive
     });
-    done(true, { autoTap: isAutoTap, previewGain, freeEnergyActive });
 }
 
 function queueTapFeedback({
@@ -2963,75 +2969,14 @@ function queueTapFeedback({
     dailyInfiniteEnergyActive,
     megaBoostActive
 }) {
-    requestAnimationFrame(() => {
-        // реюз пула эффектов, чтобы не создавать сотни DOM-элементов
-        if (!State.temp.tapPool) {
-            State.temp.tapPool = Array.from({ length: isLitePerformanceMode() ? 6 : 10 }, () => {
-                const el = document.createElement('div');
-                el.className = 'tap-effect-global';
-                el.style.position = 'fixed';
-                el.style.pointerEvents = 'none';
-                el.style.zIndex = '9999';
-                el.style.whiteSpace = 'nowrap';
-                document.body.appendChild(el);
-                return el;
-            });
-            State.temp.tapPoolIdx = 0;
-        }
-        const pool = State.temp.tapPool;
-        const idx = State.temp.tapPoolIdx % pool.length;
-        State.temp.tapPoolIdx++;
-        const effect = pool[idx];
-        const isNightMode = document.body.classList.contains('night-mode');
-        const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
-        const tapColor = ghostBoostActive ? '#9CEBFF' : (boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4'));
-        const tapGlow = ghostBoostActive ? 'rgba(156,235,255,0.95)' : (boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4'));
-        effect.style.left = `${clientX}px`;
-        effect.style.top = `${clientY}px`;
-        effect.style.transform = 'translate(-50%, -50%)';
-        effect.style.color = tapColor;
-        effect.style.fontSize = isAutoTap ? '22px' : '28px';
-        effect.style.fontWeight = isAutoTap ? '700' : 'bold';
-        effect.style.textShadow = `0 0 10px ${tapGlow}`;
-        effect.textContent = ghostBoostActive ? `+${previewGain} ??` : (boostVisualActive ? `+${previewGain} ??` : `+${previewGain}`);
-        effect.style.animation = 'none';
-        effect.style.opacity = '1';
-        effect.offsetWidth;
-        effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
-
-        const nowMs = Date.now();
-        const allowAutoFeedback = !isAutoTap || (nowMs - State.temp.lastAutoFeedbackAt >= AUTO_CLICK_FEEDBACK_INTERVAL_MS);
-
-        if (State.settings.sound && allowAutoFeedback) {
-            try {
-                const audioCtx = getAudioContextForSfx();
-                if (audioCtx) {
-                    const now = audioCtx.currentTime;
-                    const osc = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    osc.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    osc.type = boostVisualActive ? 'sawtooth' : 'sine';
-                    osc.frequency.setValueAtTime(ghostBoostActive ? 980 : (boostVisualActive ? 800 : (isAutoTap ? 560 : 650)), now);
-                    osc.frequency.exponentialRampToValueAtTime(ghostBoostActive ? 540 : (boostVisualActive ? 400 : (isAutoTap ? 420 : 450)), now + (isAutoTap ? 0.08 : 0.1));
-                    gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
-                    osc.start(now);
-                    osc.stop(now + (isAutoTap ? 0.12 : 0.2));
-                }
-            } catch (err) {}
-        }
-
-        if (State.settings.vibration && allowAutoFeedback) {
-            try {
-                if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
-                else if (navigator.vibrate) navigator.vibrate(isAutoTap ? 12 : 20);
-            } catch (err) {}
-        }
-
-        if (isAutoTap && allowAutoFeedback) {
-            State.temp.lastAutoFeedbackAt = nowMs;
-        }
+    tapFeedbackRenderer.render({
+        clientX,
+        clientY,
+        isAutoTap,
+        previewGain,
+        ghostBoostActive,
+        dailyInfiniteEnergyActive,
+        megaBoostActive
     });
 }
 
@@ -3736,181 +3681,41 @@ function toggleCompletedSocialTasks() {
     renderVideoTasks();
 }
 
+socialTasksDomain = window.SpiritSocialTasksDomain.createSocialTasksDomain({
+    State,
+    StateActions,
+    API,
+    SOCIAL_TASKS,
+    userId: () => userId,
+    tg,
+    persistSocialTasksState,
+    isCompletedSocialTasksCollapsed,
+    renderVideoTasks,
+    showToast,
+    tr,
+    setCoins,
+    normalizeOwnedSkinIds,
+    loadSkinsList,
+    renderSkins,
+    updateCollectionProgress,
+    updateUI,
+    DEBUG
+});
+
 async function loadSocialTasksStatus() {
-    State.tasks.social = {};
-
-    SOCIAL_TASKS.forEach((task) => {
-        State.tasks.social[task.id] = {
-            started: false,
-            completed: false
-        };
-    });
-
-    if (!userId) return;
-
-    try {
-        const tasks = await API.get(`/api/tasks/${userId}`);
-        tasks
-            .filter((task) => SOCIAL_TASKS.some((socialTask) => socialTask.id === task.id))
-            .forEach((task) => {
-                State.tasks.social[task.id] = {
-                    started: false,
-                    completed: !!task.completed
-                };
-            });
-        persistSocialTasksState();
-    } catch (err) {
-        if (DEBUG) console.warn('Social tasks sync failed', err);
-    }
+    return socialTasksDomain.loadSocialTasksStatus();
 }
 
 function renderSocialTasksMarkup() {
-    const activeTasks = [];
-    const completedTasks = [];
-
-    SOCIAL_TASKS.forEach((task) => {
-        const state = State.tasks.social[task.id] || { started: false, completed: false };
-        const isCompleted = state.completed;
-        const verificationUnavailable = task.verifyMode === 'unavailable';
-        const canClaim = state.started && !state.completed && !verificationUnavailable;
-        const requiresVerify = task.verifyMode === 'telegram';
-        const actionLabel = isCompleted
-            ? 'Claimed'
-            : canClaim
-                ? (requiresVerify ? 'Verify' : 'Claim')
-                : (verificationUnavailable ? 'Open' : 'Subscribe');
-        const actionHandler = isCompleted
-            ? ''
-            : canClaim
-                ? `onclick="claimSocialTask('${task.id}')"`
-                : `onclick="startSocialTask('${task.id}')"`
-        ;
-        const statusCopy = isCompleted
-            ? 'Reward received'
-            : canClaim
-                ? (requiresVerify ? 'Join the channel and tap verify' : 'Open the page, then claim the reward')
-                : (verificationUnavailable
-                    ? 'Open the page. Reward is disabled until server-side verification is added.'
-                    : '20,000 coins and an exclusive skin reward');
-
-        const cardMarkup = `
-            <div class="task-card task-card-simple social-task-card social-${task.colorClass} ${isCompleted ? 'is-claimed is-inactive' : ''}">
-                <div class="social-task-head">
-                    <div class="social-task-brand">
-                        <span class="social-task-icon">${task.icon}</span>
-                        <span class="social-task-dot ${isCompleted ? 'is-off' : ''}"></span>
-                        <span class="social-task-name">${task.name}</span>
-                    </div>
-                    <span class="task-reward-pill task-reward-pill-simple">${isCompleted ? 'Done' : '+20K + Skin'}</span>
-                </div>
-                <div class="task-copy-simple">
-                    <div class="task-title">${`Follow ${task.name}`}</div>
-                    <div class="task-desc">${statusCopy}</div>
-                </div>
-                <div class="task-actions-simple">
-                    <div class="social-task-preview">
-                        <img src="${task.image}" alt="${task.name}" onerror="this.src='imgg/skins/default.png'">
-                    </div>
-                    <button class="task-action task-action-simple social-action social-${task.colorClass}" ${actionHandler} ${isCompleted ? 'disabled' : ''}>
-                        ${actionLabel}
-                    </button>
-                </div>
-            </div>
-        `;
-
-        if (isCompleted) {
-            completedTasks.push(cardMarkup);
-        } else {
-            activeTasks.push(cardMarkup);
-        }
-    });
-
-    const completedCollapsed = isCompletedSocialTasksCollapsed();
-    const completedMarkup = completedTasks.length
-        ? `
-            <div class="social-completed-block ${completedCollapsed ? 'is-collapsed' : ''}">
-                <button class="social-completed-title" type="button" onclick="toggleCompletedSocialTasks()">
-                    <span>Completed</span>
-                    <span class="social-completed-arrow">${completedCollapsed ? '?' : '?'}</span>
-                </button>
-                <div class="social-completed-list" ${completedCollapsed ? 'hidden' : ''}>
-                    ${completedTasks.join('')}
-                </div>
-            </div>
-        `
-        : '';
-
-    return `${activeTasks.join('')}${completedMarkup}`;
+    return socialTasksDomain.renderSocialTasksMarkup();
 }
 
 function startSocialTask(taskId) {
-    const task = SOCIAL_TASKS.find((item) => item.id === taskId);
-    if (!task) return;
-
-    const link = task.link;
-    if (taskId === 'telegram_sub' && tg?.openTelegramLink) {
-        tg.openTelegramLink(link);
-    } else if (tg?.openLink) {
-        tg.openLink(link);
-    } else {
-        window.open(link, '_blank', 'noopener,noreferrer');
-    }
-
-    State.tasks.social[taskId] = {
-        started: task.verifyMode !== 'unavailable',
-        completed: false
-    };
-    persistSocialTasksState();
-    renderVideoTasks();
+    return socialTasksDomain.startSocialTask(taskId);
 }
 
 async function claimSocialTask(taskId) {
-    if (!userId) {
-        showToast(tr('toasts.authRequired'), true);
-        return;
-    }
-
-    try {
-        const response = await API.post('/api/complete-task', {
-            user_id: userId,
-            task_id: taskId
-        });
-
-        State.tasks.social[taskId] = {
-            started: false,
-            completed: true
-        };
-        persistSocialTasksState();
-
-        if (typeof response.coins === 'number') {
-            setCoins('claimSocialTask', response.coins, response);
-        }
-
-        if (response.skin_id) {
-            State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
-            await loadSkinsList();
-            renderSkins();
-            updateCollectionProgress();
-        }
-
-        updateUI();
-        renderVideoTasks();
-        showToast(response.message || '? Reward claimed!', false, {
-            title: taskId === 'telegram_sub' ? 'Verified reward' : 'Reward claimed',
-            variant: 'reward',
-            side: taskId === 'telegram_sub' ? 'right' : 'left'
-        });
-    } catch (err) {
-        if (String(err?.detail || '').includes('Task verification is not available yet')) {
-            State.tasks.social[taskId] = {
-                started: false,
-                completed: false
-            };
-            persistSocialTasksState();
-            renderVideoTasks();
-        }
-        showToast(err?.detail || tr('toasts.serverError'), true);
-    }
+    return socialTasksDomain.claimSocialTask(taskId);
 }
 
 async function loadVideoTasks() {
@@ -4571,6 +4376,13 @@ function getEventZoneText(player) {
     return tr('games.zonePlacesAway', { places: player.rank - 50 });
 }
 
+walletEventUi = window.SpiritWalletEventUi.createWalletEventUi({
+    t,
+    getTonWalletState: () => tonWalletState,
+    getPendingTonWalletNotice: () => pendingTonWalletNotice,
+    buildPendingTonWalletNoticeHtml
+});
+
 function setTonWalletState(wallet = {}) {
     tonWalletState = {
         connected: !!wallet?.connected,
@@ -4586,31 +4398,7 @@ function setTonWalletState(wallet = {}) {
 }
 
 function renderTonWalletState() {
-    const badgeEl = document.getElementById('event-wallet-status-badge');
-    const titleEl = document.getElementById('event-wallet-title');
-    const addressEl = document.getElementById('event-wallet-address');
-    const subEl = document.getElementById('event-wallet-sub');
-    const connectBtn = document.getElementById('event-wallet-connect-btn');
-    const disconnectBtn = document.getElementById('event-wallet-disconnect-btn');
-    const payoutReady = tonWalletState.connected && tonWalletState.verified;
-
-    if (badgeEl) badgeEl.textContent = payoutReady
-        ? t('wallet.connected')
-        : (tonWalletState.connected ? t('wallet.verificationRequired') : t('wallet.notConnected'));
-    if (titleEl) titleEl.textContent = payoutReady
-        ? t('wallet.connectedTitle')
-        : (tonWalletState.connected ? t('wallet.verificationTitle') : t('wallet.disconnectedTitle'));
-    if (addressEl) addressEl.textContent = tonWalletState.connected
-        ? (tonWalletState.masked_address || tonWalletState.address)
-        : t('wallet.noWallet');
-    if (subEl) subEl.textContent = payoutReady
-        ? t('wallet.connectedSub')
-        : (tonWalletState.connected ? t('wallet.verificationSub') : t('wallet.disconnectedSub'));
-    if (connectBtn) connectBtn.style.display = payoutReady ? 'none' : '';
-    if (disconnectBtn) disconnectBtn.style.display = tonWalletState.connected ? '' : 'none';
-    if (connectBtn) connectBtn.textContent = t('wallet.connect');
-    if (disconnectBtn) disconnectBtn.textContent = t('wallet.disconnect');
-    renderPendingTonWalletNotice(pendingTonWalletNotice);
+    walletEventUi.renderTonWalletState();
 }
 
 function openWalletPayoutScreen() {
@@ -4647,20 +4435,7 @@ function buildPendingTonWalletNoticeHtml(notice) {
 
 function renderPendingTonWalletNotice(notice = null) {
     pendingTonWalletNotice = notice || null;
-    const eventNoticeEl = document.getElementById('event-payout-notice');
-    const walletNoticeEl = document.getElementById('wallet-payout-notice');
-    const shouldShow = !!notice && !(tonWalletState.connected && tonWalletState.verified);
-
-    [eventNoticeEl, walletNoticeEl].forEach((node) => {
-        if (!node) return;
-        if (!shouldShow) {
-            node.classList.add('hidden');
-            node.innerHTML = '';
-            return;
-        }
-        node.classList.remove('hidden');
-        node.innerHTML = buildPendingTonWalletNoticeHtml(notice);
-    });
+    walletEventUi.renderPendingTonWalletNotice(notice);
 }
 
 function buildTonProofRequestValue(payload) {
