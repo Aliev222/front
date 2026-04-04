@@ -5,6 +5,51 @@ window.recoveryInterval = null;
 'use strict';
 
 console.log('?? game.js загружен', new Date().toLocaleTimeString());
+const DEBUG_LOGS_ENABLED = (localStorage.getItem('spirit_debug_logs') || '1') !== '0';
+const APP_BOOT_TS = performance.now();
+const DEBUG_BOOT = {
+    appStarted: false,
+    firstInteractiveLogged: false,
+    firstHydrationLogged: false
+};
+
+function debugLog(prefix, message, payload = null) {
+    if (!DEBUG_LOGS_ENABLED) return;
+    if (payload === null || payload === undefined) {
+        console.log(`[${prefix}] ${message}`);
+        return;
+    }
+    console.log(`[${prefix}] ${message}`, payload);
+}
+
+function debugError(prefix, message, error) {
+    if (!DEBUG_LOGS_ENABLED) return;
+    console.error(`[${prefix}] ${message}`, error);
+}
+
+function debugPerfStart(scope, label, payload = null) {
+    const startedAt = performance.now();
+    debugLog(scope, `${label} start`, payload);
+    return (ok = true, extra = null) => {
+        const durationMs = Math.round(performance.now() - startedAt);
+        debugLog(scope, `${label} ${ok ? 'success' : 'fail'} ${durationMs}ms`, extra);
+    };
+}
+
+window.addEventListener('error', (event) => {
+    debugError('error', 'window error', {
+        message: event?.message,
+        source: event?.filename,
+        line: event?.lineno,
+        column: event?.colno,
+        error: event?.error?.stack || String(event?.error || '')
+    });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    debugError('error', 'unhandledrejection', event?.reason);
+});
+debugLog('perf', 'app start', { t0Ms: Math.round(APP_BOOT_TS) });
 
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
@@ -995,11 +1040,14 @@ async function runWithRetry(task, attempts = 3, initialDelayMs = 1200) {
 }
 
 async function ensureApiSession(forceRefresh = false) {
+    const done = debugPerfStart('perf', 'auth/session', { forceRefresh });
     if (!telegramInitData) return null;
     if (!forceRefresh && apiSessionToken && apiSessionExpiresAt > Date.now() + 30000) {
+        done(true, { source: 'cache' });
         return apiSessionToken;
     }
     if (apiSessionRefreshPromise) {
+        done(true, { source: 'inflight' });
         return apiSessionRefreshPromise;
     }
 
@@ -1028,7 +1076,9 @@ async function ensureApiSession(forceRefresh = false) {
     })();
 
     try {
-        return await apiSessionRefreshPromise;
+        const token = await apiSessionRefreshPromise;
+        done(true, { hasToken: !!token });
+        return token;
     } finally {
         apiSessionRefreshPromise = null;
     }
@@ -1978,9 +2028,11 @@ function playAchievementSound() {
 // ==================== API ====================
 const API = {
     async request(endpoint, options = {}, retries = 2, authRetry = true) {
+        const startedAt = performance.now();
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
         const method = String(options.method || 'GET').toUpperCase();
+        const label = `${method} ${endpoint}`;
         const isRetryableRequest = ['GET', 'HEAD', 'OPTIONS'].includes(method) || options.idempotent === true;
         try {
             const res = await fetch(CONFIG.API_URL + endpoint, {
@@ -2002,9 +2054,12 @@ const API = {
                 } catch (parseError) {}
                 throw err;
             }
-            return await res.json();
+            const data = await res.json();
+            debugLog('api', `${label} success ${Math.round(performance.now() - startedAt)}ms`);
+            return data;
         } catch (err) {
             clearTimeout(timeout);
+            debugError('api', `${label} fail ${Math.round(performance.now() - startedAt)}ms`, err);
             if (isRetryableRequest && retries > 0 && (err.name === 'AbortError' || err.status >= 500)) {
                 await new Promise(r => setTimeout(r, 1000));
                 return this.request(endpoint, options, retries - 1);
@@ -2030,16 +2085,32 @@ function addCoins(_label, delta, _payload = null) {
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadUserData() {
     if (!userId) return;
+    const doneLoad = debugPerfStart('perf', 'startup/loadUserData', { userId });
     
     try {
         const data = await runWithRetry(async () => {
             await ensureApiSession();
-            await API.post('/api/register', {
-                user_id: userId,
-                username,
-                referrer_id: referrerId
-            });
-            return API.get(`/api/user/${userId}`);
+            const doneRegister = debugPerfStart('perf', 'startup/register');
+            try {
+                await API.post('/api/register', {
+                    user_id: userId,
+                    username,
+                    referrer_id: referrerId
+                });
+                doneRegister(true);
+            } catch (err) {
+                doneRegister(false, { error: String(err?.message || err || '') });
+                throw err;
+            }
+            const doneUser = debugPerfStart('perf', 'startup/api_user');
+            try {
+                const userData = await API.get(`/api/user/${userId}`);
+                doneUser(true);
+                return userData;
+            } catch (err) {
+                doneUser(false, { error: String(err?.message || err || '') });
+                throw err;
+            }
         }, 3, 1800);
         
         // Ordering check: ignore stale user snapshots
@@ -2080,6 +2151,10 @@ async function loadUserData() {
         applySavedSkin();
         updateUI();
         startPerfectEnergySystem();
+        if (!DEBUG_BOOT.firstHydrationLogged) {
+            DEBUG_BOOT.firstHydrationLogged = true;
+            debugLog('perf', `first real hydration ${Math.round(performance.now() - APP_BOOT_TS)}ms`);
+        }
 
         Promise.allSettled([
             loadPrices(),
@@ -2095,9 +2170,10 @@ async function loadUserData() {
                 }
             });
         });
-        
+        doneLoad(true);
         
     } catch (err) {
+        doneLoad(false, { error: String(err?.message || err || '') });
         console.error('Failed to load user data:', err);
         const wakingUp = isRetryableStartupError(err);
         showToast(
@@ -2398,36 +2474,48 @@ async function syncGhostBoostStatus() {
 }
 
 async function startAdActionSession(action) {
+    debugLog('ads', 'ad click', { action });
     if (!userId) {
         throw new Error(tr('toasts.authRequired'));
     }
 
+    const done = debugPerfStart('ads', 'start ad session', { action });
     const response = await API.post('/api/ad-action/start', {
         user_id: userId,
         action
     });
 
     if (!response?.ad_session_id) {
+        done(false, { action, reason: 'missing ad_session_id' });
         throw new Error('Ad session was not created');
     }
 
+    done(true, { action, adSessionId: response.ad_session_id });
     return response.ad_session_id;
 }
 
 async function showRewardedAd(adSessionId = null) {
+    debugLog('ads', 'controller init start', { adSessionId });
     const controller = await initAdsgramController();
     if (!controller) {
+        debugLog('ads', 'controller init ready=false', { adSessionId });
         throw new Error(tr('toasts.adUnavailable'));
     }
+    debugLog('ads', 'controller init ready=true', { adSessionId });
 
     try {
         setAdInputBlocked(true);
+        const doneShow = debugPerfStart('ads', 'controller.show', { adSessionId });
         const result = await controller.show();
+        debugLog('ads', 'controller.show result', result || null);
         if (result?.done !== true) {
+            doneShow(false, { adSessionId, done: result?.done });
             throw new Error(result?.description || 'Ad was not completed');
         }
+        doneShow(true, { adSessionId, done: result?.done });
         return result;
     } catch (err) {
+        debugError('ads', 'controller.show error', err);
         const detail = String(err?.description || err?.message || '').trim();
         if (detail) {
             throw new Error(detail);
@@ -2446,12 +2534,24 @@ async function confirmAdsgramAdSession(adSessionId, attempts = 6, delayMs = 1500
     let lastError = null;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
         try {
+            const done = debugPerfStart('ads', '/api/ads/adsgram/complete', {
+                adSessionId,
+                attempt: attempt + 1
+            });
             return await API.post('/api/ads/adsgram/complete', {
                 user_id: userId,
                 ad_session_id: adSessionId
+            }).then((res) => {
+                done(true, { adSessionId, attempt: attempt + 1 });
+                return res;
             });
         } catch (err) {
             lastError = err;
+            debugError('ads', '/api/ads/adsgram/complete error', {
+                adSessionId,
+                attempt: attempt + 1,
+                error: err?.detail || err?.message || String(err)
+            });
             if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
                 throw err;
             }
@@ -2485,9 +2585,16 @@ async function claimAdActionWithRetry(claimFn, attempts = 15, delayMs = 1500) {
 
     for (let attempt = 0; attempt < attempts; attempt += 1) {
         try {
-            return await claimFn();
+            debugLog('ads', 'activate endpoint start', { attempt: attempt + 1 });
+            const result = await claimFn();
+            debugLog('ads', 'activate endpoint end', { attempt: attempt + 1, success: true });
+            return result;
         } catch (err) {
             lastError = err;
+            debugError('ads', 'activate endpoint error', {
+                attempt: attempt + 1,
+                error: err?.detail || err?.message || String(err)
+            });
             if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
                 throw err;
             }
@@ -2541,6 +2648,7 @@ async function claimLuckyGhost(event) {
         }));
         const expiresAt = activation?.expires_at || optimisticExpires;
         setGhostBoostState(true, expiresAt);
+        debugLog('ads', 'reward applied in UI', { flow: 'ghost_boost', expiresAt, multiplier: activation?.multiplier });
         removeLuckyGhost();
         showToast(`x${activation?.multiplier || GHOST_BOOST_MULTIPLIER} taps and infinite energy for 1 minute.`, false, {
             title: 'Ghost caught',
@@ -2777,6 +2885,7 @@ function updateEnergyUIImmediate() {
 
 function updateUI() {
     if (pendingUI) return;
+    const done = debugPerfStart('ui', 'updateUI');
     pendingUI = true;
     
     requestAnimationFrame(() => {
@@ -2813,6 +2922,7 @@ function updateUI() {
         maybePromptUpgradeOnboarding();
         
         pendingUI = false;
+        done(true, { coins: State.game.coins, energy: State.game.energy, maxEnergy: State.game.maxEnergy });
     });
 }
 
@@ -2982,6 +3092,11 @@ async function sendClickBatch() {
 }
 
 function handleTap(e) {
+    const done = debugPerfStart('ui', 'handleTap');
+    if (!DEBUG_BOOT.firstInteractiveLogged) {
+        DEBUG_BOOT.firstInteractiveLogged = true;
+        debugLog('perf', `first interactive ${Math.round(performance.now() - APP_BOOT_TS)}ms`);
+    }
     if (State.temp.adInputBlocked) return;
     const isAutoTap = !!e?.syntheticAuto;
     const target = (e && e.target && e.target.closest) ? e.target : null;
@@ -3041,6 +3156,7 @@ function handleTap(e) {
         const currentVisualEnergy = getVisualEnergy();
 
         if (currentVisualEnergy < 1) {
+            done(false, { reason: 'no_energy' });
             showEnergyRecoveryModal();
             return;
         }
@@ -3149,6 +3265,7 @@ function queueTapFeedback({
         if (isAutoTap && allowAutoFeedback) {
             State.temp.lastAutoFeedbackAt = nowMs;
         }
+        done(true, { autoTap: isAutoTap, previewGain, freeEnergyActive });
     });
 }
 
@@ -3177,12 +3294,17 @@ function getSkinById(id) {
 }
 
 function applySavedSkin() {
+    const done = debugPerfStart('ui', 'applySavedSkin');
     const img = document.querySelector('.click-image');
-    if (!img) return;
+    if (!img) {
+        done(false, { reason: 'missing .click-image' });
+        return;
+    }
     
     const skin = getSkinById(State.skins.selected);
     img.src = (skin?.image || 'imgg/skins/default.png') + '?t=' + Date.now();
     img.onerror = () => img.src = 'imgg/skins/default.png';
+    done(true, { skinId: State.skins.selected, hasSkin: !!skin });
 }
 
 function renderSkins() {
@@ -3546,6 +3668,7 @@ async function watchAdForSkin(skinId) {
             ad_session_id: adSessionId,
             skin_id: skinId
         }));
+        debugLog('ads', 'reward applied in UI', { flow: 'ads_increment', skinId, currentCount: adsSync?.current_count });
 
         const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
         State.skins.videoViews[key] = Number(adsSync?.current_count || 0);
@@ -4108,8 +4231,12 @@ function getTaskTimeLeft(task) {
 }
 
 async function loadVideoTasks() {
+    const done = debugPerfStart('ui', 'tasks load');
     const container = document.getElementById('tasks-list');
-    if (!container) return;
+    if (!container) {
+        done(false, { reason: 'tasks-list missing' });
+        return;
+    }
 
     renderVideoTasks();
 
@@ -4133,6 +4260,7 @@ async function loadVideoTasks() {
             });
         }
         renderVideoTasks();
+        done(true, { social: socialResult.status, video: videoResult.status });
     });
 }
 
@@ -4264,6 +4392,7 @@ async function watchVideoForTask(taskId) {
 
         if (typeof response?.coins === 'number') {
             setCoins('watchVideoForTask', response.coins, response);
+            debugLog('ads', 'reward applied in UI', { flow: 'video_task', taskId: task.id, coins: response.coins });
         }
 
         applyTaskBoostPayload(response);
@@ -4592,6 +4721,7 @@ function applyStaticTranslations() {
 
 // ==================== НАВИГАЦИЯ ====================
 function openModal(id) {
+    debugLog('ui', 'modal open', { id });
     document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
     const modal = document.getElementById(id);
     if (modal) {
@@ -4648,6 +4778,7 @@ function closeSettingsOutside(e) {
 }
 
 function openTasksModal() {
+    debugLog('ui', 'tasks open', { source: 'openTasksModal' });
     openModal('tasks-screen');
     advanceSoftOnboarding('tasks');
     switchTaskHubTab('tasks');
@@ -5361,6 +5492,7 @@ async function loadTournamentPrizePoolData({ silent = false } = {}) {
 }
 
 async function selectEventLeague(league) {
+    const done = debugPerfStart('ui', 'leaderboard load', { league });
     eventSelectedLeague = EVENT_LEAGUE_ORDER.includes(league) ? league : 'bronze';
     renderEventLeagueTabs(eventSelectedLeague);
     try {
@@ -5369,11 +5501,13 @@ async function selectEventLeague(league) {
         const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
         renderEventLeaderboard(response?.players || [], eventSelectedLeague);
         await loadEventResults(eventSelectedLeague);
+        done(true, { league: eventSelectedLeague, rows: (response?.players || []).length });
     } catch (err) {
         console.error('Event leaderboard error:', err);
         const list = document.getElementById('event-leaderboard-list');
         if (list) list.innerHTML = `<div class="loading">${t('toasts.leaderboardLoadError')}</div>`;
         renderEventResults([], null);
+        done(false, { league: eventSelectedLeague, error: String(err?.message || err || '') });
     }
 }
 
@@ -5534,6 +5668,7 @@ async function recoverEnergyWithAd() {
         }));
 
         applyServerEnergySnapshot(data);
+        debugLog('ads', 'reward applied in UI', { flow: 'energy_refill', energy: data?.energy, maxEnergy: data?.max_energy });
         setAdCooldownFromIso('energy_refill', data?.cooldown_until || null, Number(data?.cooldown_minutes || 10));
         updateUI();
         showToast(tr('toasts.energyRecovered'));
@@ -5641,6 +5776,7 @@ async function activateMegaBoost() {
         }
         megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
         setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
+        debugLog('ads', 'reward applied in UI', { flow: 'mega_boost', expiresAt: activation?.expires_at, cooldownUntil: activation?.cooldown_until });
         
         syncMegaBoostUi();
         
@@ -6907,8 +7043,11 @@ function setupGlobalClickHandler() {
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('?? Spirit Clicker starting...');
+    const doneStartup = debugPerfStart('perf', 'startup/domcontentloaded');
+    DEBUG_BOOT.appStarted = true;
 
     if (!mobileAccessState.allowed) {
+        doneStartup(false, { reason: 'mobile_gate' });
         renderMobileOnlyGate();
         return;
     }
@@ -6955,6 +7094,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     console.log('? Spirit Clicker ready');
+    doneStartup(true, { userId: !!userId, readyMs: Math.round(performance.now() - APP_BOOT_TS) });
 });
 
 // ==================== ENERGY CHARM (GYRO) ====================
@@ -7271,10 +7411,11 @@ function initAutoClicker() {
             await showRewardedAd(adSessionId);
             enable();
             await confirmAdsgramAdSession(adSessionId);
-            await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
+            const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                 user_id: userId,
                 ad_session_id: adSessionId
             }));
+            debugLog('ads', 'reward applied in UI', { flow: 'autoclicker', duration: activation?.duration_seconds });
         } catch (e) {
             disableAutoLocal();
             showToast(
