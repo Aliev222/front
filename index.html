@@ -55,6 +55,11 @@
     <script src="js/domains/skins-domain.js" defer></script>
     <script src="js/domains/tasks-events-domain.js" defer></script>
     <script src="js/domains/social-tasks-domain.js" defer></script>
+    <script src="js/ui/hud-ui.js" defer></script>
+    <script src="js/ui/tap-area-ui.js" defer></script>
+    <script src="js/ui/bottom-panel-ui.js" defer></script>
+    <script src="js/ui/rebirth-panel-ui.js" defer></script>
+    <script src="js/ui/modal-layer-ui.js" defer></script>
     <script src="js/ui/tap-feedback-renderer.js" defer></script>
     <script src="js/ui/wallet-event-ui.js" defer></script>
     <script src="js/ui/modal-manager.js" defer></script>
@@ -104,7 +109,7 @@
                     <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
                 </span>
-                <span class="header-nav-label">Tasks</span>
+                <span class="header-nav-label" data-ui="header-tasks-label">Tasks</span>
             </div>
             
             <div class="nav-item nav-item-daily" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
@@ -112,7 +117,7 @@
                     <img src="imgg/dark icon/rewarddark.svg" alt="Daily Rewards" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/rewardlight.svg" alt="Daily Rewards" class="nav-icon-img icon-light">
                 </span>
-                <span class="header-nav-label">Reward</span>
+                <span class="header-nav-label" data-ui="header-daily-label">Reward</span>
                 <span class="daily-gift-dot"></span>
             </div>
 
@@ -208,22 +213,22 @@
                     <img src="imgg/light icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-light">
                 </div>
                 <div>
-                    <div class="stat-label">per hour</div>
-                    <div class="stat-value" id="profitPerHour"><span class="loading-spinner"></span></div>
+                    <div class="stat-label" data-ui="hud-per-hour-label">per hour</div>
+                    <div class="stat-value" id="profitPerHour" data-ui="hud-profit-hour"><span class="loading-spinner"></span></div>
                 </div>
             </div>
             <div class="stat-card glass">
                 <img src="imgg/coin.png" class="stat-icon-img">
                 <div>
-                    <div class="stat-label">per tap</div>
-                    <div class="stat-value" id="profitPerTap">1</div>
+                    <div class="stat-label" data-ui="hud-per-tap-label">per tap</div>
+                    <div class="stat-value" id="profitPerTap" data-ui="hud-profit-tap">1</div>
                 </div>
             </div>
         </div>
         
             <div class="energy-bar-container">
                 <div class="energy-bar-bg">
-                    <div class="energy-bar-fill" id="energyFill" style="width:100%;"></div>
+                    <div class="energy-bar-fill" id="energyFill" data-ui="tap-energy-fill" style="width:100%;"></div>
                 </div>
                 <div class="badge-wrap">
                     <canvas id="badgeRope" width="220" height="420" aria-hidden="true"></canvas>
@@ -236,13 +241,13 @@
 
             <div class="coin-balance-banner glass">
                 <img src="imgg/coin.png" class="coin-balance-banner-icon" alt="Coins">
-                <div class="coin-balance-banner-value" id="coinBalance">0</div>
+                <div class="coin-balance-banner-value" id="coinBalance" data-ui="hud-coins">0</div>
             </div>
                     
         <!-- CLICKER AREA -->
         <div class="clicker-area">
             <div class="energy-preview">
-                <span id="energyText">1000</span> / <span id="maxEnergyText">1000</span>
+                <span id="energyText" data-ui="tap-energy-current">1000</span> / <span id="maxEnergyText" data-ui="tap-energy-max">1000</span>
             </div>
 
             <div class="clicker-container">
@@ -277,52 +282,52 @@
             <div class="upgrade-panel-left">
                 <div class="upgrade-panel-icons"></div>
                 <div class="upgrade-panel-info">
-                    <div class="upgrade-panel-title">Upgrade</div>
+                    <div class="upgrade-panel-title" data-ui="bottom-upgrade-title">Upgrade</div>
                     <div class="upgrade-panel-bonuses"></div>
                 </div>
             </div>
             <div class="upgrade-panel-right">
-                <div class="upgrade-panel-level">LVL <span id="globalLevel">1</span></div>
+                <div class="upgrade-panel-level">LVL <span id="globalLevel" data-ui="bottom-level">1</span></div>
                 <div class="upgrade-panel-price">
                     <img src="imgg/coin.png" class="stat-icon-img">
-                    <span id="globalPrice">730</span>
+                    <span id="globalPrice" data-ui="bottom-price">730</span>
                 </div>
             </div>
         </div>
 
         <!-- NAVIGATION -->
         <div class="nav-bar">
-            <div class="nav-item nav-item-main active" onclick="switchTab('main', this)">
+            <div class="nav-item nav-item-main active" data-ui-nav-item data-ui-tab="main" onclick="switchTab('main', this)">
                 <span class="nav-icon nav-icon-img-wrap">
                     <img src="imgg/dark icon/home.svg" alt="Main" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/home.svg" alt="Main" class="nav-icon-img icon-light">
                 </span>
-                <span>Main</span>
+                <span data-ui="nav-main-label">Main</span>
             </div>
-            <div class="nav-item" onclick="switchTab('friends', this)">
+            <div class="nav-item" data-ui-nav-item data-ui-tab="friends" onclick="switchTab('friends', this)">
                 <span class="nav-icon nav-icon-img-wrap">
                     <img src="imgg/dark icon/friends.svg" alt="Friends" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/friends.svg" alt="Friends" class="nav-icon-img icon-light">
                 </span>
-                <span>Friends</span>
+                <span data-ui="nav-friends-label">Friends</span>
             </div>
-            <div class="nav-item nav-item-wallet" onclick="switchTab('wallet', this)">
+            <div class="nav-item nav-item-wallet" data-ui-nav-item data-ui-tab="wallet" onclick="switchTab('wallet', this)">
                 <span class="nav-icon">💎</span>
-                <span>Wallet</span>
+                <span data-ui="nav-wallet-label">Wallet</span>
             </div>
-            <div class="nav-item" onclick="switchTab('games', this)">
+            <div class="nav-item" data-ui-nav-item data-ui-tab="games" onclick="switchTab('games', this)">
                 <span class="nav-icon nav-icon-img-wrap">
                     <img src="imgg/dark icon/games.svg" alt="Event" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/games.svg" alt="Event" class="nav-icon-img icon-light">
                 </span>
-                <span>Event</span>
+                <span data-ui="nav-games-label">Event</span>
             </div>
-            <div class="nav-item" onclick="switchTab('skins', this)">
+            <div class="nav-item" data-ui-nav-item data-ui-tab="skins" onclick="switchTab('skins', this)">
                 <span class="nav-icon nav-icon-img-wrap">
                     <img src="imgg/dark icon/skins.svg" alt="Skins" class="nav-icon-img icon-dark">
                     <img src="imgg/light icon/skins.svg" alt="Skins" class="nav-icon-img icon-light">
                 </span>
-                <span>Skins</span>
+                <span data-ui="nav-skins-label">Skins</span>
             </div>
         </div>
     </div>
@@ -392,7 +397,7 @@
                 </div>
             </div>
         </div>
-        <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
+        <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" data-ui="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
             <div class="upgrade-panel-left">
                 <div class="upgrade-panel-icons"></div>
                 <div class="upgrade-panel-info">
@@ -401,7 +406,7 @@
                 </div>
             </div>
             <div class="upgrade-panel-right">
-                <button class="btn-primary" id="rebirth-action-btn" type="button">Переродиться</button>
+                <button class="btn-primary" id="rebirth-action-btn" data-ui="rebirth-action-btn" type="button">Переродиться</button>
             </div>
         </div>
     </div>
@@ -548,7 +553,7 @@
                 <p><strong>Стоимость:</strong> 1 000 000 монет.</p>
                 <div class="event-wallet-actions">
                     <button class="btn-secondary" type="button" onclick="closeModal('rebirth-confirm-screen')">Отмена</button>
-                    <button class="btn-primary" id="rebirth-confirm-btn" type="button" onclick="confirmRebirth()">Переродиться</button>
+                    <button class="btn-primary" id="rebirth-confirm-btn" data-ui="rebirth-confirm-btn" type="button" onclick="confirmRebirth()">Переродиться</button>
                 </div>
             </div>
         </div>

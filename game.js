@@ -1126,6 +1126,11 @@ let tapFeedbackRenderer = null;
 let socialTasksDomain = null;
 let walletEventUi = null;
 let rebirthDomain = null;
+let hudUi = null;
+let tapAreaUi = null;
+let bottomPanelUi = null;
+let rebirthPanelUi = null;
+let modalLayerUi = null;
 const StateActions = {};
 
 window.State = State;
@@ -1169,6 +1174,14 @@ const formatNumber = (num) => {
     if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
     return num.toString();
 };
+
+hudUi = window.SpiritHudUi.createHudUi({ formatNumber });
+tapAreaUi = window.SpiritTapAreaUi.createTapAreaUi();
+bottomPanelUi = window.SpiritBottomPanelUi.createBottomPanelUi({
+    formatNumber,
+    getDisplayLevel
+});
+rebirthPanelUi = window.SpiritRebirthPanelUi.createRebirthPanelUi();
 
 const formatTonAmount = (nano) => {
     const value = Number(nano || 0) / 1_000_000_000;
@@ -2831,16 +2844,12 @@ async function claimDailyReward() {
 let pendingUI = false;
 
 function updateEnergyUIImmediate() {
-    const energyFill = document.getElementById('energyFill');
-    const energyText = document.getElementById('energyText');
-    const maxEnergyEl = document.getElementById('maxEnergyText');
-    if (!energyFill || !energyText || !maxEnergyEl) return;
-    const visualEnergy = getVisualEnergy();
-    const maxEnergy = State.game.maxEnergy || 1;
-    const percent = (visualEnergy / maxEnergy) * 100;
-    energyFill.style.width = percent + '%';
-    energyText.textContent = Math.floor(visualEnergy);
-    maxEnergyEl.textContent = maxEnergy;
+    if (!tapAreaUi) return;
+    const viewModel = tapAreaUi.buildViewModel({
+        visualEnergy: getVisualEnergy(),
+        maxEnergy: State.game.maxEnergy || 1
+    });
+    tapAreaUi.render(viewModel);
 }
 
 function updateUI() {
@@ -2849,46 +2858,32 @@ function updateUI() {
     pendingUI = true;
     
     requestAnimationFrame(() => {
-        const setTextForAll = (selector, value) => {
-            document.querySelectorAll(selector).forEach((node) => {
-                node.textContent = value;
+        if (hudUi) {
+            const hudViewModel = hudUi.buildViewModel({
+                coins: State.game.coins,
+                profitPerHour: State.game.profitPerHour,
+                profitPerTap: State.game.profitPerTap,
+                isTaskPassiveBoostActive: isTaskPassiveBoostActive(),
+                taskPassiveBoostMultiplier: State.temp.taskPassiveBoostMultiplier || 1,
+                isTaskTapBoostActive: isTaskTapBoostActive(),
+                taskTapBoostMultiplier: State.temp.taskTapBoostMultiplier || 1
             });
-        };
-
-        const coinEl = document.getElementById('coinBalance');
-        if (coinEl) coinEl.textContent = formatNumber(State.game.coins);
-
-        const hourEl = document.getElementById('profitPerHour');
-        const displayHour = isTaskPassiveBoostActive()
-            ? Math.floor((State.game.profitPerHour || 0) * (State.temp.taskPassiveBoostMultiplier || 1))
-            : State.game.profitPerHour;
-        if (hourEl) hourEl.textContent = formatNumber(displayHour);
-        setTextForAll('#profitPerHour, .stats-row .stat-card:nth-child(1) .stat-value', formatNumber(displayHour));
-        
-        const tapEl = document.getElementById('profitPerTap');
-        const displayTap = isTaskTapBoostActive()
-            ? Math.floor((State.game.profitPerTap || 0) * (State.temp.taskTapBoostMultiplier || 1))
-            : State.game.profitPerTap;
-        if (tapEl) tapEl.textContent = displayTap;
-        setTextForAll('#profitPerTap, .stats-row .stat-card:nth-child(2) .stat-value', String(displayTap));
+            hudUi.render(hudViewModel);
+        }
 
         updateEnergyUIImmediate();
 
-        const globalLevelEl = document.getElementById('globalLevel');
-        if (globalLevelEl) {
-            const globalLevel = State.game.levels.multitap;
-            const displayLevel = getDisplayLevel(globalLevel);
-            State.game.level = displayLevel;
-            globalLevelEl.textContent = displayLevel;
+        if (bottomPanelUi) {
+            const bottomViewModel = bottomPanelUi.buildViewModel({
+                rawLevel: State.game.levels.multitap,
+                globalPrice: State.game.prices.global || 0
+            });
+            State.game.level = bottomViewModel.displayLevel;
+            bottomPanelUi.render(bottomViewModel);
         }
 
-        const globalPriceEl = document.getElementById('globalPrice');
-        if (globalPriceEl) {
-            globalPriceEl.textContent = formatNumber(State.game.prices.global || 0);
-        }
-
-        if (rebirthDomain) {
-            rebirthDomain.renderAvailability();
+        if (rebirthDomain && rebirthPanelUi) {
+            rebirthPanelUi.render(rebirthDomain.buildAvailabilityViewModel());
         }
 
         maybePromptUpgradeOnboarding();
@@ -3763,6 +3758,7 @@ rebirthDomain = window.SpiritRebirthDomain.createRebirthDomain({
     API,
     openModal,
     closeModal,
+    setConfirmBusy: (...args) => modalLayerUi?.setRebirthConfirmBusy(...args),
     showToast,
     updateUI,
     formatNumber,
@@ -4136,17 +4132,17 @@ function setLabel(id, text) {
 
 function applyStaticTranslations() {
     const textMap = [
-        ['.header .nav-item:nth-child(1) > .header-nav-label', 'nav.tasks'],
-        ['.header .nav-item:nth-child(2) > .header-nav-label', 'nav.daily'],
-        ['.stats-row .stat-card:nth-child(1) .stat-label', 'common.perHour'],
-        ['.stats-row .stat-card:nth-child(2) .stat-label', 'common.perTap'],
+        ['[data-ui="header-tasks-label"]', 'nav.tasks'],
+        ['[data-ui="header-daily-label"]', 'nav.daily'],
+        ['[data-ui="hud-per-hour-label"]', 'common.perHour'],
+        ['[data-ui="hud-per-tap-label"]', 'common.perTap'],
         
-        ['.upgrade-panel-title', 'main.upgrade'],
-        ['.nav-bar .nav-item:nth-child(1) > span:last-child', 'nav.main'],
-        ['.nav-bar .nav-item:nth-child(2) > span:last-child', 'nav.friends'],
-        ['.nav-bar .nav-item:nth-child(3) > span:last-child', 'nav.wallet'],
-        ['.nav-bar .nav-item:nth-child(4) > span:last-child', 'nav.games'],
-        ['.nav-bar .nav-item:nth-child(5) > span:last-child', 'nav.skins'],
+        ['[data-ui="bottom-upgrade-title"]', 'main.upgrade'],
+        ['[data-ui="nav-main-label"]', 'nav.main'],
+        ['[data-ui="nav-friends-label"]', 'nav.friends'],
+        ['[data-ui="nav-wallet-label"]', 'nav.wallet'],
+        ['[data-ui="nav-games-label"]', 'nav.games'],
+        ['[data-ui="nav-skins-label"]', 'nav.skins'],
         ['#friends-screen .modal-header h2', 'friends.title'],
         ['#friends-screen .stat-small:nth-child(1) .stat-small-label', 'friends.invited'],
         ['#friends-screen .stat-small:nth-child(2) .stat-small-label', 'friends.earned'],
@@ -4240,6 +4236,9 @@ const modalManager = window.SpiritModalManager.createModalManager({
     bodyClass: 'modal-open',
     onOpen: (id) => debugLog('ui', 'modal open', { id })
 });
+modalLayerUi = window.SpiritModalLayerUi.createModalLayerUi({
+    modalManager
+});
 const tasksEventsDomain = window.SpiritTasksEventsDomain.createTasksEventsDomain({
     t,
     VIDEO_TASKS,
@@ -4247,20 +4246,20 @@ const tasksEventsDomain = window.SpiritTasksEventsDomain.createTasksEventsDomain
 });
 
 function hasBlockingOverlayActive() {
-    return modalManager.hasBlockingOverlayActive();
+    return modalLayerUi.hasBlockingOverlayActive();
 }
 
 function syncModalOpenState() {
-    modalManager.syncBodyClass();
+    modalLayerUi.syncBodyClass();
 }
 
 // ==================== НАВИГАЦИЯ ====================
 function openModal(id) {
-    modalManager.openModal(id);
+    modalLayerUi.openModal(id);
 }
 
 function closeModal(id) {
-    modalManager.closeModal(id);
+    modalLayerUi.closeModal(id);
 }
 
 function openRebirthConfirm() {
@@ -4274,10 +4273,15 @@ async function confirmRebirth() {
 }
 
 function switchTab(tab, el) {
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    if (el) el.classList.add('active');
+    if (bottomPanelUi) {
+        bottomPanelUi.setActiveTab(tab);
+    } else {
+        document.querySelectorAll('[data-ui-nav-item]').forEach((node) => node.classList.remove('active'));
+        document.querySelectorAll('.nav-bar .nav-item').forEach((node) => node.classList.remove('active'));
+        if (el) el.classList.add('active');
+    }
     
-    modalManager.clearModals();
+    modalLayerUi.clearModals();
     
     if (tab === 'main') return;
     

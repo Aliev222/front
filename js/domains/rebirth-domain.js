@@ -9,6 +9,7 @@
             API,
             openModal,
             closeModal,
+            setConfirmBusy,
             showToast,
             updateUI,
             formatNumber,
@@ -32,18 +33,15 @@
             return getRawGlobalLevel() >= REBIRTH_MIN_LEVEL;
         }
 
-        function renderAvailability() {
-            const panel = document.getElementById('rebirth-panel');
-            if (!panel) return;
-            panel.style.display = shouldShowEntry() ? '' : 'none';
-
-            const actionBtn = document.getElementById('rebirth-action-btn');
-            if (!actionBtn) return;
+        function buildAvailabilityViewModel() {
             const enabled = canRebirth();
-            actionBtn.disabled = !enabled;
-            actionBtn.textContent = enabled
-                ? 'Переродиться'
-                : `Нужно ${formatNumber(REBIRTH_COST_COINS)} монет`;
+            return {
+                visible: shouldShowEntry(),
+                enabled,
+                actionText: enabled
+                    ? 'Переродиться'
+                    : `Нужно ${formatNumber(REBIRTH_COST_COINS)} монет`
+            };
         }
 
         function openConfirmModal() {
@@ -93,11 +91,11 @@
             }
 
             rebirthInFlight = true;
-            const confirmBtn = document.getElementById('rebirth-confirm-btn');
-            if (confirmBtn) {
-                confirmBtn.disabled = true;
-                confirmBtn.dataset.prevLabel = confirmBtn.textContent || 'Переродиться';
-                confirmBtn.textContent = 'Перерождение...';
+            if (typeof setConfirmBusy === 'function') {
+                setConfirmBusy(true, {
+                    defaultLabel: 'Переродиться',
+                    loadingLabel: 'Перерождение...'
+                });
             }
 
             try {
@@ -121,18 +119,18 @@
                 }
             } finally {
                 rebirthInFlight = false;
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = confirmBtn.dataset.prevLabel || 'Переродиться';
+                if (typeof setConfirmBusy === 'function') {
+                    setConfirmBusy(false, {
+                        defaultLabel: 'Переродиться'
+                    });
                 }
-                renderAvailability();
             }
         }
 
         return {
             canRebirth,
             shouldShowEntry,
-            renderAvailability,
+            buildAvailabilityViewModel,
             openConfirmModal,
             confirmRebirth
         };
