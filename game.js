@@ -94,16 +94,6 @@ function getMobileAccessState() {
         };
     }
 
-    if (!isLikelyMobileGameClient()) {
-        return {
-            allowed: false,
-            title: isRu ? 'Доступ с компьютера заблокирован' : 'Desktop access is blocked',
-            text: isRu
-                ? 'Открой игру в Telegram на телефоне. Запуск с компьютера отключён, чтобы снизить ботов и фарм.'
-                : 'Open the game from Telegram on your phone. Desktop launch is disabled to reduce botting and farming.',
-        };
-    }
-
     return { allowed: true, title: '', text: '' };
 }
 
