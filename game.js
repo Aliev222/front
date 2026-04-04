@@ -7170,7 +7170,7 @@ function initBadgePhysics() {
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
-const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
+async function checkOfflinePassiveIncome({ silent = false } = {}) {
     if (!userId) return;
     try {
         const data = await API.post('/api/passive-income', { user_id: userId });
@@ -7185,7 +7185,7 @@ const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
     } catch (e) {
         console.error('Passive income error:', e);
     }
-};
+}
 
 
 // ==================== ЭКСПОРТ ====================
