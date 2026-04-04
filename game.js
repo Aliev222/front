@@ -915,6 +915,12 @@ function applyTaskBoostPayload(data = {}) {
 }
 
 const tr = t;
+const adsDomain = window.SpiritAdsDomain.createAdsDomain({
+    sleep,
+    debugLog,
+    debugError,
+    adNotConfirmedMessage: () => tr('toasts.adNotConfirmed')
+});
 
 if (tg) {
     tg.expand();
@@ -1113,117 +1119,18 @@ async function ensureApiSession(forceRefresh = false) {
 }
 
 // ==================== СОСТОЯНИЕ ====================
-const State = {
-    user: { id: userId, username, referrerId },
-    achievements: {
-        clicks: 0,
-        upgrades: 0,
-        games: 0,
-        referrals: 0,
-        adsWatched: 0,
-        completed: []
-    },
-    game: {
-        coins: 0,
-        energy: 500,
-        maxEnergy: 500,
-        profitPerTap: 1,
-        profitPerHour: 100,
-        level: 0,
-        prices: { global: 120, multitap: 120, profit: 120, energy: 120 },
-        levels: { multitap: 0, profit: 0, energy: 0 }
-    },
-    skins: {
-        owned: ['default.pngSP'],
-        selected: 'default.pngSP',
-        adsWatched: 0,
-        friendsInvited: 0,
-        data: [],
-        videoViews: JSON.parse(localStorage.getItem('videoSkinViews') || '{}'),
-        selectInFlight: false
-    },
-    tasks: {
-        social: {}
-    },
-    daily: {
-        claimedDays: 0,
-        claimAvailable: false,
-        loaded: false,
-        nextDay: 1,
-        infiniteEnergyActive: false,
-        infiniteEnergyExpiresAt: null
-    },
-    settings: {
-        theme: savedSettings.theme || 'day',
-        language: UI_LANG,
-        sound: savedSettings.sound !== undefined ? savedSettings.sound : true,
-        music: savedSettings.music !== undefined ? savedSettings.music : true,
-        vibration: savedSettings.vibration !== undefined ? savedSettings.vibration : true
-    },
-    temp: {
-        tapAnimation: null,
-        clickBuffer: 0,
-        clickValueBuffer: 0,
-        clickBatchInFlight: false,
-        pendingClickBatchId: null,
-        lastAutoFeedbackAt: 0,
-        animationTimer: null,
-        syncTimer: null,
-        bgm: {
-            audio: null,
-            ready: false,
-            enabled: true
-        },
-        auto: {
-            enabledUntil: 0,
-            timer: null,
-            fingerDown: false,
-            point: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-            effect: null
-        },
-        taskTapBoostExpiresAt: null,
-        taskTapBoostMultiplier: 1,
-        taskPassiveBoostExpiresAt: null,
-        taskPassiveBoostMultiplier: 1,
-
-        // энергосистема — dual-layer model
-        // Layer 1: authoritative server state
-        energyUiTimer: null,
-        serverEnergyBase: 0,          // latest confirmed energy from backend
-        serverMaxEnergy: 0,           // latest confirmed max_energy from backend
-        serverEnergySyncedAtMs: 0,    // timestamp of last server confirmation
-        energyRegenMs: 2000,          // regen interval (2 seconds per +1 energy)
-        // Layer 2: client visual state
-        pendingEnergySpend: 0,        // energy spent on local taps not yet reconciled
-        lastTapAt: 0,
-        lastStateUpdatedAtMs: 0,
-        toastLayerReady: false,
-        toastContextTimer: null,
-        toastCooldowns: {},
-        toastReferralCount: null,
-        toastAmbientLastAt: 0,
-        idleToastTimer: null,
-        idleToastShown: false,
-        rapidTapWindow: [],
-        ghostBoostActive: false,
-        ghostBoostExpiresAt: null,
-        ghostBoostInterval: null,
-        ghostSpawnVisible: false,
-        ghostNextSpawnAt: 0,
-        adInputBlocked: false,
-        adBlockerEl: null,
-        tournamentLastRank: null,
-        tournamentLastTopLimit: 0,
-        tournamentDropWarned: false,
-        onboarding: {
-            active: false,
-            step: 'done',
-            handEl: null
-        }
-
-    },
-    cache: new Map()
-};
+const State = window.SpiritStore.createInitialState({
+    userId,
+    username,
+    referrerId,
+    savedSettings,
+    uiLang: UI_LANG
+});
+const Store = window.SpiritStore.createStore(State);
+const clickDomain = window.SpiritClickDomain.createClickDomain({
+    store: Store,
+    state: State
+});
 
 window.State = State;
 window.state = State;
@@ -2055,60 +1962,21 @@ function playAchievementSound() {
 }
 
 // ==================== API ====================
-const API = {
-    async request(endpoint, options = {}, retries = 2, authRetry = true) {
-        const startedAt = performance.now();
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        const method = String(options.method || 'GET').toUpperCase();
-        const label = `${method} ${endpoint}`;
-        const isRetryableRequest = ['GET', 'HEAD', 'OPTIONS'].includes(method) || options.idempotent === true;
-        try {
-            const res = await fetch(CONFIG.API_URL + endpoint, {
-                ...options,
-                headers: { 'Content-Type': 'application/json', ...options.headers },
-                signal: controller.signal
-            });
-            clearTimeout(timeout);
-            if (!res.ok) {
-                if (res.status === 401 && authRetry && telegramInitData) {
-                    await ensureApiSession(true);
-                    return this.request(endpoint, options, retries, false);
-                }
-                const err = new Error(`HTTP ${res.status}`);
-                err.status = res.status;
-                try {
-                    const data = await res.json();
-                    err.detail = data?.detail || '';
-                } catch (parseError) {}
-                throw err;
-            }
-            const data = await res.json();
-            debugLog('api', `${label} success ${Math.round(performance.now() - startedAt)}ms`);
-            return data;
-        } catch (err) {
-            clearTimeout(timeout);
-            debugError('api', `${label} fail ${Math.round(performance.now() - startedAt)}ms`, err);
-            if (isRetryableRequest && retries > 0 && (err.name === 'AbortError' || err.status >= 500)) {
-                await new Promise(r => setTimeout(r, 1000));
-                return this.request(endpoint, options, retries - 1);
-            }
-            throw err;
-        }
-    },
-    get(endpoint) { return this.request(endpoint); },
-    post(endpoint, data, options = {}) {
-        return this.request(endpoint, { ...options, method: 'POST', body: JSON.stringify(data) });
-    }
-};
+const API = window.SpiritApi.createApiClient({
+    baseUrl: CONFIG.API_URL,
+    fetchImpl: fetch,
+    debugLog,
+    debugError,
+    ensureApiSession,
+    hasTelegramInitData: !!telegramInitData
+});
 
 function setCoins(_label, next, _payload = null) {
-    State.game.coins = next;
+    clickDomain.setCoins(next);
 }
 
 function addCoins(_label, delta, _payload = null) {
-    const next = State.game.coins + delta;
-    State.game.coins = next;
+    clickDomain.addCoins(delta);
 }
 
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
@@ -2673,46 +2541,15 @@ async function confirmAdsgramAdSession(adSessionId, attempts = 6, delayMs = 1500
 }
 
 function isAdConfirmationPendingError(err) {
-    const detail = String(err?.detail || err?.message || '').toLowerCase();
-    return detail.includes('ad completion was not confirmed yet') || detail.includes('ad watch is not completed yet');
+    return adsDomain.isAdConfirmationPendingError(err);
 }
 
 function resolveRewardedAdErrorMessage(err, fallbackMessage) {
-    if (isAdConfirmationPendingError(err)) {
-        return tr('toasts.adNotConfirmed');
-    }
-
-    const detail = String(err?.detail || err?.message || '').trim();
-    if (detail) {
-        return detail;
-    }
-
-    return fallbackMessage;
+    return adsDomain.resolveRewardedAdErrorMessage(err, fallbackMessage);
 }
 
 async function claimAdActionWithRetry(claimFn, attempts = 15, delayMs = 1500) {
-    let lastError = null;
-
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-        try {
-            debugLog('ads', 'activate endpoint start', { attempt: attempt + 1 });
-            const result = await claimFn();
-            debugLog('ads', 'activate endpoint end', { attempt: attempt + 1, success: true });
-            return result;
-        } catch (err) {
-            lastError = err;
-            debugError('ads', 'activate endpoint error', {
-                attempt: attempt + 1,
-                error: err?.detail || err?.message || String(err)
-            });
-            if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
-                throw err;
-            }
-            await sleep(delayMs);
-        }
-    }
-
-    throw lastError || new Error('Ad claim failed');
+    return adsDomain.claimAdActionWithRetry(claimFn, { attempts, delayMs });
 }
 
 function removeLuckyGhost() {
@@ -3412,6 +3249,18 @@ function startSync() {
 
 // ==================== СКИНЫ ====================
 let currentFilter = 'all';
+let skinsDomain = window.SpiritSkinsDomain.createSkinsDomain({
+    State,
+    API,
+    tr,
+    showToast,
+    applySavedSkin,
+    renderSkins,
+    closeSkinDetail,
+    setCharmImageFromSkin,
+    updateCollectionProgress,
+    userId: () => userId
+});
 
 function getSkinById(id) {
     return State.skins.data.find(s => s.id === id);
@@ -3496,27 +3345,7 @@ function selectSkin(id) {
 }
 
 async function selectSkinInternal(id, { closeDetail = false } = {}) {
-    if (!userId) return false;
-    if (State.skins.selectInFlight || State.skins.selected === id) return false;
-    State.skins.selectInFlight = true;
-    const prevSelected = State.skins.selected;
-    State.skins.selected = id;
-    applySavedSkin();
-    renderSkins();
-    if (closeDetail) closeSkinDetail();
-    try {
-        await API.post('/api/select-skin', { user_id: userId, skin_id: id });
-        showToast(tr('toasts.skinSelected'));
-        return true;
-    } catch (err) {
-        State.skins.selected = prevSelected;
-        applySavedSkin();
-        renderSkins();
-        showToast(tr('toasts.skinSelectError'), true);
-        return false;
-    } finally {
-        State.skins.selectInFlight = false;
-    }
+    return skinsDomain.selectSkinInternal(id, { closeDetail });
 }
 
 async function selectActiveSkin(id) {
@@ -3529,32 +3358,12 @@ async function unlockSkinInternal(skinId, {
     showAlreadyOwnedToast = false,
     errorToastKey = 'toasts.skinUnlockError'
 } = {}) {
-    if (!userId) {
-        showToast(tr('toasts.authRequired'), true);
-        return false;
-    }
-    if (State.skins.owned.includes(skinId)) {
-        if (showAlreadyOwnedToast) showToast(tr('toasts.skinAlreadyOwned'));
-        if (applyCharm) setCharmImageFromSkin(skinId);
-        if (closeDetail) closeSkinDetail();
-        return false;
-    }
-
-    try {
-        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
-        if (!res?.success) return false;
-        State.skins.owned.push(skinId);
-        showToast(tr('toasts.skinNew'));
-        if (applyCharm) setCharmImageFromSkin(skinId);
-        if (closeDetail) closeSkinDetail();
-        renderSkins();
-        applySavedSkin();
-        updateCollectionProgress();
-        return true;
-    } catch (err) {
-        showToast(tr(errorToastKey), true);
-        return false;
-    }
+    return skinsDomain.unlockSkinInternal(skinId, {
+        closeDetail,
+        applyCharm,
+        showAlreadyOwnedToast,
+        errorToastKey
+    });
 }
 
 async function unlockSkin(id) {
@@ -4776,39 +4585,37 @@ function applyStaticTranslations() {
     });
 }
 
+const modalManager = window.SpiritModalManager.createModalManager({
+    modalSelector: '.modal-screen',
+    activeClass: 'active',
+    blockingSelector: '.modal-screen.active, .skin-detail-modal.active, .energy-recovery-modal, .ad-input-blocker',
+    bodyClass: 'modal-open',
+    onOpen: (id) => debugLog('ui', 'modal open', { id })
+});
+const tasksEventsDomain = window.SpiritTasksEventsDomain.createTasksEventsDomain({ t });
+
 function hasBlockingOverlayActive() {
-    return !!document.querySelector('.modal-screen.active, .skin-detail-modal.active, .energy-recovery-modal, .ad-input-blocker');
+    return modalManager.hasBlockingOverlayActive();
 }
 
 function syncModalOpenState() {
-    document.body.classList.toggle('modal-open', hasBlockingOverlayActive());
+    modalManager.syncBodyClass();
 }
 
 // ==================== НАВИГАЦИЯ ====================
 function openModal(id) {
-    debugLog('ui', 'modal open', { id });
-    document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.add('active');
-    }
-    syncModalOpenState();
+    modalManager.openModal(id);
 }
 
 function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.remove('active');
-    }
-    syncModalOpenState();
+    modalManager.closeModal(id);
 }
 
 function switchTab(tab, el) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     if (el) el.classList.add('active');
     
-    document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
-    syncModalOpenState();
+    modalManager.clearModals();
     
     if (tab === 'main') return;
     
@@ -4833,11 +4640,7 @@ function switchTab(tab, el) {
 }
 
 function renderEventImmediatePlaceholder() {
-    const list = document.getElementById('event-leaderboard-list');
-    const resultsList = document.getElementById('event-results-list');
-    const loadingText = t('common.loading');
-    if (list) list.innerHTML = `<div class="loading">${loadingText}</div>`;
-    if (resultsList) resultsList.innerHTML = `<div class="loading">${loadingText}</div>`;
+    tasksEventsDomain.renderEventImmediatePlaceholder();
 }
 
 function openSettings() {
@@ -7215,66 +7018,40 @@ function setupGlobalClickHandler() {
 }
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-document.addEventListener('DOMContentLoaded', async () => {
-    if (DEBUG) console.log('Spirit Clicker starting');
-    const doneStartup = debugPerfStart('perf', 'startup/domcontentloaded');
-    DEBUG_BOOT.appStarted = true;
-
-    if (!mobileAccessState.allowed) {
-        doneStartup(false, { reason: 'mobile_gate' });
-        renderMobileOnlyGate();
-        return;
-    }
-
-    applyPerformanceMode();
-    applyStaticTranslations();
-    ensureToastLayer();
-    updateToastViewportOffset();
-    loadAchievementsFromStorage();
-    loadSettings();
-    setupGlobalClickHandler();
-    initTonWalletBridge();
-    initBgm();
-    initAdsgramController();
-    initAutoClicker();
-    initBadgePhysics();
-
-    if (userId) {
-        await loadUserData();
-        // Non-critical startup requests are intentionally deferred so
-        // first hydration / first interaction are not blocked by them.
-        Promise.allSettled([
-            loadTournamentPrizePoolData({ silent: true }),
-            loadTonWalletStatus(),
-            checkOfflinePassiveIncome()
-        ]).catch((err) => {
-            if (DEBUG) console.warn('Deferred post-hydration startup failed:', err);
-        });
-        startOnlinePresence();
-        setInterval(sendClickBatch, 1500);
-    } else {
-        const saved = localStorage.getItem('ryohoGame');
-        if (saved) Object.assign(State.game, JSON.parse(saved));
-        updateUI();
-    }
-
-    setInterval(() => localStorage.setItem('ryohoGame', JSON.stringify(State.game)), 10000);
-    setInterval(() => checkOfflinePassiveIncome({ silent: true }), CONFIG.PASSIVE_INCOME_INTERVAL);
-    startAmbientToastLoop();
-    State.temp.lastTapAt = Date.now();
-    startIdleToastLoop();
-    applySavedSkin();
-    initSoftOnboarding();
-    window.addEventListener('resize', () => {
-        applyPerformanceMode();
-        updateToastViewportOffset();
-        if (State.temp.onboarding.active && ['tap', 'upgrade'].includes(State.temp.onboarding.step)) {
-            renderOnboardingHandHint();
-        }
-    });
-
-    if (DEBUG) console.log('Spirit Clicker ready');
-    doneStartup(true, { userId: !!userId, readyMs: Math.round(performance.now() - APP_BOOT_TS) });
+window.SpiritBootstrap.run({
+    DEBUG,
+    APP_BOOT_TS,
+    DEBUG_BOOT,
+    debugPerfStart,
+    mobileAccessState,
+    renderMobileOnlyGate,
+    applyPerformanceMode,
+    applyStaticTranslations,
+    ensureToastLayer,
+    updateToastViewportOffset,
+    loadAchievementsFromStorage,
+    loadSettings,
+    setupGlobalClickHandler,
+    initTonWalletBridge,
+    initBgm,
+    initAdsgramController,
+    initAutoClicker,
+    initBadgePhysics,
+    userId,
+    loadUserData,
+    loadTournamentPrizePoolData,
+    loadTonWalletStatus,
+    checkOfflinePassiveIncome,
+    startOnlinePresence,
+    sendClickBatch,
+    State,
+    updateUI,
+    CONFIG,
+    startAmbientToastLoop,
+    startIdleToastLoop,
+    applySavedSkin,
+    initSoftOnboarding,
+    renderOnboardingHandHint
 });
 
 // ==================== ENERGY CHARM (GYRO) ====================
