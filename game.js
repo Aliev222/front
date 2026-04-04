@@ -2662,14 +2662,25 @@ async function claimLuckyGhost(event) {
         await showRewardedAd(adSessionId);
         const optimisticExpires = new Date(Date.now() + GHOST_BOOST_DURATION_MS).toISOString();
         setGhostBoostState(true, optimisticExpires);
-        await confirmAdsgramAdSession(adSessionId);
-        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
+        debugLog('ads', 'reward applied in UI', {
+            flow: 'ghost_boost',
+            optimistic: true,
+            expiresAt: optimisticExpires
+        });
+        const confirmPromise = confirmAdsgramAdSession(adSessionId);
+        const activationPromise = claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
+        const [_, activation] = await Promise.all([confirmPromise, activationPromise]);
         const expiresAt = activation?.expires_at || optimisticExpires;
         setGhostBoostState(true, expiresAt);
-        debugLog('ads', 'reward applied in UI', { flow: 'ghost_boost', expiresAt, multiplier: activation?.multiplier });
+        debugLog('ads', 'reward applied in UI', {
+            flow: 'ghost_boost',
+            optimistic: false,
+            expiresAt,
+            multiplier: activation?.multiplier
+        });
         removeLuckyGhost();
         showToast(`x${activation?.multiplier || GHOST_BOOST_MULTIPLIER} taps and infinite energy for 1 minute.`, false, {
             title: 'Ghost caught',
@@ -5784,11 +5795,18 @@ async function activateMegaBoost() {
         boostEndTime = new Date(Date.now() + MEGA_BOOST_DURATION_MS);
         if (boostBtn) boostBtn.classList.add('active');
         syncMegaBoostUi();
-        await confirmAdsgramAdSession(adSessionId);
-        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
+        showToast(tr('toasts.megaBoostActivated'));
+        debugLog('ads', 'reward applied in UI', {
+            flow: 'mega_boost',
+            optimistic: true,
+            expiresAt: boostEndTime?.toISOString?.()
+        });
+        const confirmPromise = confirmAdsgramAdSession(adSessionId);
+        const activationPromise = claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
+        const [__, activation] = await Promise.all([confirmPromise, activationPromise]);
 
         if (activation?.already_active && activation.expires_at) {
             boostEndTime = parseServerDate(activation.expires_at);
@@ -5797,11 +5815,14 @@ async function activateMegaBoost() {
         }
         megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
         setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
-        debugLog('ads', 'reward applied in UI', { flow: 'mega_boost', expiresAt: activation?.expires_at, cooldownUntil: activation?.cooldown_until });
+        debugLog('ads', 'reward applied in UI', {
+            flow: 'mega_boost',
+            optimistic: false,
+            expiresAt: activation?.expires_at,
+            cooldownUntil: activation?.cooldown_until
+        });
         
         syncMegaBoostUi();
-        
-        showToast(tr('toasts.megaBoostActivated'));
     })().catch((err) => {
         boostEndTime = null;
         syncMegaBoostUi();
@@ -7437,12 +7458,22 @@ function initAutoClicker() {
             const adSessionId = await startAdActionSession('autoclicker');
             await showRewardedAd(adSessionId);
             enable();
-            await confirmAdsgramAdSession(adSessionId);
-            const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
+            debugLog('ads', 'reward applied in UI', {
+                flow: 'autoclicker',
+                optimistic: true,
+                duration: AUTO_CLICK_DURATION_MS / 1000
+            });
+            const confirmPromise = confirmAdsgramAdSession(adSessionId);
+            const activationPromise = claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                 user_id: userId,
                 ad_session_id: adSessionId
             }));
-            debugLog('ads', 'reward applied in UI', { flow: 'autoclicker', duration: activation?.duration_seconds });
+            const [_, activation] = await Promise.all([confirmPromise, activationPromise]);
+            debugLog('ads', 'reward applied in UI', {
+                flow: 'autoclicker',
+                optimistic: false,
+                duration: activation?.duration_seconds
+            });
         } catch (e) {
             disableAutoLocal();
             showToast(
