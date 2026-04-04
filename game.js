@@ -2823,6 +2823,12 @@ function updateUI() {
     pendingUI = true;
     
     requestAnimationFrame(() => {
+        const setTextForAll = (selector, value) => {
+            document.querySelectorAll(selector).forEach((node) => {
+                node.textContent = value;
+            });
+        };
+
         const coinEl = document.getElementById('coinBalance');
         if (coinEl) coinEl.textContent = formatNumber(State.game.coins);
 
@@ -2831,12 +2837,14 @@ function updateUI() {
             ? Math.floor((State.game.profitPerHour || 0) * (State.temp.taskPassiveBoostMultiplier || 1))
             : State.game.profitPerHour;
         if (hourEl) hourEl.textContent = formatNumber(displayHour);
+        setTextForAll('#profitPerHour, .stats-row .stat-card:nth-child(1) .stat-value', formatNumber(displayHour));
         
         const tapEl = document.getElementById('profitPerTap');
         const displayTap = isTaskTapBoostActive()
             ? Math.floor((State.game.profitPerTap || 0) * (State.temp.taskTapBoostMultiplier || 1))
             : State.game.profitPerTap;
         if (tapEl) tapEl.textContent = displayTap;
+        setTextForAll('#profitPerTap, .stats-row .stat-card:nth-child(2) .stat-value', String(displayTap));
 
         updateEnergyUIImmediate();
 
