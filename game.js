@@ -4881,6 +4881,35 @@ function openTasksModal() {
     switchTaskHubTab('tasks');
 }
 
+function renderTasksImmediatePlaceholder() {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    if (container.innerHTML && container.innerHTML.trim().length > 0) return;
+    const loadingText = t('common.loading');
+    container.innerHTML = `
+        <div class="task-card task-card-simple ready">
+            <div class="task-copy-simple">
+                <div class="task-title">${loadingText}</div>
+                <div class="task-desc">${loadingText}</div>
+            </div>
+            <div class="task-actions-simple">
+                <span class="task-reward-pill task-reward-pill-simple">${loadingText}</span>
+                <button class="task-action task-action-simple" disabled>${loadingText}</button>
+            </div>
+        </div>
+        <div class="task-card task-card-simple ready">
+            <div class="task-copy-simple">
+                <div class="task-title">${loadingText}</div>
+                <div class="task-desc">${loadingText}</div>
+            </div>
+            <div class="task-actions-simple">
+                <span class="task-reward-pill task-reward-pill-simple">${loadingText}</span>
+                <button class="task-action task-action-simple" disabled>${loadingText}</button>
+            </div>
+        </div>
+    `;
+}
+
 function switchTaskHubTab(tab = 'tasks') {
     tasksHubTab = tab === 'achievements' ? 'achievements' : 'tasks';
 
@@ -4895,7 +4924,11 @@ function switchTaskHubTab(tab = 'tasks') {
     achievementsPanel?.classList.toggle('active', tasksHubTab === 'achievements');
 
     if (tasksHubTab === 'tasks') {
-        loadVideoTasks();
+        renderTasksImmediatePlaceholder();
+        requestAnimationFrame(() => {
+            renderVideoTasks();
+            loadVideoTasks();
+        });
         return;
     }
 
