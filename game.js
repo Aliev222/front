@@ -4,14 +4,15 @@ window.recoveryInterval = null;
 
 'use strict';
 
-console.log('?? game.js загружен', new Date().toLocaleTimeString());
-const DEBUG_LOGS_ENABLED = (localStorage.getItem('spirit_debug_logs') || '1') !== '0';
+const DEBUG = false;
+const DEBUG_LOGS_ENABLED = DEBUG;
 const APP_BOOT_TS = performance.now();
 const DEBUG_BOOT = {
     appStarted: false,
     firstInteractiveLogged: false,
     firstHydrationLogged: false
 };
+const ENABLE_MOTION_TILT = false;
 
 function debugLog(prefix, message, payload = null) {
     if (!DEBUG_LOGS_ENABLED) return;
@@ -50,6 +51,31 @@ window.addEventListener('unhandledrejection', (event) => {
     debugError('error', 'unhandledrejection', event?.reason);
 });
 debugLog('perf', 'app start', { t0Ms: Math.round(APP_BOOT_TS) });
+
+let hasUserGesture = false;
+function markUserGesture() {
+    hasUserGesture = true;
+}
+document.addEventListener('pointerdown', markUserGesture, { capture: true, passive: true });
+document.addEventListener('touchstart', markUserGesture, { capture: true, passive: true });
+document.addEventListener('keydown', markUserGesture, { capture: true });
+
+function getAudioContextForSfx() {
+    if (!State.settings.sound || !hasUserGesture) return null;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return null;
+    if (!window.audioCtx) {
+        try {
+            window.audioCtx = new AudioContextCtor();
+        } catch (_) {
+            return null;
+        }
+    }
+    if (window.audioCtx.state === 'suspended') {
+        window.audioCtx.resume().catch(() => {});
+    }
+    return window.audioCtx;
+}
 
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
@@ -896,13 +922,13 @@ if (tg) {
         try {
             tg.disableVerticalSwipes();
         } catch (error) {
-            console.warn('disableVerticalSwipes failed:', error);
+            if (DEBUG) console.warn('disableVerticalSwipes failed:', error);
         }
     } else if ('isVerticalSwipesEnabled' in tg) {
         try {
             tg.isVerticalSwipesEnabled = false;
         } catch (error) {
-            console.warn('isVerticalSwipesEnabled toggle failed:', error);
+            if (DEBUG) console.warn('isVerticalSwipesEnabled toggle failed:', error);
         }
     }
     if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
@@ -927,7 +953,7 @@ if (!referrerId) {
             referrerId = parseInt(refParam, 10) || null;
         }
     } catch (error) {
-        console.warn('Failed to parse referral params from URL:', error);
+        if (DEBUG) console.warn('Failed to parse referral params from URL:', error);
     }
 }
 
@@ -1895,7 +1921,7 @@ function loadAchievementsFromStorage() {
             completed: Array.from(new Set(parsed.completed || []))
         };
     } catch (e) {
-        console.warn('Achievements restore failed', e);
+        if (DEBUG) console.warn('Achievements restore failed', e);
     }
 }
 
@@ -1906,7 +1932,7 @@ function saveAchievementsToStorage() {
             completed: Array.from(new Set(State.achievements.completed || []))
         }));
     } catch (e) {
-        console.warn('Achievements save failed', e);
+        if (DEBUG) console.warn('Achievements save failed', e);
     }
 }
 
@@ -2010,13 +2036,14 @@ function showAchievementNotification(achievement) {
 function playAchievementSound() {
     if (!State.settings.sound) return;
     try {
-        if (!window.audioCtx) window.audioCtx = new AudioContext();
-        const now = window.audioCtx.currentTime;
+        const audioCtx = getAudioContextForSfx();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
         for (let i = 0; i < 3; i++) {
-            const osc = window.audioCtx.createOscillator();
-            const gain = window.audioCtx.createGain();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
             osc.connect(gain);
-            gain.connect(window.audioCtx.destination);
+            gain.connect(audioCtx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(600 + i * 200, now + i * 0.1);
             gain.gain.setValueAtTime(0.2, now + i * 0.1);
@@ -2111,7 +2138,7 @@ async function loadUserData() {
                         deferred: true,
                         error: String(registerErr?.message || registerErr || '')
                     });
-                    console.warn('Deferred register failed:', registerErr);
+                    if (DEBUG) console.warn('Deferred register failed:', registerErr);
                 });
 
                 return userData;
@@ -2189,7 +2216,7 @@ async function loadUserData() {
             secondaryLoads.forEach((result, index) => {
                 if (result.status === 'rejected') {
                     const labels = ['prices', 'skins', 'referrals', 'boost-status', 'daily-reward'];
-                    console.warn(`Deferred startup load failed: ${labels[index]}`, result.reason);
+                    if (DEBUG) console.warn(`Deferred startup load failed: ${labels[index]}`, result.reason);
                 }
             });
         });
@@ -2908,7 +2935,7 @@ async function loadDailyRewardStatus() {
         renderSkins();
         updateCollectionProgress();
     } catch (err) {
-        console.warn('Daily reward status failed', err);
+        if (DEBUG) console.warn('Daily reward status failed', err);
         State.daily.loaded = false;
         State.daily.claimAvailable = false;
         renderDailyRewardButton();
@@ -3332,19 +3359,21 @@ function queueTapFeedback({
 
         if (State.settings.sound && allowAutoFeedback) {
             try {
-                if (!window.audioCtx) window.audioCtx = new AudioContext();
-                const now = window.audioCtx.currentTime;
-                const osc = window.audioCtx.createOscillator();
-                const gainNode = window.audioCtx.createGain();
-                osc.connect(gainNode);
-                gainNode.connect(window.audioCtx.destination);
-                osc.type = boostVisualActive ? 'sawtooth' : 'sine';
-                osc.frequency.setValueAtTime(ghostBoostActive ? 980 : (boostVisualActive ? 800 : (isAutoTap ? 560 : 650)), now);
-                osc.frequency.exponentialRampToValueAtTime(ghostBoostActive ? 540 : (boostVisualActive ? 400 : (isAutoTap ? 420 : 450)), now + (isAutoTap ? 0.08 : 0.1));
-                gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
-                osc.start(now);
-                osc.stop(now + (isAutoTap ? 0.12 : 0.2));
+                const audioCtx = getAudioContextForSfx();
+                if (audioCtx) {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    osc.type = boostVisualActive ? 'sawtooth' : 'sine';
+                    osc.frequency.setValueAtTime(ghostBoostActive ? 980 : (boostVisualActive ? 800 : (isAutoTap ? 560 : 650)), now);
+                    osc.frequency.exponentialRampToValueAtTime(ghostBoostActive ? 540 : (boostVisualActive ? 400 : (isAutoTap ? 420 : 450)), now + (isAutoTap ? 0.08 : 0.1));
+                    gainNode.gain.setValueAtTime(isAutoTap ? 0.12 : 0.2, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + (isAutoTap ? 0.12 : 0.2));
+                    osc.start(now);
+                    osc.stop(now + (isAutoTap ? 0.12 : 0.2));
+                }
             } catch (err) {}
         }
 
@@ -4043,13 +4072,14 @@ async function upgradeAll(internal = false) {
 function playUpgradeSound() {
     if (!State.settings.sound) return;
     try {
-        if (!window.audioCtx) window.audioCtx = new AudioContext();
-        const now = window.audioCtx.currentTime;
+        const audioCtx = getAudioContextForSfx();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
         for (let i = 0; i < 3; i++) {
-            const osc = window.audioCtx.createOscillator();
-            const gain = window.audioCtx.createGain();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
             osc.connect(gain);
-            gain.connect(window.audioCtx.destination);
+            gain.connect(audioCtx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(400 + i * 200, now + i * 0.1);
             gain.gain.setValueAtTime(0.2, now + i * 0.1);
@@ -4151,7 +4181,7 @@ async function loadSocialTasksStatus() {
             });
         persistSocialTasksState();
     } catch (err) {
-        console.warn('Social tasks sync failed', err);
+        if (DEBUG) console.warn('Social tasks sync failed', err);
     }
 }
 
@@ -4348,7 +4378,7 @@ async function loadVideoTasks() {
                 task.remainingSeconds = serverTask ? Number(serverTask.remaining_seconds || 0) : 0;
             });
         } else if (videoResult.status === 'rejected') {
-            console.warn('Video task status failed', videoResult.reason);
+            if (DEBUG) console.warn('Video task status failed', videoResult.reason);
             VIDEO_TASKS.forEach((task) => {
                 task.available = true;
                 task.remainingSeconds = 0;
@@ -5321,7 +5351,7 @@ async function disconnectTonWallet() {
         try {
             await tonConnectUI.disconnect();
         } catch (err) {
-            console.warn('TON Connect SDK disconnect error:', err);
+            if (DEBUG) console.warn('TON Connect SDK disconnect error:', err);
         }
     }
 }
@@ -5682,7 +5712,7 @@ async function sendOnlineHeartbeat() {
         const data = await res.json();
         if (data.success && canSeeOnlineCounter()) setOnlineCount(data.online_now);
     } catch (err) {
-        console.warn('Online heartbeat failed:', err);
+        if (DEBUG) console.warn('Online heartbeat failed:', err);
     }
 }
 
@@ -5693,7 +5723,7 @@ async function refreshOnlineCount() {
         const data = await res.json();
         if (data.success) setOnlineCount(data.online_now);
     } catch (err) {
-        console.warn('Online count failed:', err);
+        if (DEBUG) console.warn('Online count failed:', err);
     }
 }
 
@@ -7024,12 +7054,13 @@ function playSound(type) {
     if (!State.settings.sound) return;
     
     try {
-        if (!window.audioCtx) window.audioCtx = new AudioContext();
-        const now = window.audioCtx.currentTime;
-        const osc = window.audioCtx.createOscillator();
-        const gain = window.audioCtx.createGain();
+        const audioCtx = getAudioContextForSfx();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         osc.connect(gain);
-        gain.connect(window.audioCtx.destination);
+        gain.connect(audioCtx.destination);
         
         switch(type) {
             case 'win':
@@ -7194,7 +7225,7 @@ function setupGlobalClickHandler() {
 
 // ==================== ИНИЦИАЛИЗАЦИЯ ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('?? Spirit Clicker starting...');
+    if (DEBUG) console.log('Spirit Clicker starting');
     const doneStartup = debugPerfStart('perf', 'startup/domcontentloaded');
     DEBUG_BOOT.appStarted = true;
 
@@ -7226,7 +7257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadTonWalletStatus(),
             checkOfflinePassiveIncome()
         ]).catch((err) => {
-            console.warn('Deferred post-hydration startup failed:', err);
+            if (DEBUG) console.warn('Deferred post-hydration startup failed:', err);
         });
         startOnlinePresence();
         setInterval(sendClickBatch, 1500);
@@ -7251,7 +7282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    console.log('? Spirit Clicker ready');
+    if (DEBUG) console.log('Spirit Clicker ready');
     doneStartup(true, { userId: !!userId, readyMs: Math.round(performance.now() - APP_BOOT_TS) });
 });
 
@@ -7307,6 +7338,7 @@ function initEnergyCharm() {
     };
 
     const requestMotionPermission = async () => {
+        if (!ENABLE_MOTION_TILT) return;
         if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const p = await DeviceMotionEvent.requestPermission();
@@ -7808,35 +7840,6 @@ const checkOfflinePassiveIncome = async ({ silent = false } = {}) => {
 };
 
 
-async function testReferral() {
-    if (!userId) {
-        console.log('? Нет userId');
-        return;
-    }
-    
-    const testReferrerId = 123456789; // Чужой тестовый ID
-    console.log('?? Тест: отправляем регистрацию с referrer_id=', testReferrerId);
-    
-    try {
-        const res = await API.post('/api/register', {
-            user_id: userId,
-            username: username + '_test',
-            referrer_id: testReferrerId
-        });
-        console.log('? Результат теста:', res);
-        
-        // Проверяем, обновились ли данные реферера
-        const referrerData = await API.get(`/api/user/${testReferrerId}`);
-        console.log('?? Данные тестового реферера:', referrerData);
-        
-    } catch (err) {
-        console.error('? Ошибка теста:', err);
-    }
-}
-
-// ?? ВАЖНО: Делаем функцию глобальной
-window.testReferral = testReferral;
-
 // ==================== ЭКСПОРТ ====================
 window.handleTap = handleTap;
 window.upgradeBoost = upgradeBoost;
@@ -7894,5 +7897,3 @@ window.unlockSkinFromDetail = unlockSkinFromDetail;
 window.selectSkinFromDetail = selectSkinFromDetail;
 window.connectTonWallet = connectTonWallet;
 window.disconnectTonWallet = disconnectTonWallet;
-
-console.log('? Все функции определены');
