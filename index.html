@@ -51,6 +51,7 @@
     <script src="js/domains/click-domain.js" defer></script>
     <script src="js/domains/tap-domain.js" defer></script>
     <script src="js/domains/ads-domain.js" defer></script>
+    <script src="js/domains/rebirth-domain.js" defer></script>
     <script src="js/domains/skins-domain.js" defer></script>
     <script src="js/domains/tasks-events-domain.js" defer></script>
     <script src="js/domains/social-tasks-domain.js" defer></script>
@@ -391,6 +392,18 @@
                 </div>
             </div>
         </div>
+        <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
+            <div class="upgrade-panel-left">
+                <div class="upgrade-panel-icons"></div>
+                <div class="upgrade-panel-info">
+                    <div class="upgrade-panel-title">Перерождение</div>
+                    <div class="upgrade-panel-bonuses">Сброс уровня и постоянный бонус к тапу</div>
+                </div>
+            </div>
+            <div class="upgrade-panel-right">
+                <button class="btn-primary" id="rebirth-action-btn" type="button">Переродиться</button>
+            </div>
+        </div>
     </div>
 
     <!-- TASKS MODAL -->
@@ -518,6 +531,23 @@
                             <button class="btn-secondary" id="event-wallet-disconnect-btn" onclick="disconnectTonWallet()" style="display: none;">Disconnect</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-screen" id="rebirth-confirm-screen">
+        <div class="glass">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal('rebirth-confirm-screen')">×</button>
+                <h2>Перерождение</h2>
+            </div>
+            <div class="modal-content">
+                <p>Ты потеряешь текущий уровень и начнёшь прокачку заново.</p>
+                <p>Взамен получишь постоянный бонус к тапу.</p>
+                <p><strong>Стоимость: 1 000 000 монет</strong></p>
+                <div class="event-wallet-actions">
+                    <button class="btn-secondary" type="button" onclick="closeModal('rebirth-confirm-screen')">Отмена</button>
+                    <button class="btn-primary" type="button" onclick="confirmRebirth()">Переродиться</button>
                 </div>
             </div>
         </div>

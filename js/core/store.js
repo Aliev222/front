@@ -26,6 +26,7 @@
                 profitPerTap: 1,
                 profitPerHour: 100,
                 level: 0,
+                rebirthCount: 0,
                 prices: { global: 120, multitap: 120, profit: 120, energy: 120 },
                 levels: { multitap: 0, profit: 0, energy: 0 }
             },

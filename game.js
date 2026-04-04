@@ -1125,6 +1125,8 @@ let tapDomain = null;
 let tapFeedbackRenderer = null;
 let socialTasksDomain = null;
 let walletEventUi = null;
+let rebirthDomain = null;
+const StateActions = {};
 
 window.State = State;
 window.state = State;
@@ -2022,10 +2024,33 @@ function addCoins(_label, delta, _payload = null) {
     clickDomain.addCoins(delta);
 }
 
-const StateActions = {
+Object.assign(StateActions, {
+    setCoins(value) {
+        Store.set('game.coins', Number(value || 0));
+    },
+    setRebirthCount(value) {
+        Store.set('game.rebirthCount', Math.max(0, Number(value || 0)));
+    },
     setStateVersion(version) {
         if (version > 0) {
             Store.set('temp.lastStateUpdatedAtMs', version);
+        }
+    },
+    applyProgressSnapshot(payload = {}) {
+        if (typeof payload.multitap_level === 'number') {
+            Store.set('game.levels.multitap', payload.multitap_level);
+        }
+        if (typeof payload.profit_level === 'number') {
+            Store.set('game.levels.profit', payload.profit_level);
+        }
+        if (typeof payload.energy_level === 'number') {
+            Store.set('game.levels.energy', payload.energy_level);
+        }
+        if (typeof payload.level === 'number') {
+            Store.set('game.level', payload.level);
+        }
+        if (typeof payload.rebirth_count === 'number') {
+            Store.set('game.rebirthCount', Math.max(0, payload.rebirth_count));
         }
     },
     applyProfitSnapshot(payload = {}) {
@@ -2035,6 +2060,9 @@ const StateActions = {
         if (typeof payload.profit_per_hour === 'number') {
             Store.set('game.profitPerHour', payload.profit_per_hour);
         }
+    },
+    applyEnergySnapshot(payload = {}) {
+        applyServerEnergySnapshot(payload);
     },
     markTapTimestamp(ts) {
         Store.set('temp.lastTapAt', ts);
@@ -2049,7 +2077,7 @@ const StateActions = {
     setOwnedSkins(owned) {
         Store.set('skins.owned', owned || []);
     }
-};
+});
 
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadUserData() {
@@ -2119,12 +2147,18 @@ async function loadUserData() {
             max_energy: data.max_energy || 500,
             regen_seconds: data.regen_seconds || 2
         });
-        State.game.profitPerTap = data.profit_per_tap || 1;
-        State.game.profitPerHour = data.profit_per_hour || 100;
-        State.game.levels.multitap = data.multitap_level || 0;
-        State.game.levels.profit = data.profit_level || 0;
-        State.game.levels.energy = data.energy_level || 0;
-        State.game.level = getDisplayLevel(Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy));
+        StateActions.applyProfitSnapshot({
+            profit_per_tap: data.profit_per_tap || 1,
+            profit_per_hour: data.profit_per_hour || 100
+        });
+        StateActions.applyProgressSnapshot({
+            level: data.level || 0,
+            multitap_level: data.multitap_level || 0,
+            profit_level: data.profit_level || 0,
+            energy_level: data.energy_level || 0,
+            rebirth_count: data.rebirth_count || 0
+        });
+        State.game.level = getDisplayLevel(State.game.levels.multitap);
         applyTaskBoostPayload(data);
         
         State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
@@ -2806,7 +2840,7 @@ function updateUI() {
 
         const globalLevelEl = document.getElementById('globalLevel');
         if (globalLevelEl) {
-            const globalLevel = Math.max(State.game.levels.multitap, State.game.levels.profit, State.game.levels.energy);
+            const globalLevel = State.game.levels.multitap;
             const displayLevel = getDisplayLevel(globalLevel);
             State.game.level = displayLevel;
             globalLevelEl.textContent = displayLevel;
@@ -2815,6 +2849,10 @@ function updateUI() {
         const globalPriceEl = document.getElementById('globalPrice');
         if (globalPriceEl) {
             globalPriceEl.textContent = formatNumber(State.game.prices.global || 0);
+        }
+
+        if (rebirthDomain) {
+            rebirthDomain.renderAvailability();
         }
 
         maybePromptUpgradeOnboarding();
@@ -2893,6 +2931,7 @@ async function fullSyncWithServer() {
 
         setCoins('fullSyncWithServer', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
         StateActions.applyProfitSnapshot(data);
+        StateActions.applyProgressSnapshot(data);
 
         applyBoostStateFromPayload(data);
         applyServerEnergySnapshot(data);
@@ -3681,6 +3720,19 @@ function toggleCompletedSocialTasks() {
     renderVideoTasks();
 }
 
+rebirthDomain = window.SpiritRebirthDomain.createRebirthDomain({
+    State,
+    store: Store,
+    userId: () => userId,
+    API,
+    openModal,
+    closeModal,
+    showToast,
+    updateUI,
+    formatNumber,
+    StateActions
+});
+
 socialTasksDomain = window.SpiritSocialTasksDomain.createSocialTasksDomain({
     State,
     StateActions,
@@ -4173,6 +4225,16 @@ function openModal(id) {
 
 function closeModal(id) {
     modalManager.closeModal(id);
+}
+
+function openRebirthConfirm() {
+    if (!rebirthDomain) return;
+    rebirthDomain.openConfirmModal();
+}
+
+async function confirmRebirth() {
+    if (!rebirthDomain) return;
+    await rebirthDomain.confirmRebirth();
 }
 
 function switchTab(tab, el) {
@@ -7142,6 +7204,8 @@ window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.closeSettingsOutside = closeSettingsOutside;
 window.openTasksModal = openTasksModal;
+window.openRebirthConfirm = openRebirthConfirm;
+window.confirmRebirth = confirmRebirth;
 window.switchTaskHubTab = switchTaskHubTab;
 window.setLanguage = setLanguage;
 window.toggleTheme = toggleTheme;
