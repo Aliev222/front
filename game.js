@@ -4851,7 +4851,10 @@ function switchTab(tab, el) {
     if (tab === 'friends') loadReferralData();
     if (tab === 'skins') openSkins();
     if (tab === 'games') {
-        loadTournamentData();
+        renderEventImmediatePlaceholder();
+        requestAnimationFrame(() => {
+            loadTournamentData();
+        });
     }
     if (tab === 'wallet') renderTonWalletState();
     if (tab === 'tasks') {
@@ -4859,6 +4862,14 @@ function switchTab(tab, el) {
         renderVideoTasks();
         loadVideoTasks();
     }
+}
+
+function renderEventImmediatePlaceholder() {
+    const list = document.getElementById('event-leaderboard-list');
+    const resultsList = document.getElementById('event-results-list');
+    const loadingText = t('common.loading');
+    if (list) list.innerHTML = `<div class="loading">${loadingText}</div>`;
+    if (resultsList) resultsList.innerHTML = `<div class="loading">${loadingText}</div>`;
 }
 
 function openSettings() {
@@ -5627,10 +5638,15 @@ async function selectEventLeague(league) {
     renderEventLeagueTabs(eventSelectedLeague);
     try {
         const list = document.getElementById('event-leaderboard-list');
+        const resultsList = document.getElementById('event-results-list');
         if (list) list.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
+        if (resultsList) resultsList.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
         const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
         renderEventLeaderboard(response?.players || [], eventSelectedLeague);
-        await loadEventResults(eventSelectedLeague);
+        loadEventResults(eventSelectedLeague).catch((err) => {
+            console.error('Event results error:', err);
+            renderEventResults([], null);
+        });
         done(true, { league: eventSelectedLeague, rows: (response?.players || []).length });
     } catch (err) {
         console.error('Event leaderboard error:', err);
