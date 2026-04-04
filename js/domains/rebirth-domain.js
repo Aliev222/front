@@ -5,7 +5,6 @@
     function createRebirthDomain(deps) {
         const {
             State,
-            store,
             userId,
             API,
             openModal,
@@ -15,6 +14,8 @@
             formatNumber,
             StateActions
         } = deps;
+
+        let rebirthInFlight = false;
 
         function getRawGlobalLevel() {
             return Number(State.game.levels.multitap || 0);
@@ -37,9 +38,12 @@
             panel.style.display = shouldShowEntry() ? '' : 'none';
 
             const actionBtn = document.getElementById('rebirth-action-btn');
-            if (actionBtn) {
-                actionBtn.disabled = !canRebirth();
-            }
+            if (!actionBtn) return;
+            const enabled = canRebirth();
+            actionBtn.disabled = !enabled;
+            actionBtn.textContent = enabled
+                ? 'Переродиться'
+                : `Нужно ${formatNumber(REBIRTH_COST_COINS)} монет`;
         }
 
         function openConfirmModal() {
@@ -53,18 +57,20 @@
         function applyRebirthSuccess(payload) {
             const nextCoins = Number(payload?.coins ?? State.game.coins);
             const nextRebirthCount = Number(payload?.rebirth_count ?? (State.game.rebirthCount + 1));
-            const nextProfitPerTap = Number(payload?.profit_per_tap ?? (1 + nextRebirthCount));
-            const nextProfitPerHour = Number(payload?.profit_per_hour ?? 100);
-            const nextMaxEnergy = Number(payload?.max_energy ?? 500);
-            const nextEnergy = Number(payload?.energy ?? nextMaxEnergy);
+            const nextProfitPerTap = Number(payload?.profit_per_tap ?? State.game.profitPerTap);
+            const nextProfitPerHour = Number(payload?.profit_per_hour ?? State.game.profitPerHour);
+            const nextMaxEnergy = Number(payload?.max_energy ?? State.game.maxEnergy);
+            const nextEnergy = Number(payload?.energy ?? State.game.energy);
+            const nextProfitLevel = Number(payload?.profit_level ?? State.game.levels.profit);
+            const nextEnergyLevel = Number(payload?.energy_level ?? State.game.levels.energy);
 
             StateActions.setCoins(nextCoins);
             StateActions.setRebirthCount(nextRebirthCount);
             StateActions.applyProgressSnapshot({
                 level: 0,
                 multitap_level: 0,
-                profit_level: 0,
-                energy_level: 0
+                profit_level: nextProfitLevel,
+                energy_level: nextEnergyLevel
             });
             StateActions.applyProfitSnapshot({
                 profit_per_tap: nextProfitPerTap,
@@ -79,10 +85,19 @@
 
         async function confirmRebirth() {
             if (!userId()) return;
+            if (rebirthInFlight) return;
             if (!shouldShowEntry()) {
                 showToast('Недостаточный уровень для перерождения.', true);
                 closeModal('rebirth-confirm-screen');
                 return;
+            }
+
+            rebirthInFlight = true;
+            const confirmBtn = document.getElementById('rebirth-confirm-btn');
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.dataset.prevLabel = confirmBtn.textContent || 'Переродиться';
+                confirmBtn.textContent = 'Перерождение...';
             }
 
             try {
@@ -94,7 +109,7 @@
                 applyRebirthSuccess(result);
                 closeModal('rebirth-confirm-screen');
                 updateUI();
-                showToast(`Перерождение успешно! Бонус к тапу: +${formatNumber(State.game.rebirthCount)}`);
+                showToast(`Перерождение успешно! Бонус к тапу: +${formatNumber(State.game.rebirthCount)}.`);
             } catch (err) {
                 const detail = String(err?.detail || '');
                 if (detail.includes('level 100')) {
@@ -105,6 +120,11 @@
                     showToast('Ошибка сервера при перерождении.', true);
                 }
             } finally {
+                rebirthInFlight = false;
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = confirmBtn.dataset.prevLabel || 'Переродиться';
+                }
                 renderAvailability();
             }
         }

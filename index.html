@@ -542,12 +542,13 @@
                 <h2>Перерождение</h2>
             </div>
             <div class="modal-content">
-                <p>Ты потеряешь текущий уровень и начнёшь прокачку заново.</p>
-                <p>Взамен получишь постоянный бонус к тапу.</p>
-                <p><strong>Стоимость: 1 000 000 монет</strong></p>
+                <p><strong>Ты потеряешь:</strong> текущий уровень и прогрессию тапа.</p>
+                <p><strong>Ты сохранишь:</strong> апгрейды энергии, апгрейды дохода, скины, задания, кошелёк и прочие системы прогрессии.</p>
+                <p><strong>Ты получишь:</strong> постоянный бонус +1 к тапу за каждый уровень после перерождения.</p>
+                <p><strong>Стоимость:</strong> 1 000 000 монет.</p>
                 <div class="event-wallet-actions">
                     <button class="btn-secondary" type="button" onclick="closeModal('rebirth-confirm-screen')">Отмена</button>
-                    <button class="btn-primary" type="button" onclick="confirmRebirth()">Переродиться</button>
+                    <button class="btn-primary" id="rebirth-confirm-btn" type="button" onclick="confirmRebirth()">Переродиться</button>
                 </div>
             </div>
         </div>
