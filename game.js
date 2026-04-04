@@ -113,8 +113,6 @@ let apiSessionExpiresAt = parseInt(localStorage.getItem(API_SESSION_EXPIRES_AT_K
 let apiSessionRefreshPromise = null;
 let adsgramController = null;
 let adsgramInitializedBlockId = '';
-const AD_SESSION_PREFETCH_MAX_AGE_MS = 120000;
-const adSessionPrefetch = new Map();
 const TON_CONNECT_MANIFEST_URL = /^https?:/i.test(window.location?.origin || '')
     ? `${window.location.origin}/tonconnect-manifest.json`
     : 'https://spirix.vercel.app/tonconnect-manifest.json';
@@ -915,12 +913,7 @@ function applyTaskBoostPayload(data = {}) {
 }
 
 const tr = t;
-const adsDomain = window.SpiritAdsDomain.createAdsDomain({
-    sleep,
-    debugLog,
-    debugError,
-    adNotConfirmedMessage: () => tr('toasts.adNotConfirmed')
-});
+let adsDomain = null;
 
 if (tg) {
     tg.expand();
@@ -1127,10 +1120,7 @@ const State = window.SpiritStore.createInitialState({
     uiLang: UI_LANG
 });
 const Store = window.SpiritStore.createStore(State);
-const clickDomain = window.SpiritClickDomain.createClickDomain({
-    store: Store,
-    state: State
-});
+let clickDomain = null;
 
 window.State = State;
 window.state = State;
@@ -1970,6 +1960,29 @@ const API = window.SpiritApi.createApiClient({
     ensureApiSession,
     hasTelegramInitData: !!telegramInitData
 });
+clickDomain = window.SpiritClickDomain.createClickDomain({
+    store: Store,
+    state: State,
+    userId: () => userId,
+    API,
+    setCoins: (next) => Store.set('game.coins', next),
+    applyBoostStateFromPayload,
+    applyServerEnergySnapshot,
+    updateUI,
+    fullSyncWithServer
+});
+adsDomain = window.SpiritAdsDomain.createAdsDomain({
+    sleep,
+    debugLog,
+    debugError,
+    adNotConfirmedMessage: () => tr('toasts.adNotConfirmed'),
+    userId: () => userId,
+    API,
+    State,
+    store: Store,
+    syncModalOpenState,
+    initAdsgramController
+});
 
 function setCoins(_label, next, _payload = null) {
     clickDomain.setCoins(next);
@@ -1978,6 +1991,25 @@ function setCoins(_label, next, _payload = null) {
 function addCoins(_label, delta, _payload = null) {
     clickDomain.addCoins(delta);
 }
+
+const StateActions = {
+    setStateVersion(version) {
+        if (version > 0) {
+            Store.set('temp.lastStateUpdatedAtMs', version);
+        }
+    },
+    applyProfitSnapshot(payload = {}) {
+        if (typeof payload.profit_per_tap === 'number') {
+            Store.set('game.profitPerTap', payload.profit_per_tap);
+        }
+        if (typeof payload.profit_per_hour === 'number') {
+            Store.set('game.profitPerHour', payload.profit_per_hour);
+        }
+    },
+    markTapTimestamp(ts) {
+        Store.set('temp.lastTapAt', ts);
+    }
+};
 
 // ==================== ЗАГРУЗКА ДАННЫХ ====================
 async function loadUserData() {
@@ -2357,26 +2389,7 @@ function setGhostBoostState(active, expiresAt = null) {
 }
 
 function setAdInputBlocked(blocked) {
-    State.temp.adInputBlocked = !!blocked;
-    let overlay = State.temp.adBlockerEl;
-    if (blocked) {
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.className = 'ad-input-blocker';
-            overlay.style.position = 'fixed';
-            overlay.style.inset = '0';
-            overlay.style.zIndex = '2147483647';
-            overlay.style.pointerEvents = 'all';
-            overlay.style.background = 'transparent';
-            overlay.style.touchAction = 'none';
-            document.body.appendChild(overlay);
-            State.temp.adBlockerEl = overlay;
-        }
-    } else if (overlay) {
-        overlay.remove();
-        State.temp.adBlockerEl = null;
-    }
-    syncModalOpenState();
+    adsDomain.setAdInputBlocked(blocked);
 }
 
 async function syncGhostBoostStatus() {
@@ -2393,151 +2406,39 @@ async function syncGhostBoostStatus() {
 }
 
 async function requestAdActionSession(action, { logClick = true, source = 'interactive' } = {}) {
-    if (logClick) {
-        debugLog('ads', 'ad click', { action });
-    }
-    if (!userId) {
-        throw new Error(tr('toasts.authRequired'));
-    }
-
     const done = debugPerfStart('ads', 'start ad session', { action, source });
-    const response = await API.post('/api/ad-action/start', {
-        user_id: userId,
-        action
-    });
-
-    if (!response?.ad_session_id) {
-        done(false, { action, reason: 'missing ad_session_id' });
-        throw new Error('Ad session was not created');
+    try {
+        const adSessionId = await adsDomain.requestAdActionSession(action, { logClick, source });
+        done(true, { action, adSessionId });
+        return adSessionId;
+    } catch (err) {
+        done(false, { action, error: err?.detail || err?.message || String(err) });
+        throw err;
     }
-
-    done(true, { action, adSessionId: response.ad_session_id });
-    return response.ad_session_id;
 }
 
 async function startAdActionSession(action) {
-    return requestAdActionSession(action, { logClick: true, source: 'interactive' });
+    return adsDomain.startAdActionSession(action);
 }
 
 function prewarmAdActionSession(action) {
-    if (!userId || !action) return;
-    const now = Date.now();
-    const existing = adSessionPrefetch.get(action);
-    if (existing && (now - existing.createdAt) < AD_SESSION_PREFETCH_MAX_AGE_MS) {
-        return;
-    }
-
-    const promise = requestAdActionSession(action, { logClick: false, source: 'prefetch' })
-        .then((adSessionId) => {
-            const current = adSessionPrefetch.get(action);
-            if (current && current.promise === promise) {
-                current.adSessionId = adSessionId;
-            }
-            return adSessionId;
-        })
-        .catch((err) => {
-            const current = adSessionPrefetch.get(action);
-            if (current && current.promise === promise) {
-                adSessionPrefetch.delete(action);
-            }
-            debugLog('ads', 'prefetch skipped', {
-                action,
-                error: err?.detail || err?.message || String(err)
-            });
-            return null;
-        });
-
-    adSessionPrefetch.set(action, {
-        createdAt: now,
-        promise,
-        adSessionId: null
-    });
+    adsDomain.prewarmAdActionSession(action);
 }
 
 async function consumeAdActionSession(action) {
-    const now = Date.now();
-    const existing = adSessionPrefetch.get(action);
-    if (existing && (now - existing.createdAt) < AD_SESSION_PREFETCH_MAX_AGE_MS) {
-        adSessionPrefetch.delete(action);
-        return await existing.promise;
-    }
-    return await startAdActionSession(action);
+    return adsDomain.consumeAdActionSession(action);
 }
 
 async function showRewardedAd(adSessionId = null) {
-    debugLog('ads', 'controller init start', { adSessionId });
-    const controller = await initAdsgramController();
-    if (!controller) {
-        debugLog('ads', 'controller init ready=false', { adSessionId });
-        throw new Error(tr('toasts.adUnavailable'));
-    }
-    debugLog('ads', 'controller init ready=true', { adSessionId });
-
-    try {
-        setAdInputBlocked(true);
-        const doneShow = debugPerfStart('ads', 'controller.show', { adSessionId });
-        const result = await controller.show();
-        debugLog('ads', 'controller.show result', result || null);
-        if (result?.done !== true) {
-            doneShow(false, { adSessionId, done: result?.done });
-            throw new Error(result?.description || 'Ad was not completed');
-        }
-        doneShow(true, { adSessionId, done: result?.done });
-        return result;
-    } catch (err) {
-        debugError('ads', 'controller.show error', err);
-        const detail = String(err?.description || err?.message || '').trim();
-        if (detail) {
-            throw new Error(detail);
-        }
-        throw err;
-    } finally {
-        setAdInputBlocked(false);
-    }
+    return adsDomain.showRewardedAd(adSessionId, tr('toasts.adUnavailable'));
 }
 
 async function openRewardedAdWithSession(action) {
-    const adSessionId = await consumeAdActionSession(action);
-    // Keep the next click fast without affecting current correctness.
-    prewarmAdActionSession(action);
-    await showRewardedAd(adSessionId);
-    return adSessionId;
+    return adsDomain.openRewardedAdWithSession(action, tr('toasts.adUnavailable'));
 }
 
 async function confirmAdsgramAdSession(adSessionId, attempts = 6, delayMs = 1500) {
-    if (!userId || !adSessionId) {
-        throw new Error('Ad session was not created');
-    }
-
-    let lastError = null;
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-        try {
-            const done = debugPerfStart('ads', '/api/ads/adsgram/complete', {
-                adSessionId,
-                attempt: attempt + 1
-            });
-            return await API.post('/api/ads/adsgram/complete', {
-                user_id: userId,
-                ad_session_id: adSessionId
-            }).then((res) => {
-                done(true, { adSessionId, attempt: attempt + 1 });
-                return res;
-            });
-        } catch (err) {
-            lastError = err;
-            debugError('ads', '/api/ads/adsgram/complete error', {
-                adSessionId,
-                attempt: attempt + 1,
-                error: err?.detail || err?.message || String(err)
-            });
-            if (!isAdConfirmationPendingError(err) || attempt === attempts - 1) {
-                throw err;
-            }
-            await sleep(delayMs);
-        }
-    }
-
-    throw lastError || new Error('Ad completion was not confirmed yet');
+    return adsDomain.confirmAdsgramAdSession(adSessionId, { attempts, delayMs });
 }
 
 function isAdConfirmationPendingError(err) {
@@ -2948,13 +2849,10 @@ async function fullSyncWithServer() {
         if (incomingTs > 0 && incomingTs <= currentTs) {
             return; // stale response, ignore entirely
         }
-        if (incomingTs > 0) {
-            State.temp.lastStateUpdatedAtMs = incomingTs;
-        }
+        StateActions.setStateVersion(incomingTs);
 
         setCoins('fullSyncWithServer', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
-        State.game.profitPerTap = data.profit_per_tap || State.game.profitPerTap;
-        State.game.profitPerHour = data.profit_per_hour || State.game.profitPerHour;
+        StateActions.applyProfitSnapshot(data);
 
         applyBoostStateFromPayload(data);
         applyServerEnergySnapshot(data);
@@ -2968,84 +2866,7 @@ async function fullSyncWithServer() {
 let lastBatchTime = 0;
 
 async function sendClickBatch() {
-    const clicks = State.temp.clickBuffer;
-
-    if (clicks === 0 || !userId || State.temp.clickBatchInFlight) return;
-
-    const optimisticGain = State.temp.clickValueBuffer;
-    const batchId = State.temp.pendingClickBatchId || `${userId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
-
-    // Safety: exactly one in-flight batch is guaranteed by the
-    // clickBatchInFlight guard at the top of this function.
-    // FIX: Do NOT clear pendingEnergySpend here. Clearing it causes the visual
-    // energy to jump back up to the stale server value while waiting for response.
-    // We snapshot it to reconcile on success/409, but keep it active for visuals.
-    const pendingSpendForThisBatch = State.temp.pendingEnergySpend;
-
-    State.temp.clickBuffer = 0;
-    State.temp.clickValueBuffer = 0;
-    State.temp.clickBatchInFlight = true;
-    State.temp.pendingClickBatchId = batchId;
-
-    try {
-        const data = await API.post('/api/clicks', {
-            user_id: userId,
-            clicks,
-            batch_id: batchId
-        }, { idempotent: true });
-
-        if (data.success) {
-            State.temp.pendingClickBatchId = null;
-
-            // Ordering check: ignore stale responses for all state fields
-            const incomingTs = data.state_updated_at || data.state_version || 0;
-            const currentTs = State.temp.lastStateUpdatedAtMs || 0;
-            if (incomingTs > 0 && incomingTs <= currentTs) {
-                // Stale response — the server already processed this batch earlier.
-                // Do NOT modify pendingEnergySpend — it already contains this batch.
-                return;
-            }
-            if (incomingTs > 0) {
-                State.temp.lastStateUpdatedAtMs = incomingTs;
-            }
-
-            setCoins('sendClickBatch', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
-            State.game.profitPerTap = data.profit_per_tap ?? State.game.profitPerTap;
-            State.game.profitPerHour = data.profit_per_hour ?? State.game.profitPerHour;
-            applyBoostStateFromPayload(data);
-
-            // FIX: Reconcile energy. The server's energy_after includes the deduction
-            // for this batch. We remove the batch's spend from pending so it's not
-            // double-counted. Any taps made *during* the request remain in pending.
-            State.temp.pendingEnergySpend = Math.max(0, State.temp.pendingEnergySpend - pendingSpendForThisBatch);
-            applyServerEnergySnapshot(data);
-            updateUI();
-        }
-    } catch (err) {
-        if (err?.status === 409) {
-            // 409 Duplicate: server already processed this batch_id.
-            // Energy was already deducted. Remove from pending to match server state.
-            State.temp.pendingClickBatchId = null;
-            State.temp.pendingEnergySpend = Math.max(0, State.temp.pendingEnergySpend - pendingSpendForThisBatch);
-            await fullSyncWithServer();
-            return;
-        }
-        if (err?.status === 500 || err?.status === 502 || err?.status === 503 || err?.status === 504) {
-            // Backend 5xx: server may or may not have processed.
-            // Keep pendingEnergySpend as is (visual stays low). Restore buffers for retry.
-            console.error('Click batch server error:', err);
-            State.temp.clickBuffer += clicks;
-            State.temp.clickValueBuffer += optimisticGain;
-            return;
-        }
-        // Network failure / timeout / aborted: server definitely did not process.
-        // Keep pendingEnergySpend as is. Restore buffers for retry.
-        console.error('Click batch error:', err);
-        State.temp.clickBuffer += clicks;
-        State.temp.clickValueBuffer += optimisticGain;
-    } finally {
-        State.temp.clickBatchInFlight = false;
-    }
+    await clickDomain.sendClickBatch();
 }
 
 function handleTap(e) {
@@ -3079,58 +2900,42 @@ function handleTap(e) {
         clientY = e.clientY;
     }
 
-    const megaBoostActive = isMegaBoostActive();
-    const dailyInfiniteEnergyActive = isDailyInfiniteEnergyActive();
-    const ghostBoostActive = isGhostBoostActive();
-    const freeEnergyActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
-
-    let previewGain = State.game.profitPerTap;
-
-    const skin = State.skins.data.find(s => s.id === State.skins.selected);
-    if (skin?.bonus?.type === 'multiplier') {
-        previewGain *= skin.bonus.value;
-    }
-    if (isTaskTapBoostActive()) {
-        previewGain *= Math.max(1, State.temp.taskTapBoostMultiplier || 1);
-    }
-
-    if (megaBoostActive) {
-        previewGain *= 2;
-    }
-    if (ghostBoostActive) {
-        previewGain *= GHOST_BOOST_MULTIPLIER;
-    }
-
-    previewGain = Math.floor(previewGain) || 1;
+    const tapSnapshot = clickDomain.computeTapPreviewGain({
+        isMegaBoostActive,
+        isDailyInfiniteEnergyActive,
+        isGhostBoostActive,
+        isTaskTapBoostActive,
+        ghostBoostMultiplier: GHOST_BOOST_MULTIPLIER
+    });
+    const {
+        previewGain,
+        freeEnergyActive,
+        megaBoostActive,
+        dailyInfiniteEnergyActive,
+        ghostBoostActive
+    } = tapSnapshot;
 
     const tapTime = Date.now();
-    State.temp.lastTapAt = tapTime;
+    StateActions.markTapTimestamp(tapTime);
     registerTapRhythm(tapTime, isAutoTap);
     if (!isAutoTap) {
         advanceSoftOnboarding('tap');
     }
 
-    // Energy check using visual energy (authoritative + regen - pending spend)
-    if (!freeEnergyActive) {
-        const currentVisualEnergy = getVisualEnergy();
-
-        if (currentVisualEnergy < 1) {
-            done(false, { reason: 'no_energy' });
+    const applyTap = clickDomain.applyTapLocalMutation({
+        previewGain,
+        freeEnergyActive,
+        getVisualEnergy,
+        updateEnergyUIImmediate
+    });
+    if (!applyTap.ok) {
+        done(false, { reason: applyTap.reason || 'tap_blocked' });
+        if (applyTap.reason === 'no_energy') {
             showEnergyRecoveryModal();
-            return;
         }
-
-        // Decrement visual energy immediately by 1 — this is the player-facing
-        // UX. We do NOT touch serverEnergyBase; instead we track pending spend.
-        State.temp.pendingEnergySpend += 1;
-        updateEnergyUIImmediate();
+        return;
     }
 
-
-    // И только потом считаем клик успешным
-    State.temp.clickBuffer += 1;
-    State.temp.clickValueBuffer += previewGain;
-    addCoins('handleTap', previewGain, { previewGain });
     maybeSpawnLuckyGhost(isAutoTap);
 
     trackAchievementProgress('clicks', 1);
@@ -3251,6 +3056,7 @@ function startSync() {
 let currentFilter = 'all';
 let skinsDomain = window.SpiritSkinsDomain.createSkinsDomain({
     State,
+    store: Store,
     API,
     tr,
     showToast,
@@ -3259,7 +3065,19 @@ let skinsDomain = window.SpiritSkinsDomain.createSkinsDomain({
     closeSkinDetail,
     setCharmImageFromSkin,
     updateCollectionProgress,
-    userId: () => userId
+    userId: () => userId,
+    isAdsgramReady,
+    getAdCooldownRemainingMs,
+    formatCooldownClock,
+    openSkinDetail,
+    openRewardedAdWithSession,
+    confirmAdsgramAdSession,
+    claimAdActionWithRetry,
+    setAdCooldownFromIso,
+    trackAchievementProgress,
+    checkAchievements,
+    resolveRewardedAdErrorMessage,
+    debugLog
 });
 
 function getSkinById(id) {
@@ -3577,56 +3395,7 @@ async function buySkinWithStarsPlaceholder(skin) {
 }
 
 async function watchAdForSkin(skinId) {
-    if (!isAdsgramReady()) {
-        showToast(tr('toasts.adUnavailable'), true);
-        return;
-    }
-
-    const skin = State.skins.data.find(s => s.id === skinId);
-    const cooldownKey = `skin:${skin?.requirement?.progressKey || skinId}`;
-    const cooldownRemainingMs = getAdCooldownRemainingMs(cooldownKey);
-    if (cooldownRemainingMs > 0) {
-        showToast(`Skin cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
-        if (document.getElementById('skin-detail-modal')?.classList.contains('active')) {
-            openSkinDetail(skinId);
-        }
-        return;
-    }
-
-    showToast(tr('toasts.adLoading'));
-
-    try {
-        const adSessionId = await openRewardedAdWithSession('ads_increment');
-        await confirmAdsgramAdSession(adSessionId);
-        const adsSync = await claimAdActionWithRetry(() => API.post('/api/ads/increment', {
-            user_id: userId,
-            ad_session_id: adSessionId,
-            skin_id: skinId
-        }));
-        debugLog('ads', 'reward applied in UI', { flow: 'ads_increment', skinId, currentCount: adsSync?.current_count });
-
-        const key = State.skins.data.find(s => s.id === skinId)?.requirement?.progressKey || skinId;
-        State.skins.videoViews[key] = Number(adsSync?.current_count || 0);
-        localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
-        State.skins.adsWatched = adsSync?.ads_watched || ((State.skins.adsWatched || 0) + 1);
-        setAdCooldownFromIso(`skin:${key}`, adsSync?.next_allowed_at || null, Number(adsSync?.cooldown_minutes || 10));
-
-        trackAchievementProgress('adsWatched', 1);
-        checkAchievements();
-
-        showToast(tr('toasts.skinAdProgress'));
-        renderSkins();
-
-        if (document.getElementById('skin-detail-modal').classList.contains('active')) {
-            openSkinDetail(skinId);
-        }
-
-    } catch (e) {
-        showToast(
-            resolveRewardedAdErrorMessage(e, tr('toasts.watchError')),
-            true
-        );
-    }
+    await skinsDomain.watchAdForSkin(skinId);
 }
 
 function updateCollectionProgress() {
@@ -4159,19 +3928,10 @@ async function loadVideoTasks() {
         userId ? API.get(`/api/video-tasks/status/${userId}`) : Promise.resolve(null)
     ]).then(([socialResult, videoResult]) => {
         if (videoResult.status === 'fulfilled' && videoResult.value) {
-            const response = videoResult.value;
-            const taskMap = new Map((response.tasks || []).map((task) => [task.task_id, task]));
-            VIDEO_TASKS.forEach((task) => {
-                const serverTask = taskMap.get(task.id);
-                task.available = serverTask ? !!serverTask.available : true;
-                task.remainingSeconds = serverTask ? Number(serverTask.remaining_seconds || 0) : 0;
-            });
+            tasksEventsDomain.applyVideoTaskStatus(videoResult.value);
         } else if (videoResult.status === 'rejected') {
             if (DEBUG) console.warn('Video task status failed', videoResult.reason);
-            VIDEO_TASKS.forEach((task) => {
-                task.available = true;
-                task.remainingSeconds = 0;
-            });
+            tasksEventsDomain.resetVideoTaskStatus();
         }
         renderVideoTasks();
         done(true, { social: socialResult.status, video: videoResult.status });
@@ -4184,29 +3944,24 @@ function renderVideoTasks() {
 
     const socialMarkup = renderSocialTasksMarkup();
     const videoMarkup = VIDEO_TASKS.map(task => {
-        const available = task.available;
-        const timeLeft = Math.ceil((task.remainingSeconds || 0) / 60);
-        const taskCopy = I18N[UI_LANG]?.tasksList?.[task.id] || I18N.en.tasksList[task.id] || {};
-        const rewardValue = taskCopy.reward || task.reward;
-        const rewardLabel = typeof rewardValue === 'number'
-            ? `+${rewardValue.toLocaleString(UI_LANG === 'ru' ? 'ru-RU' : 'en-US')} ${t('tasks.coinsSuffix')}`
-            : rewardValue;
-
-        const actionLabel = available ? t('tasks.watch') : t('tasks.locked');
-        const stateText = available
-            ? `${taskCopy.description || task.description} • ${rewardLabel}`
-            : `${t('tasks.refreshIn', { time: timeLeft })} • ${rewardLabel}`;
+        const view = tasksEventsDomain.buildVideoTaskViewModel(task, {
+            I18N,
+            UI_LANG,
+            tFn: t
+        });
+        const available = view.available;
+        const timeLeft = view.timeLeft;
 
         return `
             <div class="task-card task-card-simple ${available ? 'ready' : 'cooldown'}" data-category="${task.category}">
                 <div class="task-copy-simple">
-                    <div class="task-title">${taskCopy.title || task.title}</div>
-                    <div class="task-desc">${stateText}</div>
+                    <div class="task-title">${view.title}</div>
+                    <div class="task-desc">${view.stateText}</div>
                 </div>
                 <div class="task-actions-simple">
-                    <span class="task-reward-pill task-reward-pill-simple">${rewardLabel}</span>
+                    <span class="task-reward-pill task-reward-pill-simple">${view.rewardLabel}</span>
                     <button class="task-action task-action-simple ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
-                        ${available ? `?? ${actionLabel}` : `? ${actionLabel}`}
+                        ${available ? `?? ${view.actionLabel}` : `? ${view.actionLabel}`}
                     </button>
                 </div>
                 ${!available && timeLeft > 0 ? `
@@ -4592,7 +4347,11 @@ const modalManager = window.SpiritModalManager.createModalManager({
     bodyClass: 'modal-open',
     onOpen: (id) => debugLog('ui', 'modal open', { id })
 });
-const tasksEventsDomain = window.SpiritTasksEventsDomain.createTasksEventsDomain({ t });
+const tasksEventsDomain = window.SpiritTasksEventsDomain.createTasksEventsDomain({
+    t,
+    VIDEO_TASKS,
+    DEBUG
+});
 
 function hasBlockingOverlayActive() {
     return modalManager.hasBlockingOverlayActive();
@@ -5388,19 +5147,11 @@ async function fetchTournamentOverview() {
 }
 
 async function loadTournamentPrizePoolData({ silent = false } = {}) {
-    try {
-        const overview = await fetchTournamentOverview();
-        if (!overview) {
-            renderPrizePoolDrawer(null);
-            return null;
-        }
-        renderPrizePoolDrawer(overview);
-        return overview;
-    } catch (err) {
-        if (!silent) console.error('Prize pool drawer error:', err);
-        renderPrizePoolDrawer(null);
-        return null;
-    }
+    return tasksEventsDomain.loadTournamentPrizePoolData({
+        silent,
+        fetchTournamentOverview,
+        renderPrizePoolDrawer
+    });
 }
 
 async function selectEventLeague(league) {
@@ -5486,25 +5237,17 @@ function startOnlinePresence() {
 }
 
 async function loadTournamentData() {
-    try {
-        const list = document.getElementById('event-leaderboard-list');
-        const resultsList = document.getElementById('event-results-list');
-        if (list) list.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-        if (resultsList) resultsList.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-        const overview = await fetchTournamentOverview();
-        if (!overview) return;
-
-        renderPendingTonWalletNotice(overview?.pending_ton_notice || null);
-        renderEventOverview(overview);
-        updateOnlineCounterVisibility();
-        const preferredLeague = eventSelectedLeague || overview?.player?.league || deriveEventLeague(State.game.level || 1);
-        await selectEventLeague(preferredLeague);
-        startTournamentTimer(overview.time_left_seconds || 0);
-    } catch (err) {
-        console.error('Event error:', err);
-        const list = document.getElementById('event-leaderboard-list');
-        if (list) list.innerHTML = '<div class="loading">Failed to load event data.</div>';
-    }
+    return tasksEventsDomain.loadTournamentData({
+        fetchTournamentOverview,
+        renderPendingTonWalletNotice,
+        renderEventOverview,
+        updateOnlineCounterVisibility,
+        eventSelectedLeague: () => eventSelectedLeague,
+        deriveEventLeague,
+        State,
+        selectEventLeague,
+        startTournamentTimer
+    });
 }
 
 function startTournamentTimer(seconds) {
