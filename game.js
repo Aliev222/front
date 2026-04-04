@@ -2731,12 +2731,11 @@ async function claimLuckyGhost(event) {
             optimistic: true,
             expiresAt: optimisticExpires
         });
-        const confirmPromise = confirmAdsgramAdSession(adSessionId);
-        const activationPromise = claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
+        await confirmAdsgramAdSession(adSessionId);
+        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-ghost-boost', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
-        const [_, activation] = await Promise.all([confirmPromise, activationPromise]);
         const expiresAt = activation?.expires_at || optimisticExpires;
         setGhostBoostState(true, expiresAt);
         debugLog('ads', 'reward applied in UI', {
@@ -3398,7 +3397,11 @@ function applySavedSkin() {
     }
     
     const skin = getSkinById(State.skins.selected);
-    img.src = (skin?.image || 'imgg/skins/default.png') + '?t=' + Date.now();
+    const nextSrc = skin?.image || 'imgg/skins/default.png';
+    if (img.dataset.skinSrc !== nextSrc) {
+        img.dataset.skinSrc = nextSrc;
+        img.src = nextSrc;
+    }
     img.onerror = () => img.src = 'imgg/skins/default.png';
     done(true, { skinId: State.skins.selected, hasSkin: !!skin });
 }
@@ -3640,10 +3643,10 @@ async function selectSkinFromDetail(skinId) {
     State.skins.selected = skinId;
     applySavedSkin();
     renderSkins();
+    closeSkinDetail();
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
         showToast(tr('toasts.skinSelected'));
-        closeSkinDetail();
     } catch (err) {
         State.skins.selected = prevSelected;
         applySavedSkin();
@@ -5861,12 +5864,11 @@ async function activateMegaBoost() {
             optimistic: true,
             expiresAt: boostEndTime?.toISOString?.()
         });
-        const confirmPromise = confirmAdsgramAdSession(adSessionId);
-        const activationPromise = claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
+        await confirmAdsgramAdSession(adSessionId);
+        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
-        const [__, activation] = await Promise.all([confirmPromise, activationPromise]);
 
         if (activation?.already_active && activation.expires_at) {
             boostEndTime = parseServerDate(activation.expires_at);
@@ -7527,12 +7529,11 @@ function initAutoClicker() {
                 optimistic: true,
                 duration: AUTO_CLICK_DURATION_MS / 1000
             });
-            const confirmPromise = confirmAdsgramAdSession(adSessionId);
-            const activationPromise = claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
+            await confirmAdsgramAdSession(adSessionId);
+            const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                 user_id: userId,
                 ad_session_id: adSessionId
             }));
-            const [_, activation] = await Promise.all([confirmPromise, activationPromise]);
             debugLog('ads', 'reward applied in UI', {
                 flow: 'autoclicker',
                 optimistic: false,
