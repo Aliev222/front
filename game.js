@@ -2433,7 +2433,7 @@ async function showRewardedAd(adSessionId = null) {
     try {
         setAdInputBlocked(true);
         const result = await controller.show();
-        if (result?.done === false) {
+        if (result?.done !== true) {
             throw new Error(result?.description || 'Ad was not completed');
         }
         return result;
