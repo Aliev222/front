@@ -595,40 +595,6 @@
         </div>
     </div>
 
-    <!-- CONFIRM MODAL (for skins) -->
-    <div class="confirm-modal" id="confirm-modal" style="display: none;">
-        <div class="confirm-modal-overlay" onclick="closeConfirmModal?.()"></div>
-        <div class="confirm-modal-content glass">
-            <button class="confirm-modal-close" onclick="closeConfirmModal?.()">×</button>
-            <div class="confirm-modal-icon" id="confirm-modal-icon">🎨</div>
-            <h3 class="confirm-modal-title" id="confirm-modal-title">Choose an action</h3>
-            <div class="skin-preview-mini" id="confirm-skin-preview">
-                <img src="" alt="" id="confirm-skin-img" class="confirm-skin-img" loading="lazy">
-            </div>
-            <p class="confirm-skin-name" id="confirm-skin-name">Skin name</p>
-            <p class="confirm-skin-desc" id="confirm-skin-desc">Skin description</p>
-            <div class="skin-requirements-mini" id="confirm-skin-requirements">
-                <span class="requirement-badge">✨ Free</span>
-            </div>
-            <div class="skin-bonus-mini" id="confirm-skin-bonus">
-                <span class="bonus-badge">⚡ +50% income</span>
-            </div>
-            <div class="confirm-modal-buttons">
-                <button class="btn-secondary modal-btn" onclick="closeConfirmModal?.()">
-                    <span class="btn-icon">×</span>
-                    <span class="btn-text">Cancel</span>
-                </button>
-                <button class="btn-primary modal-btn" id="confirm-action-btn" onclick="executeSkinAction?.()">
-                    <span class="btn-icon">✓</span>
-                    <span class="btn-text" id="confirm-action-text">Select</span>
-                </button>
-            </div>
-            <div class="modal-tip">
-                Tap outside the window to close
-            </div>
-        </div>
-    </div>
-
     <!-- ==================== РќРћР’РђРЇ РњРћР”РђР›РљРђ РЎРџРРЎРљРђ РЎРљРРќРћР’ ==================== -->
     <div class="modal-screen" id="skins-screen">
         <div class="skins-modal">
@@ -693,7 +659,7 @@
                     </div>
                 </div>
 
-            <button class="skin-action-btn" id="skin-action-btn" onclick="handleSkinAction()">
+            <button class="skin-action-btn" id="skin-action-btn" type="button">
                 Claim
             </button>
         </div>

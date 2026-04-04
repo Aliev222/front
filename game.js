@@ -2508,6 +2508,7 @@ function setAdInputBlocked(blocked) {
         overlay.remove();
         State.temp.adBlockerEl = null;
     }
+    syncModalOpenState();
 }
 
 async function syncGhostBoostStatus() {
@@ -3217,6 +3218,7 @@ function handleTap(e) {
         debugLog('perf', `first interactive ${Math.round(performance.now() - APP_BOOT_TS)}ms`);
     }
     if (State.temp.adInputBlocked) return;
+    if (hasBlockingOverlayActive()) return;
     const isAutoTap = !!e?.syntheticAuto;
     const target = (e && e.target && e.target.closest) ? e.target : null;
     if (target && target.closest(
@@ -3224,6 +3226,7 @@ function handleTap(e) {
         '.mini-boost-button, .auto-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
         '.modal-screen, .modal-content, .game-modal, .game-modal-content, .badge-card, ' +
+        '.skin-detail-modal, .energy-recovery-modal, .ad-input-blocker, ' +
         '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop'
     )) return;
 
@@ -3492,40 +3495,70 @@ function selectSkin(id) {
     else showToast(tr('toasts.skinLocked', { name: skin.name }), true);
 }
 
-async function selectActiveSkin(id) {
-    if (!userId) return;
-    if (State.skins.selectInFlight || State.skins.selected === id) return;
+async function selectSkinInternal(id, { closeDetail = false } = {}) {
+    if (!userId) return false;
+    if (State.skins.selectInFlight || State.skins.selected === id) return false;
     State.skins.selectInFlight = true;
     const prevSelected = State.skins.selected;
     State.skins.selected = id;
     applySavedSkin();
     renderSkins();
+    if (closeDetail) closeSkinDetail();
     try {
         await API.post('/api/select-skin', { user_id: userId, skin_id: id });
         showToast(tr('toasts.skinSelected'));
+        return true;
     } catch (err) {
         State.skins.selected = prevSelected;
         applySavedSkin();
         renderSkins();
         showToast(tr('toasts.skinSelectError'), true);
+        return false;
     } finally {
         State.skins.selectInFlight = false;
     }
 }
 
-async function unlockSkin(id) {
-    if (!userId || State.skins.owned.includes(id)) return;
-    try {
-        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: id, method: 'free' });
-        if (res.success) {
-            State.skins.owned.push(id);
-            showToast(tr('toasts.skinNew'));
-            renderSkins();
-            applySavedSkin();
-        }
-    } catch (err) {
-        showToast(tr('toasts.skinUnlockError'), true);
+async function selectActiveSkin(id) {
+    await selectSkinInternal(id);
+}
+
+async function unlockSkinInternal(skinId, {
+    closeDetail = false,
+    applyCharm = false,
+    showAlreadyOwnedToast = false,
+    errorToastKey = 'toasts.skinUnlockError'
+} = {}) {
+    if (!userId) {
+        showToast(tr('toasts.authRequired'), true);
+        return false;
     }
+    if (State.skins.owned.includes(skinId)) {
+        if (showAlreadyOwnedToast) showToast(tr('toasts.skinAlreadyOwned'));
+        if (applyCharm) setCharmImageFromSkin(skinId);
+        if (closeDetail) closeSkinDetail();
+        return false;
+    }
+
+    try {
+        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
+        if (!res?.success) return false;
+        State.skins.owned.push(skinId);
+        showToast(tr('toasts.skinNew'));
+        if (applyCharm) setCharmImageFromSkin(skinId);
+        if (closeDetail) closeSkinDetail();
+        renderSkins();
+        applySavedSkin();
+        updateCollectionProgress();
+        return true;
+    } catch (err) {
+        showToast(tr(errorToastKey), true);
+        return false;
+    }
+}
+
+async function unlockSkin(id) {
+    await unlockSkinInternal(id);
 }
 
 function openSkins() {
@@ -3554,6 +3587,7 @@ function openSkinDetail(skinId) {
     const modal = document.getElementById('skin-detail-modal');
     if (!modal) return;
     modal.classList.add('active');
+    syncModalOpenState();
     
     requestAnimationFrame(() => {
         const isOwned = State.skins.owned.includes(skin.id);
@@ -3659,52 +3693,20 @@ function openSkinDetail(skinId) {
 
 function closeSkinDetail() {
     document.getElementById('skin-detail-modal')?.classList.remove('active');
+    syncModalOpenState();
 }
 
 async function selectSkinFromDetail(skinId) {
-    if (!userId) return showToast(tr('toasts.authRequired'), true);
-    if (State.skins.selectInFlight || State.skins.selected === skinId) return;
-    State.skins.selectInFlight = true;
-    const prevSelected = State.skins.selected;
-    State.skins.selected = skinId;
-    applySavedSkin();
-    renderSkins();
-    closeSkinDetail();
-    try {
-        await API.post('/api/select-skin', { user_id: userId, skin_id: skinId });
-        showToast(tr('toasts.skinSelected'));
-    } catch (err) {
-        State.skins.selected = prevSelected;
-        applySavedSkin();
-        renderSkins();
-        showToast(tr('toasts.skinSelectError'), true);
-    } finally {
-        State.skins.selectInFlight = false;
-    }
+    await selectSkinInternal(skinId, { closeDetail: true });
 }
 
 async function unlockSkinFromDetail(skinId) {
-    if (!userId) return showToast(tr('toasts.authRequired'), true);
-    if (State.skins.owned.includes(skinId)) {
-        showToast(tr('toasts.skinAlreadyOwned'));
-        setCharmImageFromSkin(skinId);
-        closeSkinDetail();
-        return;
-    }
-    
-    try {
-        const res = await API.post('/api/unlock-skin', { user_id: userId, skin_id: skinId, method: 'free' });
-        if (res.success) {
-            State.skins.owned.push(skinId);
-            showToast(tr('toasts.skinNew'));
-            setCharmImageFromSkin(skinId);
-            closeSkinDetail();
-            renderSkins();
-            updateCollectionProgress();
-        }
-    } catch (err) {
-        showToast(tr('toasts.skinClaimError'), true);
-    }
+    await unlockSkinInternal(skinId, {
+        closeDetail: true,
+        applyCharm: true,
+        showAlreadyOwnedToast: true,
+        errorToastKey: 'toasts.skinClaimError'
+    });
 }
 
 async function buySkinWithStarsPlaceholder(skin) {
@@ -4136,7 +4138,6 @@ const VIDEO_TASKS = [
     }
 ];
 
-const TASKS_STORAGE_KEY = 'videoTasksState';
 const SOCIAL_COMPLETED_COLLAPSED_KEY = 'socialCompletedCollapsed';
 
 function persistSocialTasksState() {
@@ -4334,27 +4335,6 @@ async function claimSocialTask(taskId) {
     }
 }
 
-function checkTaskCooldown(task) {
-    if (!task.lastUsed) return true; // Никогда не использовалось
-    
-    const now = Date.now();
-    const cooldownMs = task.cooldown * 60 * 1000; // минуты в миллисекунды
-    const timePassed = now - task.lastUsed;
-    
-    return timePassed >= cooldownMs;
-}
-
-function getTaskTimeLeft(task) {
-    if (!task.lastUsed) return 0;
-    
-    const now = Date.now();
-    const cooldownMs = task.cooldown * 60 * 1000;
-    const timePassed = now - task.lastUsed;
-    const timeLeft = Math.max(0, cooldownMs - timePassed);
-    
-    return Math.ceil(timeLeft / 1000 / 60); // минуты
-}
-
 async function loadVideoTasks() {
     const done = debugPerfStart('ui', 'tasks load');
     const container = document.getElementById('tasks-list');
@@ -4387,12 +4367,6 @@ async function loadVideoTasks() {
         renderVideoTasks();
         done(true, { social: socialResult.status, video: videoResult.status });
     });
-}
-
-function persistTasksState() {
-    const payload = {};
-    VIDEO_TASKS.forEach(t => payload[t.id] = { lastUsed: t.lastUsed || null });
-    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(payload));
 }
 
 function renderVideoTasks() {
@@ -4471,7 +4445,7 @@ function giveRandomReward() {
             activateCustomBoost(random.multiplier, random.minutes);
             break;
         case 'skin_chance':
-            unlockRandomSkin('common');
+            showToast(tr('toasts.serverError'), true);
             break;
     }
 }
@@ -4760,12 +4734,6 @@ function applyStaticTranslations() {
         ['#prize-pool-footnote', 'games.drawerFootnote'],
         ['#event-leaderboard-panel .event-section-card:nth-child(1) .event-section-head h3', 'games.leaderboardTitle'],
         ['#event-leaderboard-panel .event-section-card:nth-child(2) .event-section-head h3', 'games.finalTonTitle'],
-        ['#games-screen .game-card:nth-child(1) .game-enter', 'games.tapToPlay'],
-        ['#games-screen .game-card:nth-child(2) .game-enter', 'games.pullReels'],
-        ['#games-screen .game-card:nth-child(3) .game-enter', 'games.rollIt'],
-        ['#games-screen .game-card:nth-child(4) .game-enter', 'games.spinNow'],
-        ['#games-screen .game-card:nth-child(5) .game-enter', 'games.openBox'],
-        ['#games-screen .game-card:nth-child(6) .game-enter', 'games.chaseMultiplier'],
         ['#wallet-modal-kicker', 'wallet.kicker'],
         ['#wallet-modal-title', 'wallet.title'],
         ['#wallet-section-title', 'wallet.sectionTitle'],
@@ -4775,14 +4743,6 @@ function applyStaticTranslations() {
         ['#soundTitle', 'gameModals.sound'],
         ['#musicTitle', 'gameModals.music'],
         ['#vibrationTitle', 'gameModals.vibration'],
-        ['#confirm-modal-title', 'gameModals.chooseAction'],
-        ['#confirm-skin-name', 'skins.name'],
-        ['#confirm-skin-desc', 'skins.description'],
-        ['#confirm-skin-requirements .requirement-badge', 'common.claimFree'],
-        ['#confirm-skin-bonus .bonus-badge', 'common.bonusIncome'],
-        ['#confirm-modal .btn-secondary .btn-text', 'common.cancel'],
-        ['#confirm-action-text', 'common.select'],
-        ['#confirm-modal .modal-tip', 'common.closeHint'],
         ['.skins-title', 'skins.title'],
         ['.skin-filters .filter-btn:nth-child(1)', 'skins.all'],
         ['.skin-filters .filter-btn:nth-child(2)', 'skins.common'],
@@ -4797,33 +4757,6 @@ function applyStaticTranslations() {
     ];
 
     textMap.forEach(([selector, key]) => {
-        const el = document.querySelector(selector);
-        if (el) el.textContent = t(key);
-    });
-
-    const placeholders = [
-        ['coin-bet', 'gameModals.betAmount'],
-        ['wheel-bet', 'gameModals.betAmount'],
-        ['wheel-number', 'gameModals.numberRange'],
-        ['slots-bet', 'gameModals.betAmount'],
-        ['dice-bet', 'gameModals.betAmount'],
-        ['luckybox-bet', 'gameModals.betAmount'],
-        ['crash-bet', 'gameModals.betAmount']
-    ];
-
-    placeholders.forEach(([id, key]) => {
-        const el = document.getElementById(id);
-        if (el) el.setAttribute('placeholder', t(key));
-    });
-
-    const buttonMap = [
-        ['#game-coinflip .btn-primary', 'gameModals.flip'],
-        ['#game-wheel .btn-primary', 'gameModals.spin'],
-        ['#game-slots .btn-primary', 'gameModals.spin'],
-        ['#game-dice .btn-primary', 'gameModals.roll']
-    ];
-
-    buttonMap.forEach(([selector, key]) => {
         const el = document.querySelector(selector);
         if (el) el.textContent = t(key);
     });
@@ -4843,6 +4776,14 @@ function applyStaticTranslations() {
     });
 }
 
+function hasBlockingOverlayActive() {
+    return !!document.querySelector('.modal-screen.active, .skin-detail-modal.active, .energy-recovery-modal, .ad-input-blocker');
+}
+
+function syncModalOpenState() {
+    document.body.classList.toggle('modal-open', hasBlockingOverlayActive());
+}
+
 // ==================== НАВИГАЦИЯ ====================
 function openModal(id) {
     debugLog('ui', 'modal open', { id });
@@ -4850,16 +4791,16 @@ function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.add('active');
-        document.body.classList.add('modal-open');
     }
+    syncModalOpenState();
 }
 
 function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.remove('active');
-        document.body.classList.remove('modal-open');
     }
+    syncModalOpenState();
 }
 
 function switchTab(tab, el) {
@@ -4867,7 +4808,7 @@ function switchTab(tab, el) {
     if (el) el.classList.add('active');
     
     document.querySelectorAll('.modal-screen').forEach(m => m.classList.remove('active'));
-    document.body.classList.remove('modal-open');
+    syncModalOpenState();
     
     if (tab === 'main') return;
     
@@ -5802,23 +5743,29 @@ function showEnergyRecoveryModal() {
     modal.className = 'energy-recovery-modal';
     modal.innerHTML = `
         <div class="modal-content glass">
-            <button class="modal-close" onclick="this.closest('.energy-recovery-modal').remove()">?</button>
+            <button class="modal-close" onclick="closeEnergyRecoveryModal()">?</button>
             <h3>? Energy is empty!</h3>
             <p>Watch an ad and restore energy to maximum</p>
             <button class="btn-primary" onclick="recoverEnergyWithAd()" ${cooldownRemainingMs > 0 ? 'disabled' : ''}>
                 ${cooldownRemainingMs > 0 ? `? Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}` : '?? Restore to max'}
             </button>
-            <button class="btn-secondary" onclick="this.closest('.energy-recovery-modal').remove()">
+            <button class="btn-secondary" onclick="closeEnergyRecoveryModal()">
                 ? Wait
             </button>
         </div>
     `;
     document.body.appendChild(modal);
+    syncModalOpenState();
+}
+
+function closeEnergyRecoveryModal() {
+    const modal = document.querySelector('.energy-recovery-modal');
+    if (modal) modal.remove();
+    syncModalOpenState();
 }
 
 async function recoverEnergyWithAd() {
-    const modal = document.querySelector('.energy-recovery-modal');
-    if (modal) modal.remove();
+    closeEnergyRecoveryModal();
 
     const cooldownRemainingMs = getAdCooldownRemainingMs('energy_refill');
     if (cooldownRemainingMs > 0) {
@@ -6004,6 +5951,12 @@ async function checkBoostStatus() {
 }
 
 // ==================== МИНИ-ИГРЫ ====================
+const MINI_GAMES_ENABLED = false;
+
+function notifyMiniGamesDisabled() {
+    showToast('Mini-games are temporarily unavailable.', true);
+}
+
 const ROULETTE_RED_NUMBERS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const ROULETTE_WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 let rouletteWheelRotation = 0;
@@ -6029,6 +5982,10 @@ async function postMiniGameRequest(endpoint, payload) {
 }
 
 function openGame(game) {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     document.querySelectorAll('.game-modal').forEach(m => m.classList.remove('active'));
     const modal = document.getElementById(`game-${game}`);
     if (game === 'wheel') initRouletteVisuals();
@@ -6038,6 +5995,7 @@ function openGame(game) {
 }
 
 function closeGame(game) {
+    if (!MINI_GAMES_ENABLED) return;
     const modal = document.getElementById(`game-${game}`);
     if (game === 'wheel') {
         cancelAnimationFrame(rouletteAnimationFrame);
@@ -6049,6 +6007,7 @@ function closeGame(game) {
 }
 
 function toggleNumberInput() {
+    if (!MINI_GAMES_ENABLED) return;
     const betType = document.getElementById('wheel-color')?.value;
     const numberInput = document.getElementById('wheel-number');
     if (numberInput) numberInput.style.display = betType === 'number' ? 'block' : 'none';
@@ -6204,6 +6163,10 @@ function animateRouletteToResult(resultNumber, duration = 8600) {
 }
 
 async function playCoinflip() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (miniGameLocks.coinflip) return;
     const betInput = document.getElementById('coin-bet');
     if (!betInput) return;
@@ -6277,6 +6240,10 @@ async function playCoinflip() {
 }
 
 async function playSlots() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (miniGameLocks.slots) return;
     const betInput = document.getElementById('slots-bet');
     if (!betInput) return;
@@ -6373,6 +6340,10 @@ async function playSlots() {
 }
 
 async function playDice() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (miniGameLocks.dice) return;
     const betInput = document.getElementById('dice-bet');
     const predSelect = document.getElementById('dice-prediction');
@@ -6480,6 +6451,10 @@ async function playDice() {
 }
 
 async function playWheel() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (miniGameLocks.wheel) return;
     try {
         const betInput = document.getElementById('wheel-bet');
@@ -6700,6 +6675,10 @@ function resetLuckyBoxBoard() {
 }
 
 function playLuckyBox(boxIndex) {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (luckyBoxBusy) return;
 
     const betInput = document.getElementById('luckybox-bet');
@@ -6914,6 +6893,10 @@ function finalizeCrashGhostRound(result = {}) {
 }
 
 async function startCrashGhost() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (crashGhostState.active) return;
 
     const betInput = document.getElementById('crash-bet');
@@ -6975,6 +6958,10 @@ function updateCrashGhostVisuals() {
 }
 
 async function cashOutCrashGhost() {
+    if (!MINI_GAMES_ENABLED) {
+        notifyMiniGamesDisabled();
+        return;
+    }
     if (!crashGhostState.active || crashGhostState.settled) return;
 
     const cashBtn = document.getElementById('crash-cashout-btn');
@@ -7185,6 +7172,7 @@ function setupGlobalClickHandler() {
         '.mini-boost-button, .skin-category, .skin-card, .task-button, ' +
         '.btn-primary, .btn-secondary, .toggle-wrap, .upgrade-panel, .game-card, ' +
         '.modal-screen, .modal-content, .game-modal, .game-modal-content, .auto-boost-button, ' +
+        '.skin-detail-modal, .energy-recovery-modal, .ad-input-blocker, ' +
         '.prize-pool-shell, .prize-pool-drawer, .prize-pool-tab, .prize-pool-backdrop';
 
     if (globalTapPointerHandler) {
@@ -7203,6 +7191,7 @@ function setupGlobalClickHandler() {
     if (window.PointerEvent) {
         globalTapPointerHandler = function(e) {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (hasBlockingOverlayActive()) return;
             if (e.target.closest(ignoreSelector)) return;
             handleTap(e);
         };
@@ -7211,10 +7200,12 @@ function setupGlobalClickHandler() {
     }
 
     globalTapTouchHandler = function(e) {
+        if (hasBlockingOverlayActive()) return;
         if (e.target.closest(ignoreSelector)) return;
         handleTap(e);
     };
     globalTapClickHandler = function(e) {
+        if (hasBlockingOverlayActive()) return;
         if (e.target.closest(ignoreSelector)) return;
         handleTap(e);
     };
@@ -7867,13 +7858,6 @@ window.selectSkin = selectSkin;
 window.filterSkins = filterSkins;
 window.openSkins = openSkins;
 window.showToast = showToast;
-window.playCoinflip = playCoinflip;
-window.playSlots = playSlots;
-window.playDice = playDice;
-window.playWheel = playWheel;
-window.playLuckyBox = playLuckyBox;
-window.startCrashGhost = startCrashGhost;
-window.cashOutCrashGhost = cashOutCrashGhost;
 window.State = State;
 window.state = State;
 window.startPerfectEnergySystem = startPerfectEnergySystem;
@@ -7882,6 +7866,7 @@ window.sendClickBatch = sendClickBatch;
 window.syncEnergyWithServer = syncEnergyWithServer;
 window.fullSyncWithServer = fullSyncWithServer;
 window.recoverEnergyWithAd = recoverEnergyWithAd;
+window.closeEnergyRecoveryModal = closeEnergyRecoveryModal;
 window.openAchievements = openAchievements;
 window.openDailyRewards = openDailyRewards;
 window.claimDailyReward = claimDailyReward;
@@ -7889,7 +7874,6 @@ window.watchVideoForTask = watchVideoForTask;
 window.startSocialTask = startSocialTask;
 window.claimSocialTask = claimSocialTask;
 window.toggleCompletedSocialTasks = toggleCompletedSocialTasks;
-window.recoverEnergyWithAd = recoverEnergyWithAd;
 window.checkBoostStatus = checkBoostStatus;
 window.closeSkinDetail = closeSkinDetail;
 window.openSkinDetail = openSkinDetail;
