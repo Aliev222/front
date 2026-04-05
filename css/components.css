@@ -1,0 +1,108 @@
+.task-chip,
+.metric-pill,
+.clicker-core,
+.floating-actions__item,
+.upgrade-card,
+.dock-nav,
+.dock-nav__item,
+.upgrade-card__action {
+    background: var(--surface-bg);
+}
+
+.task-chip,
+.icon-button,
+.floating-actions__item,
+.upgrade-card__action,
+.dock-nav__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-chip {
+    width: 34px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+}
+
+.task-chip__mark {
+    width: 12px;
+    height: 21px;
+    border-right: 4px solid var(--app-border);
+    border-bottom: 4px solid var(--app-border);
+    transform: rotate(41deg) translateY(-2px);
+}
+
+.icon-button--settings {
+    width: 28px;
+    height: 28px;
+}
+
+.icon-gear {
+    width: 22px;
+    height: 22px;
+    position: relative;
+    border: 2px solid var(--surface-bg);
+    border-radius: 50%;
+}
+
+.icon-gear::before,
+.icon-gear::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border: 1px dashed var(--surface-bg);
+    border-radius: 50%;
+}
+
+.metric-pill {
+    height: var(--metric-height);
+    border-radius: var(--radius-md);
+}
+
+.energy-track__fill {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-round);
+    background: var(--accent-bg);
+}
+
+.clicker-core {
+    width: var(--clicker-size);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: var(--shadow-soft);
+}
+
+.floating-actions__item {
+    width: var(--floating-size);
+    height: var(--floating-size);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted-bg);
+}
+
+.upgrade-card {
+    min-height: var(--upgrade-height);
+    border-radius: var(--radius-md);
+}
+
+.upgrade-card__action {
+    width: 113px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-sm);
+    background: var(--accent-bg);
+}
+
+.dock-nav {
+    min-height: var(--nav-height);
+    border-radius: var(--radius-md);
+}
+
+.dock-nav__item {
+    width: 46px;
+    height: 34px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-sm);
+    background: #000000;
+}

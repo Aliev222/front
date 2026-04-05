@@ -1,0 +1,3 @@
+window.SpiritAppViewport = {
+    init() {}
+};

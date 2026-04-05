@@ -1,0 +1,39 @@
+:root {
+    --font-ui: "Jura", "Montserrat", sans-serif;
+    --font-body: "Montserrat", sans-serif;
+
+    --viewport-max-width: 390px;
+    --app-page-bg: #f5f5f5;
+    --app-shell-bg: #090032;
+    --app-surface: #ffffff;
+    --app-surface-muted: #d3d3d3;
+    --app-accent: #18bdf3;
+    --app-text: #111111;
+    --app-text-inverse: #ffffff;
+    --app-border: #000000;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+
+    --radius-sm: 4px;
+    --radius-md: 14px;
+    --radius-lg: 16px;
+    --radius-round: 999px;
+
+    --topbar-height: 52px;
+    --frame-padding-x: 14px;
+    --frame-padding-top: 7px;
+    --frame-padding-bottom: 19px;
+    --metric-height: 37px;
+    --energy-height: 14px;
+    --score-size: clamp(34px, 10.5vw, 46px);
+    --clicker-size: min(82vw, 318px);
+    --floating-size: 40px;
+    --upgrade-height: 64px;
+    --nav-height: 64px;
+
+    --shadow-soft: 0 12px 24px rgba(0, 0, 0, 0.08);
+}

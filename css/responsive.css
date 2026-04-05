@@ -1,0 +1,41 @@
+@media (max-width: 359px) {
+    :root {
+        --frame-padding-x: 10px;
+        --clicker-size: min(79vw, 286px);
+        --floating-size: 36px;
+        --upgrade-height: 60px;
+        --nav-height: 58px;
+    }
+
+    .toolbar-tasks {
+        gap: 10px;
+    }
+
+    .clicker-screen__stats {
+        gap: 16px;
+        margin-inline: 4px;
+    }
+
+    .dock-nav {
+        padding-inline: 10px;
+    }
+
+    .upgrade-card__action {
+        width: 96px;
+    }
+}
+
+@media (min-width: 768px) {
+    :root {
+        --viewport-max-width: 430px;
+    }
+
+    .app-shell {
+        min-height: auto;
+        padding-block: 20px;
+    }
+
+    .clicker-screen {
+        min-height: 780px;
+    }
+}

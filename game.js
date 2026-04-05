@@ -897,18 +897,18 @@ function isTaskPassiveBoostActive() {
 }
 
 function applyTaskBoostPayload(data = {}) {
-    setStatePath('temp.taskTapBoostExpiresAt', data.task_tap_boost_expires_at || State.temp.taskTapBoostExpiresAt || null);
-    setStatePath('temp.taskTapBoostMultiplier', data.task_tap_boost_multiplier || (data.task_tap_boost_active ? 2 : State.temp.taskTapBoostMultiplier || 1));
-    setStatePath('temp.taskPassiveBoostExpiresAt', data.task_passive_boost_expires_at || State.temp.taskPassiveBoostExpiresAt || null);
-    setStatePath('temp.taskPassiveBoostMultiplier', data.task_passive_boost_multiplier || (data.task_passive_boost_active ? 2 : State.temp.taskPassiveBoostMultiplier || 1));
+    State.temp.taskTapBoostExpiresAt = data.task_tap_boost_expires_at || State.temp.taskTapBoostExpiresAt || null;
+    State.temp.taskTapBoostMultiplier = data.task_tap_boost_multiplier || (data.task_tap_boost_active ? 2 : State.temp.taskTapBoostMultiplier || 1);
+    State.temp.taskPassiveBoostExpiresAt = data.task_passive_boost_expires_at || State.temp.taskPassiveBoostExpiresAt || null;
+    State.temp.taskPassiveBoostMultiplier = data.task_passive_boost_multiplier || (data.task_passive_boost_active ? 2 : State.temp.taskPassiveBoostMultiplier || 1);
 
     if (!isTaskTapBoostActive()) {
-        setStatePath('temp.taskTapBoostExpiresAt', null);
-        setStatePath('temp.taskTapBoostMultiplier', 1);
+        State.temp.taskTapBoostExpiresAt = null;
+        State.temp.taskTapBoostMultiplier = 1;
     }
     if (!isTaskPassiveBoostActive()) {
-        setStatePath('temp.taskPassiveBoostExpiresAt', null);
-        setStatePath('temp.taskPassiveBoostMultiplier', 1);
+        State.temp.taskPassiveBoostExpiresAt = null;
+        State.temp.taskPassiveBoostMultiplier = 1;
     }
 }
 
@@ -1120,17 +1120,6 @@ const State = window.SpiritStore.createInitialState({
     uiLang: UI_LANG
 });
 const Store = window.SpiritStore.createStore(State);
-function setStatePath(path, value) {
-    Store.set(path, value);
-}
-
-function setProgressLevel(value) {
-    const nextLevel = Math.max(0, Number(value || 0));
-    setStatePath('game.level', nextLevel);
-    setStatePath('game.levels.multitap', nextLevel);
-    setStatePath('game.levels.profit', nextLevel);
-    setStatePath('game.levels.energy', nextLevel);
-}
 let clickDomain = null;
 let tapDomain = null;
 let tapFeedbackRenderer = null;
@@ -1165,9 +1154,8 @@ function isLitePerformanceMode() {
 }
 
 function applyPerformanceMode() {
-    const performanceLite = detectLitePerformanceMode();
-    setStatePath('temp.performanceLite', performanceLite);
-    document.body.classList.toggle('lite-performance', performanceLite);
+    State.temp.performanceLite = detectLitePerformanceMode();
+    document.body.classList.toggle('lite-performance', State.temp.performanceLite);
 }
 
 function parseServerDate(value) {
@@ -1338,7 +1326,7 @@ function ensureToastLayer() {
         <div class="toast-stack toast-stack-right" data-side="right"></div>
     `;
     document.body.appendChild(hud);
-    setStatePath('temp.toastLayerReady', true);
+    State.temp.toastLayerReady = true;
     updateToastViewportOffset();
 }
 
@@ -1462,7 +1450,7 @@ function maybeShowAmbientToast() {
     const candidate = pool[Math.floor(Math.random() * pool.length)] || AMBIENT_TOAST_VARIANTS[0];
     if (!candidate) return;
 
-    setStatePath('temp.toastAmbientLastAt', Date.now());
+    State.temp.toastAmbientLastAt = Date.now();
     showContextToast({
         ...candidate,
         key: `ambient:${candidate.title}`,
@@ -1475,7 +1463,7 @@ function startAmbientToastLoop() {
     if (State.temp.toastContextTimer) {
         clearInterval(State.temp.toastContextTimer);
     }
-    setStatePath('temp.toastContextTimer', setInterval(maybeShowAmbientToast, 18000));
+    State.temp.toastContextTimer = setInterval(maybeShowAmbientToast, 18000);
 }
 
 function readSoftOnboardingState() {
@@ -1504,7 +1492,7 @@ function writeSoftDiscoveryState(nextState) {
 
 function clearOnboardingHandHint() {
     State.temp.onboarding.handEl?.remove?.();
-    setStatePath('temp.onboarding.handEl', null);
+    State.temp.onboarding.handEl = null;
 }
 
 function renderOnboardingHandHint() {
@@ -1525,19 +1513,19 @@ function renderOnboardingHandHint() {
     hint.style.left = `${rect.left + rect.width * (step === 'upgrade' ? 0.78 : 0.72)}px`;
     hint.style.top = `${rect.top + rect.height * (step === 'upgrade' ? 0.45 : 0.76)}px`;
     document.body.appendChild(hint);
-    setStatePath('temp.onboarding.handEl', hint);
+    State.temp.onboarding.handEl = hint;
 }
 
 function completeSoftOnboarding() {
     clearOnboardingHandHint();
-    setStatePath('temp.onboarding.active', false);
-    setStatePath('temp.onboarding.step', 'done');
+    State.temp.onboarding.active = false;
+    State.temp.onboarding.step = 'done';
     writeSoftOnboardingState({ step: 'done', completed: true });
 }
 
 function setSoftOnboardingStep(step) {
-    setStatePath('temp.onboarding.active', step !== 'done');
-    setStatePath('temp.onboarding.step', step);
+    State.temp.onboarding.active = step !== 'done';
+    State.temp.onboarding.step = step;
     writeSoftOnboardingState({ step, completed: step === 'done' });
     if (step === 'tap') {
         renderOnboardingHandHint();
@@ -1611,8 +1599,8 @@ function initSoftOnboarding() {
     const saved = readSoftOnboardingState();
     const isCompleted = saved?.completed || saved?.step === 'done';
     if (isCompleted) {
-        setStatePath('temp.onboarding.active', false);
-        setStatePath('temp.onboarding.step', 'done');
+        State.temp.onboarding.active = false;
+        State.temp.onboarding.step = 'done';
         clearOnboardingHandHint();
         return;
     }
@@ -1628,8 +1616,8 @@ function initSoftOnboarding() {
     }
 
     const step = saved?.step || 'tap';
-    setStatePath('temp.onboarding.active', step !== 'done');
-    setStatePath('temp.onboarding.step', step);
+    State.temp.onboarding.active = step !== 'done';
+    State.temp.onboarding.step = step;
     setTimeout(() => setSoftOnboardingStep(step), 500);
 }
 
@@ -1714,7 +1702,7 @@ function maybeShowIdleToast() {
     if (idleForMs < 60000) return;
 
     const variant = IDLE_TOAST_VARIANTS[Math.floor(Math.random() * IDLE_TOAST_VARIANTS.length)];
-    setStatePath('temp.idleToastShown', true);
+    State.temp.idleToastShown = true;
     showContextToast({
         ...variant,
         key: 'idle:minute',
@@ -1727,13 +1715,13 @@ function startIdleToastLoop() {
     if (State.temp.idleToastTimer) {
         clearInterval(State.temp.idleToastTimer);
     }
-    setStatePath('temp.idleToastTimer', setInterval(maybeShowIdleToast, 5000));
+    State.temp.idleToastTimer = setInterval(maybeShowIdleToast, 5000);
 }
 
 function registerTapRhythm(now, isAutoTap = false) {
     if (isAutoTap) return;
 
-    setStatePath('temp.idleToastShown', false);
+    State.temp.idleToastShown = false;
     const windowMs = 2600;
     const threshold = 12;
     const taps = State.temp.rapidTapWindow || [];
@@ -1743,7 +1731,7 @@ function registerTapRhythm(now, isAutoTap = false) {
         taps.shift();
     }
 
-    setStatePath('temp.rapidTapWindow', taps);
+    State.temp.rapidTapWindow = taps;
 
     if (taps.length >= threshold) {
         const variant = FAST_TAP_TOAST_VARIANTS[Math.floor(Math.random() * FAST_TAP_TOAST_VARIANTS.length)];
@@ -1753,13 +1741,13 @@ function registerTapRhythm(now, isAutoTap = false) {
             cooldownMs: 25000,
             duration: 3600
         });
-        setStatePath('temp.rapidTapWindow', []);
+        State.temp.rapidTapWindow = [];
     }
 }
 
 function handleReferralToast(nextCount) {
     const previousCount = State.temp.toastReferralCount;
-    setStatePath('temp.toastReferralCount', nextCount);
+    State.temp.toastReferralCount = nextCount;
 
     if (!nextCount) return;
     if (previousCount === null) {
@@ -1804,15 +1792,15 @@ function trackTournamentToastState(rank, topLimit) {
             cooldownMs: 30000,
             duration: 5200
         });
-        setStatePath('temp.tournamentDropWarned', true);
+        State.temp.tournamentDropWarned = true;
     }
 
     if (isInTop) {
-        setStatePath('temp.tournamentDropWarned', false);
+        State.temp.tournamentDropWarned = false;
     }
 
-    setStatePath('temp.tournamentLastRank', numericRank);
-    setStatePath('temp.tournamentLastTopLimit', topLimit);
+    State.temp.tournamentLastRank = numericRank;
+    State.temp.tournamentLastTopLimit = topLimit;
 }
 
 // ==================== ДОСТИЖЕНИЯ ====================
@@ -1843,10 +1831,11 @@ function loadAchievementsFromStorage() {
         const saved = localStorage.getItem(ACHIEVEMENTS_KEY);
         if (!saved) return;
         const parsed = JSON.parse(saved);
-        Store.merge('achievements', {
+        State.achievements = {
+            ...State.achievements,
             ...parsed,
             completed: Array.from(new Set(parsed.completed || []))
-        });
+        };
     } catch (e) {
         if (DEBUG) console.warn('Achievements restore failed', e);
     }
@@ -1864,22 +1853,21 @@ function saveAchievementsToStorage() {
 }
 
 function trackAchievementProgress(key, delta = 1) {
-    const nextValue = (State.achievements[key] || 0) + delta;
-    setStatePath(`achievements.${key}`, nextValue);
+    State.achievements[key] = (State.achievements[key] || 0) + delta;
     saveAchievementsToStorage();
 }
 
 function applyServerEnergySnapshot(payload) {
     // Layer 1: update authoritative server state
     if (typeof payload.energy === 'number') {
-        setStatePath('temp.serverEnergyBase', payload.energy);
+        State.temp.serverEnergyBase = payload.energy;
     }
     if (typeof payload.max_energy === 'number') {
-        setStatePath('temp.serverMaxEnergy', payload.max_energy);
-        setStatePath('game.maxEnergy', payload.max_energy);
+        State.temp.serverMaxEnergy = payload.max_energy;
+        State.game.maxEnergy = payload.max_energy;
     }
     if (typeof payload.regen_seconds === 'number') {
-        setStatePath('temp.energyRegenMs', payload.regen_seconds * 1000);
+        State.temp.energyRegenMs = payload.regen_seconds * 1000;
     }
 
     // Use server-derived timing for visual regen, not client arrival time.
@@ -1892,10 +1880,10 @@ function applyServerEnergySnapshot(payload) {
             syncTimeMs = new Date(payload.server_time).getTime();
         } catch (_) { /* fall through to Date.now() */ }
     }
-    setStatePath('temp.serverEnergySyncedAtMs', syncTimeMs);
+    State.temp.serverEnergySyncedAtMs = syncTimeMs;
 
     // Update visual energy from the dual-layer model
-    setStatePath('game.energy', getVisualEnergy());
+    State.game.energy = getVisualEnergy();
 }
 
 function getVisualEnergy() {
@@ -1921,7 +1909,7 @@ function refreshEnergyUIOnly() {
     const visualEnergy = getVisualEnergy();
 
     if (visualEnergy !== State.game.energy) {
-        setStatePath('game.energy', visualEnergy);
+        State.game.energy = visualEnergy;
         updateEnergyUIImmediate();
     }
 }
@@ -1936,20 +1924,17 @@ function checkAchievements() {
         adsWatched: State.skins.adsWatched || 0
     };
     
-    const completed = new Set(State.achievements.completed || []);
     let changed = false;
     ACHIEVEMENTS.forEach(achievement => {
-        if (!completed.has(achievement.id) && achievement.condition(stats)) {
-            completed.add(achievement.id);
+        if (!State.achievements.completed.includes(achievement.id) && 
+            achievement.condition(stats)) {
+            State.achievements.completed.push(achievement.id);
             showAchievementNotification(achievement);
             changed = true;
         }
     });
 
-    if (changed) {
-        setStatePath('achievements.completed', Array.from(completed));
-        saveAchievementsToStorage();
-    }
+    if (changed) saveAchievementsToStorage();
 }
 
 function showAchievementNotification(achievement) {
@@ -2077,7 +2062,11 @@ Object.assign(StateActions, {
             nextLevel = legacyFallback;
         }
         nextLevel = Math.max(0, Number(nextLevel || 0));
-        setProgressLevel(nextLevel);
+        Store.set('game.level', nextLevel);
+        // Deprecated mirrors stay aligned for backward compatibility.
+        Store.set('game.levels.multitap', nextLevel);
+        Store.set('game.levels.profit', nextLevel);
+        Store.set('game.levels.energy', nextLevel);
         if (typeof payload.rebirth_count === 'number') {
             Store.set('game.rebirthCount', Math.max(0, payload.rebirth_count));
         }
@@ -2196,7 +2185,7 @@ async function loadUserData() {
             return; // stale response, ignore
         }
         if (incomingTs > 0) {
-            setStatePath('temp.lastStateUpdatedAtMs', incomingTs);
+            State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
         setCoins('loadUserData', data.coins || 0, data);
@@ -2205,7 +2194,6 @@ async function loadUserData() {
             max_energy: data.max_energy || 500,
             regen_seconds: data.regen_seconds || 2
         });
-        setStatePath('temp.pendingEnergySpend', 0);
         StateActions.applyProfitSnapshot({
             profit_per_tap: (typeof data.profit_per_tap === 'number') ? data.profit_per_tap : State.game.profitPerTap,
             profit_per_hour: (typeof data.profit_per_hour === 'number') ? data.profit_per_hour : State.game.profitPerHour,
@@ -2222,18 +2210,15 @@ async function loadUserData() {
         });
         applyTaskBoostPayload(data);
         
-        const ownedSkins = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
-        const selectedSkin = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', ownedSkins);
-        const videoViews = data.skin_ad_progress || {};
-        setStatePath('skins.owned', ownedSkins);
-        setStatePath('skins.selected', selectedSkin);
-        setStatePath('skins.adsWatched', data.ads_watched || 0);
-        setStatePath('skins.videoViews', videoViews);
-        localStorage.setItem('videoSkinViews', JSON.stringify(videoViews));
+        State.skins.owned = normalizeOwnedSkinIds(data.owned_skins || ['default.pngSP']);
+        State.skins.selected = normalizeSelectedSkinId(data.selected_skin || 'default.pngSP', State.skins.owned);
+        State.skins.adsWatched = data.ads_watched || 0;
+        State.skins.videoViews = data.skin_ad_progress || {};
+        localStorage.setItem('videoSkinViews', JSON.stringify(State.skins.videoViews));
         applyBoostStateFromPayload(data);
         setTonWalletState(data.ton_wallet || {});
         if (data.daily_infinite_energy_expires_at) {
-            setStatePath('daily.infiniteEnergyExpiresAt', data.daily_infinite_energy_expires_at);
+            State.daily.infiniteEnergyExpiresAt = data.daily_infinite_energy_expires_at;
         }
 
         applySavedSkin();
@@ -2281,7 +2266,7 @@ async function loadPrices() {
     if (!userId) return;
     try {
         const prices = await API.get(`/api/upgrade-prices/${userId}`);
-        setStatePath('game.prices', { ...State.game.prices, ...prices });
+        State.game.prices = { ...State.game.prices, ...prices };
     } catch (err) {
         console.error('Failed to load prices:', err);
     }
@@ -2335,9 +2320,9 @@ async function loadSkinsList() {
     try {
         // На клиенте фиксируем актуальный список, чтобы старые серверные записи не перезаписывали имена/изображения
         const localSkins = getLocalSkins();
-        setStatePath('skins.data', localSkins);
+        State.skins.data = localSkins;
     } catch (err) {
-        setStatePath('skins.data', getLocalSkins());
+        State.skins.data = getLocalSkins();
     }
     
     State.skins.data.forEach(skin => {
@@ -2438,11 +2423,11 @@ function applyBoostStateFromPayload(payload) {
         syncMegaBoostUi();
     }
     if (payload.daily_infinite_energy_expires_at) {
-        setStatePath('daily.infiniteEnergyExpiresAt', payload.daily_infinite_energy_expires_at);
+        State.daily.infiniteEnergyExpiresAt = payload.daily_infinite_energy_expires_at;
     } else if (payload.daily_infinite_energy_active === false) {
         const localDaily = parseServerDate(State.daily.infiniteEnergyExpiresAt);
         if (!localDaily || localDaily.getTime() <= Date.now()) {
-            setStatePath('daily.infiniteEnergyExpiresAt', null);
+            State.daily.infiniteEnergyExpiresAt = null;
         }
     }
     if (typeof payload.ghost_boost_active === 'boolean') {
@@ -2462,7 +2447,7 @@ function getRandomGhostCooldownMs() {
 }
 
 function scheduleNextGhostSpawn() {
-    setStatePath('temp.ghostNextSpawnAt', Date.now() + getRandomGhostCooldownMs());
+    State.temp.ghostNextSpawnAt = Date.now() + getRandomGhostCooldownMs();
 }
 
 function clearGhostBoostIndicator() {
@@ -2488,12 +2473,12 @@ function renderGhostBoostIndicator(expiresAt) {
 }
 
 function setGhostBoostState(active, expiresAt = null) {
-    setStatePath('temp.ghostBoostActive', !!active);
-    setStatePath('temp.ghostBoostExpiresAt', active ? expiresAt : null);
+    State.temp.ghostBoostActive = !!active;
+    State.temp.ghostBoostExpiresAt = active ? expiresAt : null;
 
     if (State.temp.ghostBoostInterval) {
         clearInterval(State.temp.ghostBoostInterval);
-        setStatePath('temp.ghostBoostInterval', null);
+        State.temp.ghostBoostInterval = null;
     }
 
     if (!active || !expiresAt) {
@@ -2505,13 +2490,13 @@ function setGhostBoostState(active, expiresAt = null) {
     document.querySelector('.energy-bar-bg')?.classList.add('ghost-boost-active');
     renderGhostBoostIndicator(expiresAt);
 
-    setStatePath('temp.ghostBoostInterval', setInterval(() => {
+    State.temp.ghostBoostInterval = setInterval(() => {
         const diff = parseServerDate(State.temp.ghostBoostExpiresAt) - new Date();
         if (diff <= 0) {
             clearInterval(State.temp.ghostBoostInterval);
-            setStatePath('temp.ghostBoostInterval', null);
-            setStatePath('temp.ghostBoostActive', false);
-            setStatePath('temp.ghostBoostExpiresAt', null);
+            State.temp.ghostBoostInterval = null;
+            State.temp.ghostBoostActive = false;
+            State.temp.ghostBoostExpiresAt = null;
             clearGhostBoostIndicator();
             showToast('The ghost bonus faded. The screen feels normal again.', false, {
                 title: 'Ghost boost ended',
@@ -2523,7 +2508,7 @@ function setGhostBoostState(active, expiresAt = null) {
             return;
         }
         renderGhostBoostIndicator(State.temp.ghostBoostExpiresAt);
-    }, 1000));
+    }, 1000);
 }
 
 function setAdInputBlocked(blocked) {
@@ -2593,7 +2578,7 @@ async function claimAdActionWithRetry(claimFn, attempts = 15, delayMs = 1500) {
 
 function removeLuckyGhost() {
     document.querySelector('.lucky-ghost-event')?.remove();
-    setStatePath('temp.ghostSpawnVisible', false);
+    State.temp.ghostSpawnVisible = false;
 }
 
 async function claimLuckyGhost(event) {
@@ -2673,7 +2658,7 @@ function spawnLuckyGhost() {
     if (isAdsgramReady()) prewarmAdActionSession('ghost_boost');
 
     scheduleNextGhostSpawn();
-    setStatePath('temp.ghostSpawnVisible', true);
+    State.temp.ghostSpawnVisible = true;
 
     const ghost = document.createElement('button');
     ghost.type = 'button';
@@ -2794,13 +2779,10 @@ async function loadDailyRewardStatus() {
     if (!userId) return;
     try {
         const response = await API.get(`/api/daily-reward/status/${userId}`);
-        const claimedDays = response.claimed_days || 0;
-        const claimAvailable = !!response.claim_available;
-        const nextDay = response.next_day || Math.min(claimedDays + 1, DAILY_REWARD_MAX_DAYS);
-        setStatePath('daily.claimedDays', claimedDays);
-        setStatePath('daily.claimAvailable', claimAvailable);
-        setStatePath('daily.loaded', true);
-        setStatePath('daily.nextDay', nextDay);
+        State.daily.claimedDays = response.claimed_days || 0;
+        State.daily.claimAvailable = !!response.claim_available;
+        State.daily.loaded = true;
+        State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
         applyBoostStateFromPayload({
             daily_infinite_energy_active: !!response.infinite_energy_active,
             daily_infinite_energy_expires_at: response.infinite_energy_expires_at || null
@@ -2816,8 +2798,8 @@ async function loadDailyRewardStatus() {
         updateCollectionProgress();
     } catch (err) {
         if (DEBUG) console.warn('Daily reward status failed', err);
-        setStatePath('daily.loaded', false);
-        setStatePath('daily.claimAvailable', false);
+        State.daily.loaded = false;
+        State.daily.claimAvailable = false;
         renderDailyRewardButton();
     }
 }
@@ -2845,14 +2827,13 @@ async function claimDailyReward() {
         const response = await API.post('/api/daily-reward/claim', { user_id: userId });
         setCoins('claimDailyReward', response.coins ?? State.game.coins, response);
         if (response.skin_id) {
-            const ownedSkins = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
-            setStatePath('skins.owned', ownedSkins);
+            State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
             await loadSkinsList();
             renderSkins();
             updateCollectionProgress();
         }
         if (response.infinite_energy_expires_at) {
-            setStatePath('daily.infiniteEnergyExpiresAt', response.infinite_energy_expires_at);
+            State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at;
         }
         updateUI();
         showToast(`?? +${formatNumber(response.coins_reward || 0)}`);
@@ -2930,15 +2911,15 @@ function startPerfectEnergySystem() {
     }
 
     // Плавное обновление UI
-    setStatePath('temp.energyUiTimer', setInterval(() => {
+    State.temp.energyUiTimer = setInterval(() => {
         refreshEnergyUIOnly();
-    }, isLitePerformanceMode() ? 400 : 250));
+    }, isLitePerformanceMode() ? 400 : 250);
 
     // Редкий sync с сервером
-    setStatePath('temp.syncTimer', setInterval(() => {
+    State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
-    }, isLitePerformanceMode() ? 20000 : 15000));
+    }, isLitePerformanceMode() ? 20000 : 15000);
 }
 
 async function syncEnergyWithServer() {
@@ -2962,7 +2943,7 @@ async function syncEnergyWithServer() {
             return; // stale response, ignore
         }
         if (incomingTs > 0) {
-            setStatePath('temp.lastStateUpdatedAtMs', incomingTs);
+            State.temp.lastStateUpdatedAtMs = incomingTs;
         }
 
         applyServerEnergySnapshot(data);
@@ -2992,7 +2973,6 @@ async function fullSyncWithServer() {
 
         applyBoostStateFromPayload(data);
         applyServerEnergySnapshot(data);
-        setStatePath('temp.pendingEnergySpend', 0);
         updateUI();
     } catch (e) {
         console.error('Full sync error:', e);
@@ -3542,50 +3522,46 @@ async function upgradeBoost(type, internal = false) {
         
         if (result) {
             setCoins('upgradeBoost', result.coins, result);
-            const nextLevel = Number(
+            State.game.level = Number(
                 result.level
                 ?? result.new_level
                 ?? result.levels?.multitap
                 ?? State.game.level
             );
-            setProgressLevel(nextLevel);
-            const nextCost = result.next_cost || 0;
-            setStatePath('game.prices.global', nextCost);
-            setStatePath('game.prices.multitap', nextCost);
-            setStatePath('game.prices.profit', nextCost);
-            setStatePath('game.prices.energy', nextCost);
+            State.game.levels.multitap = State.game.level;
+            State.game.levels.profit = State.game.level;
+            State.game.levels.energy = State.game.level;
+            State.game.prices.global = result.next_cost || 0;
+            State.game.prices.multitap = result.next_cost || 0;
+            State.game.prices.profit = result.next_cost || 0;
+            State.game.prices.energy = result.next_cost || 0;
             trackAchievementProgress('upgrades', 1);
-
-            if (typeof result.profit_per_tap === 'number') {
-                setStatePath('game.profitPerTap', result.profit_per_tap);
+            
+        if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
+        if (result.profit_per_hour) State.game.profitPerHour = result.profit_per_hour;
+        if (result.max_energy) {
+            State.game.maxEnergy = result.max_energy;
+            // Upgrade refills energy to max — update authoritative base
+            State.temp.serverEnergyBase = result.max_energy;
+            State.temp.serverMaxEnergy = result.max_energy;
+            // Use server_time if available, otherwise fall back to Date.now()
+            if (result.server_time) {
+                try {
+                    State.temp.serverEnergySyncedAtMs = new Date(result.server_time).getTime();
+                } catch (_) {
+                    State.temp.serverEnergySyncedAtMs = Date.now();
+                }
+            } else {
+                State.temp.serverEnergySyncedAtMs = Date.now();
             }
-            if (typeof result.profit_per_hour === 'number') {
-                setStatePath('game.profitPerHour', result.profit_per_hour);
-            }
-            if (result.max_energy) {
-                setStatePath('game.maxEnergy', result.max_energy);
-                // Upgrade refills energy to max — update authoritative base
-                setStatePath('temp.serverEnergyBase', result.max_energy);
-                setStatePath('temp.serverMaxEnergy', result.max_energy);
-                const syncTime = (() => {
-                    if (result.server_time) {
-                        try {
-                            return new Date(result.server_time).getTime();
-                        } catch (_) {
-                            return Date.now();
-                        }
-                    }
-                    return Date.now();
-                })();
-                setStatePath('temp.serverEnergySyncedAtMs', syncTime);
-                setStatePath('temp.pendingEnergySpend', 0);
-                setStatePath('game.energy', result.max_energy);
-            }
-            playUpgradeCelebration();
-            updateUI();
-            checkAchievements();
-            advanceSoftOnboarding('upgrade');
+            State.temp.pendingEnergySpend = 0;
+            State.game.energy = result.max_energy;
         }
+        playUpgradeCelebration();
+        updateUI();
+        checkAchievements();
+        advanceSoftOnboarding('upgrade');
+    }
     } catch (err) {
         if (err.status === 429) {
             showToast(tr('toasts.upgradeBusy'), true);
@@ -3635,45 +3611,40 @@ async function upgradeAll(internal = false) {
         }
 
         setCoins('upgradeAll', result.coins, result);
-        const nextLevel = Number(
+        State.game.level = Number(
             result.level
             ?? result.new_level
             ?? result.levels?.multitap
             ?? State.game.level
         );
-        setProgressLevel(nextLevel);
-        setStatePath('game.prices', { ...State.game.prices, ...(result.prices || {}) });
+        State.game.levels.multitap = State.game.level;
+        State.game.levels.profit = State.game.level;
+        State.game.levels.energy = State.game.level;
+        State.game.prices = { ...State.game.prices, ...(result.prices || {}) };
         if (result.next_cost) {
-            const nextCost = result.next_cost;
-            setStatePath('game.prices.global', nextCost);
-            setStatePath('game.prices.multitap', nextCost);
-            setStatePath('game.prices.profit', nextCost);
-            setStatePath('game.prices.energy', nextCost);
+            State.game.prices.global = result.next_cost;
+            State.game.prices.multitap = result.next_cost;
+            State.game.prices.profit = result.next_cost;
+            State.game.prices.energy = result.next_cost;
         }
-        if (typeof result.profit_per_tap === 'number') {
-            setStatePath('game.profitPerTap', result.profit_per_tap);
-        }
-        if (typeof result.profit_per_hour === 'number') {
-            setStatePath('game.profitPerHour', result.profit_per_hour);
-        }
-        const appliedMaxEnergy = result.max_energy ?? State.game.maxEnergy;
-        setStatePath('game.maxEnergy', appliedMaxEnergy);
+        State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
+        State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
+        State.game.maxEnergy = result.max_energy ?? State.game.maxEnergy;
         // Energy refill sets energy to max — update authoritative base
-        setStatePath('temp.serverEnergyBase', appliedMaxEnergy);
-        setStatePath('temp.serverMaxEnergy', appliedMaxEnergy);
-        const syncTime = (() => {
-            if (result.server_time) {
-                try {
-                    return new Date(result.server_time).getTime();
-                } catch (_) {
-                    return Date.now();
-                }
+        State.temp.serverEnergyBase = result.max_energy ?? State.game.maxEnergy;
+        State.temp.serverMaxEnergy = result.max_energy ?? State.game.maxEnergy;
+        // Use server_time if available, otherwise fall back to Date.now()
+        if (result.server_time) {
+            try {
+                State.temp.serverEnergySyncedAtMs = new Date(result.server_time).getTime();
+            } catch (_) {
+                State.temp.serverEnergySyncedAtMs = Date.now();
             }
-            return Date.now();
-        })();
-        setStatePath('temp.serverEnergySyncedAtMs', syncTime);
-        setStatePath('temp.pendingEnergySpend', 0);
-        setStatePath('game.energy', State.game.maxEnergy);
+        } else {
+            State.temp.serverEnergySyncedAtMs = Date.now();
+        }
+        State.temp.pendingEnergySpend = 0;
+        State.game.energy = State.game.maxEnergy;
         trackAchievementProgress('upgrades', 3);
         playUpgradeCelebration();
         updateUI();
@@ -3939,7 +3910,7 @@ function giveRandomReward() {
             // authoritative gameplay energy — just a temporary visual bonus.
             // Do NOT clear pendingEnergySpend — that would lose track of
             // real gameplay energy spent on taps.
-            setStatePath('game.energy', Math.min(State.game.maxEnergy, State.game.energy + random.value));
+            State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
             showToast(`?? +${random.value} energy!`);
             break;
         case 'boost':
@@ -3953,17 +3924,17 @@ function giveRandomReward() {
 function activateCustomBoost(multiplier, minutes) {
     // Сохраняем оригинальный доход
     if (!State.temp.originalProfit) {
-        setStatePath('temp.originalProfit', State.game.profitPerTap);
+        State.temp.originalProfit = State.game.profitPerTap;
     }
     
     // Увеличиваем доход
-    setStatePath('game.profitPerTap', State.game.profitPerTap * multiplier);
+    State.game.profitPerTap *= multiplier;
     showToast(`?? x${multiplier} for ${minutes} min!`);
     
     // Возвращаем обратно через N минут
     setTimeout(() => {
-        setStatePath('game.profitPerTap', State.temp.originalProfit);
-        setStatePath('temp.originalProfit', null);
+        State.game.profitPerTap = State.temp.originalProfit;
+        State.temp.originalProfit = null;
         updateUI();
         showToast(tr('toasts.boostFinished'));
     }, minutes * 60 * 1000);
@@ -4039,8 +4010,8 @@ async function loadReferralData() {
         document.getElementById('referral-count').textContent = data.count || 0;
         document.getElementById('referral-earnings').textContent = data.earnings || 0;
         
-        setStatePath('skins.friendsInvited', data.count || 0);
-        handleReferralToast(data.count || 0);
+        State.skins.friendsInvited = data.count || 0;
+        handleReferralToast(State.skins.friendsInvited);
         State.skins.data.forEach((skin) => {
             if (skin.requirement?.type === 'friends') {
                 skin.requirement.current = State.skins.friendsInvited || 0;
@@ -4088,7 +4059,7 @@ function saveSettings() {
     localStorage.setItem('ryohoSettings', JSON.stringify(State.settings));
     const bgm = State.temp.bgm.audio;
     if (bgm) {
-        setStatePath('temp.bgm.enabled', State.settings.music);
+        State.temp.bgm.enabled = State.settings.music;
         if (State.settings.music) bgm.play().catch(() => {});
         else bgm.pause();
     }
@@ -4100,27 +4071,26 @@ function applyTheme() {
 }
 
 function toggleTheme() {
-    const nextTheme = State.settings.theme === 'day' ? 'night' : 'day';
-    setStatePath('settings.theme', nextTheme);
+    State.settings.theme = State.settings.theme === 'day' ? 'night' : 'day';
     saveSettings();
     applyTheme();
     updateSettingsUI();
 }
 
 function toggleSound() {
-    setStatePath('settings.sound', !State.settings.sound);
+    State.settings.sound = !State.settings.sound;
     saveSettings();
     updateSettingsUI();
 }
 
 function toggleMusic() {
-    setStatePath('settings.music', !State.settings.music);
+    State.settings.music = !State.settings.music;
     saveSettings();
     updateSettingsUI();
 }
 
 function toggleVibration() {
-    setStatePath('settings.vibration', !State.settings.vibration);
+    State.settings.vibration = !State.settings.vibration;
     saveSettings();
     updateSettingsUI();
     if (State.settings.vibration && navigator.vibrate) navigator.vibrate(50);
@@ -4130,7 +4100,7 @@ function setLanguage(language) {
     const nextLang = normalizeUiLanguage(language);
     if (nextLang === UI_LANG) return;
     UI_LANG = nextLang;
-    setStatePath('settings.language', nextLang);
+    State.settings.language = nextLang;
     saveSettings();
     document.documentElement.lang = nextLang;
     window.location.reload();
@@ -6792,7 +6762,7 @@ function initEnergyCharm() {
         e.stopPropagation();
         await requestMotionPermission();
         dragging = true;
-        setStatePath('temp.charmDragging', true);
+        State.temp.charmDragging = true;
         allowTilt = false;
         charm.classList.remove('idle');
         dragStart = { x: e.clientX, y: e.clientY };
@@ -6819,7 +6789,7 @@ function initEnergyCharm() {
     const endDrag = () => {
         if (!dragging) return;
         dragging = false;
-        setStatePath('temp.charmDragging', false);
+        State.temp.charmDragging = false;
         allowTilt = true;
         charm.classList.add('idle');
         dragOffset.x = dragOffset.y = 0;

@@ -17,7 +17,7 @@
     <script src="https://sad.adsgram.ai/js/sad.min.js" defer></script>
     <script>
         window.ADSGRAM_CONFIG = {
-            blockId: "25901"
+            blockId: "26816"
         };
 
         window.TELEGRAM_ANALYTICS_CONFIG = {
@@ -102,136 +102,130 @@
         <div class="stars"></div>
         <div class="nebula"></div>
 
-        <div class="hud-layer">
-            <!-- HEADER -->
-            <div class="header glass">
-                <div class="nav-item" onclick="openTasksModal()">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
-                    </span>
-                    <span class="header-nav-label" data-ui="header-tasks-label">Tasks</span>
-                </div>
-                
-                <div class="nav-item nav-item-daily" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/rewarddark.svg" alt="Daily Rewards" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/rewardlight.svg" alt="Daily Rewards" class="nav-icon-img icon-light">
-                    </span>
-                    <span class="header-nav-label" data-ui="header-daily-label">Reward</span>
-                    <span class="daily-gift-dot"></span>
-                </div>
-
-                <div class="header-brand" data-text="Spirit" aria-hidden="true">Spirit</div>
-                
-                <div class="settings-container">
-                    <button class="settings-btn" id="settingsOpenButton" onclick="openSettings()" title="Settings">
-                        <img src="imgg/dark icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-dark">
-                        <img src="imgg/light icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-light">
-                    </button>
-                </div>
+        <!-- HEADER -->
+        <div class="header glass">
+            <div class="nav-item" onclick="openTasksModal()">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/tasks.svg" alt="Tasks" class="nav-icon-img icon-light">
+                </span>
+                <span class="header-nav-label" data-ui="header-tasks-label">Tasks</span>
+            </div>
+            
+            <div class="nav-item nav-item-daily" id="dailyRewardsButton" onclick="openDailyRewards()" title="Daily Rewards">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/rewarddark.svg" alt="Daily Rewards" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/rewardlight.svg" alt="Daily Rewards" class="nav-icon-img icon-light">
+                </span>
+                <span class="header-nav-label" data-ui="header-daily-label">Reward</span>
+                <span class="daily-gift-dot"></span>
             </div>
 
-            <div class="prize-pool-shell" id="prize-pool-shell">
-                <button
-                    class="prize-pool-tab"
-                    id="prize-pool-tab"
-                    type="button"
-                    onclick="togglePrizePoolDrawer()"
-                    aria-expanded="false"
-                    aria-controls="prize-pool-drawer"
-                >
-                    <span class="prize-pool-tab-arrow" id="prize-pool-tab-arrow">›</span>
-                    <span class="prize-pool-tab-text" id="prize-pool-tab-text">Prize</span>
+            <div class="header-brand" data-text="Spirit" aria-hidden="true">Spirit</div>
+            
+            <div class="settings-container">
+                <button class="settings-btn" id="settingsOpenButton" onclick="openSettings()" title="Settings">
+                    <img src="imgg/dark icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/settings.webp" alt="Settings" class="settings-icon-gif theme-icon icon-light">
                 </button>
-                <aside class="prize-pool-drawer glass" id="prize-pool-drawer" aria-hidden="true">
-                    <div class="prize-pool-drawer-head">
-                        <div class="prize-pool-drawer-copy">
-                            <span class="prize-pool-kicker" id="prize-pool-kicker">Weekly Prize Pool</span>
-                            <h3 id="prize-pool-title">Current fund</h3>
-                        </div>
-                        <button class="prize-pool-close" type="button" onclick="closePrizePoolDrawer()" aria-label="Close">×</button>
-                    </div>
-
-                    <div class="prize-pool-main-card">
-                        <div class="prize-pool-amount" id="prize-pool-amount">$0.00</div>
-                        <div class="prize-pool-meta-row">
-                            <span class="prize-pool-meta-label" id="prize-pool-season-label">Season</span>
-                            <span class="prize-pool-meta-value" id="prize-pool-season-value">--</span>
-                        </div>
-                        <div class="prize-pool-meta-row">
-                            <span class="prize-pool-meta-label" id="prize-pool-ends-label">Ends in</span>
-                            <span class="prize-pool-meta-value" id="prize-pool-ends-value">--</span>
-                        </div>
-                    </div>
-
-                    <div class="prize-pool-section">
-                        <div class="prize-pool-section-head">
-                            <h4 id="prize-pool-leagues-title">League Distribution</h4>
-                        </div>
-                        <div class="prize-pool-leagues" id="prize-pool-leagues"></div>
-                    </div>
-
-                    <div class="prize-pool-section">
-                        <div class="prize-pool-section-head">
-                            <h4 id="prize-pool-rules-title">Top Rewards</h4>
-                        </div>
-                        <div class="prize-pool-rules" id="prize-pool-rules"></div>
-                    </div>
-
-                    <div class="prize-pool-section">
-                        <div class="prize-pool-section-head">
-                            <h4 id="prize-pool-player-title">Your Tournament Status</h4>
-                        </div>
-                        <div class="prize-pool-player-grid">
-                            <div class="prize-pool-player-card">
-                                <span class="prize-pool-player-label" id="prize-pool-player-league-label">League</span>
-                                <span class="prize-pool-player-value" id="prize-pool-player-league">--</span>
-                            </div>
-                            <div class="prize-pool-player-card">
-                                <span class="prize-pool-player-label" id="prize-pool-player-rank-label">Rank</span>
-                                <span class="prize-pool-player-value" id="prize-pool-player-rank">--</span>
-                            </div>
-                            <div class="prize-pool-player-card prize-pool-player-card-wide">
-                                <span class="prize-pool-player-label" id="prize-pool-player-zone-label">Status</span>
-                                <span class="prize-pool-player-value" id="prize-pool-player-zone">--</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="prize-pool-footnote" id="prize-pool-footnote">
-                        Final reward depends on your final rank and payout eligibility.
-                    </p>
-                </aside>
             </div>
-            <button class="prize-pool-backdrop" id="prize-pool-backdrop" type="button" onclick="closePrizePoolDrawer()" aria-hidden="true"></button>
+        </div>
 
-            <!-- STATS ROW -->
-            <div class="stats-row">
-                <div class="stat-card glass">
-                    <div class="stat-icon">
-                        <img src="imgg/dark icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-dark">
-                        <img src="imgg/light icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-light">
+        <div class="prize-pool-shell" id="prize-pool-shell">
+            <button
+                class="prize-pool-tab"
+                id="prize-pool-tab"
+                type="button"
+                onclick="togglePrizePoolDrawer()"
+                aria-expanded="false"
+                aria-controls="prize-pool-drawer"
+            >
+                <span class="prize-pool-tab-arrow" id="prize-pool-tab-arrow">›</span>
+                <span class="prize-pool-tab-text" id="prize-pool-tab-text">Prize</span>
+            </button>
+            <aside class="prize-pool-drawer glass" id="prize-pool-drawer" aria-hidden="true">
+                <div class="prize-pool-drawer-head">
+                    <div class="prize-pool-drawer-copy">
+                        <span class="prize-pool-kicker" id="prize-pool-kicker">Weekly Prize Pool</span>
+                        <h3 id="prize-pool-title">Current fund</h3>
                     </div>
-                    <div>
-                        <div class="stat-label" data-ui="hud-per-hour-label">per hour</div>
-                        <div class="stat-value" id="profitPerHour" data-ui="hud-profit-hour"><span class="loading-spinner"></span></div>
+                    <button class="prize-pool-close" type="button" onclick="closePrizePoolDrawer()" aria-label="Close">×</button>
+                </div>
+
+                <div class="prize-pool-main-card">
+                    <div class="prize-pool-amount" id="prize-pool-amount">$0.00</div>
+                    <div class="prize-pool-meta-row">
+                        <span class="prize-pool-meta-label" id="prize-pool-season-label">Season</span>
+                        <span class="prize-pool-meta-value" id="prize-pool-season-value">--</span>
+                    </div>
+                    <div class="prize-pool-meta-row">
+                        <span class="prize-pool-meta-label" id="prize-pool-ends-label">Ends in</span>
+                        <span class="prize-pool-meta-value" id="prize-pool-ends-value">--</span>
                     </div>
                 </div>
-                <div class="stat-card glass">
-                    <img src="imgg/coin.png" class="stat-icon-img">
-                    <div>
-                        <div class="stat-label" data-ui="hud-per-tap-label">per tap</div>
-                        <div class="stat-value" id="profitPerTap" data-ui="hud-profit-tap">1</div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-leagues-title">League Distribution</h4>
+                    </div>
+                    <div class="prize-pool-leagues" id="prize-pool-leagues"></div>
+                </div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-rules-title">Top Rewards</h4>
+                    </div>
+                    <div class="prize-pool-rules" id="prize-pool-rules"></div>
+                </div>
+
+                <div class="prize-pool-section">
+                    <div class="prize-pool-section-head">
+                        <h4 id="prize-pool-player-title">Your Tournament Status</h4>
+                    </div>
+                    <div class="prize-pool-player-grid">
+                        <div class="prize-pool-player-card">
+                            <span class="prize-pool-player-label" id="prize-pool-player-league-label">League</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-league">--</span>
+                        </div>
+                        <div class="prize-pool-player-card">
+                            <span class="prize-pool-player-label" id="prize-pool-player-rank-label">Rank</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-rank">--</span>
+                        </div>
+                        <div class="prize-pool-player-card prize-pool-player-card-wide">
+                            <span class="prize-pool-player-label" id="prize-pool-player-zone-label">Status</span>
+                            <span class="prize-pool-player-value" id="prize-pool-player-zone">--</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="coin-balance-banner glass">
-                <img src="imgg/coin.png" class="coin-balance-banner-icon" alt="Coins">
-                <div class="coin-balance-banner-value" id="coinBalance" data-ui="hud-coins">0</div>
-            </div>
+                <p class="prize-pool-footnote" id="prize-pool-footnote">
+                    Final reward depends on your final rank and payout eligibility.
+                </p>
+            </aside>
+        </div>
+        <button class="prize-pool-backdrop" id="prize-pool-backdrop" type="button" onclick="closePrizePoolDrawer()" aria-hidden="true"></button>
 
+        <!-- STATS ROW -->
+        <div class="stats-row">
+            <div class="stat-card glass">
+                <div class="stat-icon">
+                    <img src="imgg/dark icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-dark">
+                    <img src="imgg/light icon/clock.webp" alt="Per Hour" class="stat-icon-gif theme-icon icon-light">
+                </div>
+                <div>
+                    <div class="stat-label" data-ui="hud-per-hour-label">per hour</div>
+                    <div class="stat-value" id="profitPerHour" data-ui="hud-profit-hour"><span class="loading-spinner"></span></div>
+                </div>
+            </div>
+            <div class="stat-card glass">
+                <img src="imgg/coin.png" class="stat-icon-img">
+                <div>
+                    <div class="stat-label" data-ui="hud-per-tap-label">per tap</div>
+                    <div class="stat-value" id="profitPerTap" data-ui="hud-profit-tap">1</div>
+                </div>
+            </div>
+        </div>
+        
             <div class="energy-bar-container">
                 <div class="energy-bar-bg">
                     <div class="energy-bar-fill" id="energyFill" data-ui="tap-energy-fill" style="width:100%;"></div>
@@ -244,111 +238,100 @@
                     </div>
                 </div>
             </div>
+
+            <div class="coin-balance-banner glass">
+                <img src="imgg/coin.png" class="coin-balance-banner-icon" alt="Coins">
+                <div class="coin-balance-banner-value" id="coinBalance" data-ui="hud-coins">0</div>
+            </div>
+                    
+        <!-- CLICKER AREA -->
+        <div class="clicker-area">
+            <div class="energy-preview">
+                <span id="energyText" data-ui="tap-energy-current">1000</span> / <span id="maxEnergyText" data-ui="tap-energy-max">1000</span>
+            </div>
+
+            <div class="clicker-container">
+                <div class="click-button-wrapper">
+                    <div class="click-button" id="ryoho">
+                        <img src="imgg/skins/default.png" alt="Spirit" class="click-image" onerror="this.src='imgg/skins/default.png'">
+                        <div class="click-ripple"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="boost-corner">
+                <button class="mini-boost-button" onclick="activateMegaBoost()" id="mega-boost-btn">
+                    <span class="mini-boost-icon">
+                        <img src="imgg/dark icon/boostdark.svg" alt="Boost" class="boost-icon-img icon-dark">
+                        <img src="imgg/light icon/boostl.svg" alt="Boost" class="boost-icon-img icon-light">
+                    </span>
+                    <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
+                </button>
+                <button class="auto-boost-button" onclick="toggleAutoClick()" id="auto-boost-btn">
+                    <span class="auto-icon nav-icon-img-wrap">
+                        <img src="imgg/dark icon/autodark.svg" alt="Autoclicker" class="auto-icon-img icon-dark">
+                        <img src="imgg/light icon/autol.svg" alt="Autoclicker" class="auto-icon-img icon-light">
+                    </span>
+                    <span class="auto-timer" id="auto-boost-timer"></span>
+                </button>
+            </div>
         </div>
 
-        <div class="tap-layer">
-            <!-- CLICKER AREA -->
-            <div class="clicker-area">
-                <div class="energy-preview">
-                    <span id="energyText" data-ui="tap-energy-current">1000</span> / <span id="maxEnergyText" data-ui="tap-energy-max">1000</span>
+        <!-- UPGRADE PANEL -->
+        <div class="upgrade-panel glass" onclick="upgradeAll()">
+            <div class="upgrade-panel-left">
+                <div class="upgrade-panel-icons"></div>
+                <div class="upgrade-panel-info">
+                    <div class="upgrade-panel-title" data-ui="bottom-upgrade-title">Upgrade</div>
+                    <div class="upgrade-panel-bonuses"></div>
                 </div>
-
-                <div class="clicker-container">
-                    <div class="click-button-wrapper">
-                        <div class="click-button" id="ryoho">
-                            <img src="imgg/skins/default.png" alt="Spirit" class="click-image" onerror="this.src='imgg/skins/default.png'">
-                            <div class="click-ripple"></div>
-                        </div>
-                    </div>
+            </div>
+            <div class="upgrade-panel-right">
+                <div class="upgrade-panel-level">LVL <span id="globalLevel" data-ui="bottom-level">1</span></div>
+                <div class="upgrade-panel-price">
+                    <img src="imgg/coin.png" class="stat-icon-img">
+                    <span id="globalPrice" data-ui="bottom-price">730</span>
                 </div>
             </div>
         </div>
 
-        <div class="bottom-layer">
-            <div class="bottom-actions-group">
-                <div class="boost-corner">
-                    <button class="mini-boost-button" onclick="activateMegaBoost()" id="mega-boost-btn">
-                        <span class="mini-boost-icon">
-                            <img src="imgg/dark icon/boostdark.svg" alt="Boost" class="boost-icon-img icon-dark">
-                            <img src="imgg/light icon/boostl.svg" alt="Boost" class="boost-icon-img icon-light">
-                        </span>
-                        <span class="mini-boost-timer" id="mega-boost-timer" style="display:none;">2:00</span>
-                    </button>
-                    <button class="auto-boost-button" onclick="toggleAutoClick()" id="auto-boost-btn">
-                        <span class="auto-icon nav-icon-img-wrap">
-                            <img src="imgg/dark icon/autodark.svg" alt="Autoclicker" class="auto-icon-img icon-dark">
-                            <img src="imgg/light icon/autol.svg" alt="Autoclicker" class="auto-icon-img icon-light">
-                        </span>
-                        <span class="auto-timer" id="auto-boost-timer"></span>
-                    </button>
-                </div>
-
-                <div class="upgrade-panel glass" onclick="upgradeAll()">
-                    <div class="upgrade-panel-left">
-                        <div class="upgrade-panel-icons"></div>
-                        <div class="upgrade-panel-info">
-                            <div class="upgrade-panel-title" data-ui="bottom-upgrade-title">Upgrade</div>
-                            <div class="upgrade-panel-bonuses"></div>
-                        </div>
-                    </div>
-                    <div class="upgrade-panel-right">
-                        <div class="upgrade-panel-level">LVL <span id="globalLevel" data-ui="bottom-level">1</span></div>
-                        <div class="upgrade-panel-price">
-                            <img src="imgg/coin.png" class="stat-icon-img">
-                            <span id="globalPrice" data-ui="bottom-price">730</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" data-ui="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
-                    <div class="upgrade-panel-left">
-                        <div class="upgrade-panel-icons"></div>
-                        <div class="upgrade-panel-info">
-                            <div class="upgrade-panel-title">Перерождение</div>
-                            <div class="upgrade-panel-bonuses">Сброс уровня и постоянный бонус к тапу</div>
-                        </div>
-                    </div>
-                    <div class="upgrade-panel-right">
-                        <button class="btn-primary" id="rebirth-action-btn" data-ui="rebirth-confirm-btn" type="button" onclick="confirmRebirth()">Переродиться</button>
-                    </div>
-                </div>
+        <!-- NAVIGATION -->
+        <div class="nav-bar">
+            <div class="nav-item nav-item-main active" data-ui-nav-item data-ui-tab="main" onclick="switchTab('main', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/home.svg" alt="Main" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/home.svg" alt="Main" class="nav-icon-img icon-light">
+                </span>
+                <span data-ui="nav-main-label">Main</span>
             </div>
-
-            <div class="nav-bar">
-                <div class="nav-item nav-item-main active" data-ui-nav-item data-ui-tab="main" onclick="switchTab('main', this)">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/home.svg" alt="Main" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/home.svg" alt="Main" class="nav-icon-img icon-light">
-                    </span>
-                    <span data-ui="nav-main-label">Main</span>
-                </div>
-                <div class="nav-item" data-ui-nav-item data-ui-tab="friends" onclick="switchTab('friends', this)">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/friends.svg" alt="Friends" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/friends.svg" alt="Friends" class="nav-icon-img icon-light">
-                    </span>
-                    <span data-ui="nav-friends-label">Friends</span>
-                </div>
-                <div class="nav-item nav-item-wallet" data-ui-nav-item data-ui-tab="wallet" onclick="switchTab('wallet', this)">
-                    <span class="nav-icon">💎</span>
-                    <span data-ui="nav-wallet-label">Wallet</span>
-                </div>
-                <div class="nav-item" data-ui-nav-item data-ui-tab="games" onclick="switchTab('games', this)">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/games.svg" alt="Event" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/games.svg" alt="Event" class="nav-icon-img icon-light">
-                    </span>
-                    <span data-ui="nav-games-label">Event</span>
-                </div>
-                <div class="nav-item" data-ui-nav-item data-ui-tab="skins" onclick="switchTab('skins', this)">
-                    <span class="nav-icon nav-icon-img-wrap">
-                        <img src="imgg/dark icon/skins.svg" alt="Skins" class="nav-icon-img icon-dark">
-                        <img src="imgg/light icon/skins.svg" alt="Skins" class="nav-icon-img icon-light">
-                    </span>
-                    <span data-ui="nav-skins-label">Skins</span>
-                </div>
+            <div class="nav-item" data-ui-nav-item data-ui-tab="friends" onclick="switchTab('friends', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/friends.svg" alt="Friends" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/friends.svg" alt="Friends" class="nav-icon-img icon-light">
+                </span>
+                <span data-ui="nav-friends-label">Friends</span>
+            </div>
+            <div class="nav-item nav-item-wallet" data-ui-nav-item data-ui-tab="wallet" onclick="switchTab('wallet', this)">
+                <span class="nav-icon">💎</span>
+                <span data-ui="nav-wallet-label">Wallet</span>
+            </div>
+            <div class="nav-item" data-ui-nav-item data-ui-tab="games" onclick="switchTab('games', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/games.svg" alt="Event" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/games.svg" alt="Event" class="nav-icon-img icon-light">
+                </span>
+                <span data-ui="nav-games-label">Event</span>
+            </div>
+            <div class="nav-item" data-ui-nav-item data-ui-tab="skins" onclick="switchTab('skins', this)">
+                <span class="nav-icon nav-icon-img-wrap">
+                    <img src="imgg/dark icon/skins.svg" alt="Skins" class="nav-icon-img icon-dark">
+                    <img src="imgg/light icon/skins.svg" alt="Skins" class="nav-icon-img icon-light">
+                </span>
+                <span data-ui="nav-skins-label">Skins</span>
             </div>
         </div>
     </div>
+
     <!-- FRIENDS MODAL -->
     <div class="modal-screen" id="friends-screen">
         <div class="glass">
@@ -412,6 +395,18 @@
                         <img src="imgg/skins/retro.png" alt="Day 30 skin" id="dailyRewardTeaserImg" onerror="this.src='imgg/skins/default.png'">
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" data-ui="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
+            <div class="upgrade-panel-left">
+                <div class="upgrade-panel-icons"></div>
+                <div class="upgrade-panel-info">
+                    <div class="upgrade-panel-title">Перерождение</div>
+                    <div class="upgrade-panel-bonuses">Сброс уровня и постоянный бонус к тапу</div>
+                </div>
+            </div>
+            <div class="upgrade-panel-right">
+                <button class="btn-primary" id="rebirth-action-btn" data-ui="rebirth-action-btn" type="button">Переродиться</button>
             </div>
         </div>
     </div>
