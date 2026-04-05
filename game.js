@@ -2523,7 +2523,7 @@ function setGhostBoostState(active, expiresAt = null) {
             return;
         }
         renderGhostBoostIndicator(State.temp.ghostBoostExpiresAt);
-    }, 1000);
+    }, 1000));
 }
 
 function setAdInputBlocked(blocked) {
