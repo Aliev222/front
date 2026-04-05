@@ -939,14 +939,12 @@ body:not(.night-mode) .prize-pool-backdrop {
 
 /* ==================== BOOST BUTTON ==================== */
 .boost-corner {
-    position: absolute;
-    bottom: 20px;
-    right: 0;
     z-index: 10;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
     gap: 10px;
-    transform: translateY(12px);
 }
 
 .mini-boost-button {
@@ -1063,7 +1061,7 @@ body:not(.night-mode) .prize-pool-backdrop {
     .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .mini-boost-button,
     .auto-boost-button { width: 56px; height: 56px; }
-    .boost-corner { right: 6px; gap: 8px; }
+    .boost-corner { right: auto; gap: 8px; }
     .energy-charm-wrap { right: 0; }
     .upgrade-panel { padding: 8px 10px; border-radius: var(--radius-md); }
     .upgrade-panel-title { letter-spacing: 1px; }
@@ -3559,7 +3557,7 @@ body.night-mode .leaderboard-item-rank-3 {
 @media (max-width: 480px) {
     .game-container { max-width: 100%; }
     .click-button { width: clamp(220px, 78vw, 360px); height: clamp(220px, 78vw, 360px); }
-    .nav-bar { width: clamp(260px, 94vw, 520px); }
+    .nav-bar { width: var(--main-control-width); margin-inline: auto; }
     .upgrade-panel { margin-bottom: 6px; }
 }
 
@@ -3579,7 +3577,7 @@ body.night-mode .leaderboard-item-rank-3 {
     .header { padding: 6px 10px; }
     .glass { padding: clamp(10px, 3vw, 14px); }
     .click-button { width: clamp(200px, 58vw, 360px); height: clamp(200px, 58vw, 360px); }
-    .nav-bar { width: clamp(240px, 88vw, 480px); }
+    .nav-bar { width: var(--main-control-width); margin-inline: auto; }
     .upgrade-panel { margin-bottom: 6px; }
 }
 
@@ -3587,7 +3585,7 @@ body.night-mode .leaderboard-item-rank-3 {
     :root { --nav-height: clamp(66px, 11vw, 80px); }
     .game-container { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height) + 8px); }
     .click-button { width: clamp(180px, 55vw, 320px); height: clamp(180px, 55vw, 320px); }
-    .nav-bar { width: clamp(220px, 86vw, 440px); }
+    .nav-bar { width: var(--main-control-width); margin-inline: auto; }
 }
 
 /* убраны расширения на очень широких экранах, чтобы размеры не разъезжались */
@@ -3600,6 +3598,7 @@ body.night-mode .leaderboard-item-rank-3 {
     --app-max-width: 1200px;
     --play-width: 100%;
     --clicker-max: 420px;
+    --main-control-width: clamp(240px, 68vw, 420px);
 }
 
 html,
@@ -3640,9 +3639,13 @@ body {
     gap: var(--outer-gap);
 }
 
+.bottom-layer {
+    align-items: center;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
 .hud-layer > *,
-.tap-layer > *,
-.bottom-layer > * {
+.tap-layer > * {
     width: 100%;
 }
 
@@ -3749,6 +3752,17 @@ body {
 
 .energy-preview {
     margin: 0;
+    font-size: 0;
+    color: transparent;
+}
+
+.energy-preview span {
+    display: none;
+}
+
+#energyText,
+#maxEnergyText {
+    display: none;
 }
 
 .clicker-container {
@@ -3783,16 +3797,20 @@ body {
 }
 
 .bottom-actions-group {
+    width: min(100%, var(--play-width));
+    max-width: calc(var(--play-width) - (var(--outer-gap) * 2));
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
     gap: var(--outer-gap);
+    flex-wrap: wrap;
+    margin-inline: auto;
 }
 
 .boost-corner {
+    flex: 0 0 auto;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    align-items: center;
     gap: var(--outer-gap);
 }
 
@@ -3808,13 +3826,16 @@ body {
         0 14px 28px rgba(0, 0, 0, 0.24),
         inset 0 1px 0 rgba(255,255,255,0.08),
         inset 0 -1px 0 rgba(255,255,255,0.03);
-    width: 100%;
-    max-width: calc(var(--play-width) - (var(--outer-gap) * 2));
+    flex: 0 0 var(--main-control-width);
+    width: var(--main-control-width);
+    max-width: var(--main-control-width);
+    min-width: 220px;
 }
 
 .nav-bar {
     flex-shrink: 0;
-    width: min(100%, var(--play-width));
+    width: var(--main-control-width);
+    margin-inline: auto;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: stretch;
@@ -8217,7 +8238,7 @@ body.night-mode .social-completed-block {
     }
 
     .boost-corner {
-        right: 5px !important;
+        right: auto !important;
         gap: 10px !important;
     }
 
@@ -8240,8 +8261,10 @@ body.night-mode .social-completed-block {
     }
 
     .nav-bar {
+        width: var(--main-control-width) !important;
+        margin-inline: auto !important;
         min-height: 66px !important;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
+        bottom: auto !important;
         padding: 8px 10px !important;
     }
 
@@ -8289,7 +8312,7 @@ body.night-mode .social-completed-block {
     }
 
     .boost-corner {
-        right: 5px !important;
+        right: auto !important;
     }
 }
 
