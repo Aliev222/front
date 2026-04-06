@@ -886,7 +886,7 @@ async function waitForAdsgramReady(timeoutMs = 2500) {
 async function initAdsgramController() {
     const blockId = getAdsgramBlockId();
     if (!blockId) {
-        return null;
+        throw new Error('Рекламный модуль не настроен');
     }
 
     if (!window.Adsgram?.init) {
@@ -7065,31 +7065,31 @@ function initAutoClicker() {
             return;
         }
         showToast(tr('toasts.adLoading'));
-        try {
-            const adSessionId = await openRewardedAdWithSession('autoclicker');
-            enable();
-            debugLog('ads', 'reward applied in UI', {
-                flow: 'autoclicker',
-                optimistic: true,
-                duration: AUTO_CLICK_DURATION_MS / 1000
-            });
-            await confirmAdsgramAdSession(adSessionId);
-            const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
-                user_id: userId,
-                ad_session_id: adSessionId
-            }));
-            debugLog('ads', 'reward applied in UI', {
-                flow: 'autoclicker',
-                optimistic: false,
-                duration: activation?.duration_seconds
-            });
-        } catch (e) {
-            disableAutoLocal();
-            showToast(
-                resolveRewardedAdErrorMessage(e, tr('toasts.autoTapError')),
-                true
-            );
-        }
+         try {
+             const adSessionId = await openRewardedAdWithSession('autoclicker');
+             debugLog('ads', 'reward applied in UI', {
+                 flow: 'autoclicker',
+                 optimistic: true,
+                 duration: AUTO_CLICK_DURATION_MS / 1000
+             });
+             await confirmAdsgramAdSession(adSessionId);
+             const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
+                 user_id: userId,
+                 ad_session_id: adSessionId
+             }));
+             enable();
+             debugLog('ads', 'reward applied in UI', {
+                 flow: 'autoclicker',
+                 optimistic: false,
+                 duration: activation?.duration_seconds
+             });
+         } catch (e) {
+             disableAutoLocal();
+             showToast(
+                 resolveRewardedAdErrorMessage(e, tr('toasts.autoTapError')),
+                 true
+             );
+         }
     };
 
     const pointerDown = (e) => {

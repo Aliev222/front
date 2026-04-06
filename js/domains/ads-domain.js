@@ -143,10 +143,6 @@
                 debugError('ads', 'controller init error', err);
                 throw err;
             }
-            if (!controller) {
-                debugLog('ads', 'controller init ready=false', { adSessionId });
-                throw new Error(adUnavailableMessage || 'Ad unavailable');
-            }
             debugLog('ads', 'controller init ready=true', { adSessionId });
 
             try {
