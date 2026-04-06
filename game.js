@@ -5254,6 +5254,7 @@ function updateMegaBoostButtonState(button = document.getElementById('mega-boost
     const cooldownActive = !!(megaBoostCooldownUntil && megaBoostCooldownUntil > now);
     const boostActive = !!(boostEndTime && boostEndTime > now);
     button.disabled = cooldownActive || boostActive;
+    button.dataset.state = boostActive ? 'active' : (cooldownActive ? 'cooldown' : 'ready');
 }
 
 function updateMegaBoostTimerLabel(timerEl = document.getElementById('mega-boost-timer')) {
@@ -6890,6 +6891,28 @@ function initBgm() {
     });
 }
 
+function initMainTapButtonUx() {
+    const tapButton = document.getElementById('ryoho');
+    if (!tapButton || tapButton.dataset.uxBound === '1') return;
+    tapButton.dataset.uxBound = '1';
+
+    const pressOn = () => tapButton.classList.add('is-pressed');
+    const pressOff = () => tapButton.classList.remove('is-pressed');
+
+    tapButton.addEventListener('pointerdown', pressOn, { passive: true });
+    tapButton.addEventListener('pointerup', pressOff, { passive: true });
+    tapButton.addEventListener('pointercancel', pressOff, { passive: true });
+    tapButton.addEventListener('pointerleave', pressOff, { passive: true });
+
+    tapButton.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        pressOn();
+        tapButton.click();
+        setTimeout(pressOff, 120);
+    });
+}
+
 // ==================== AUTO CLICKER ====================
 function initAutoClicker() {
     const autoBtn = document.getElementById('auto-boost-btn');
@@ -6907,7 +6930,10 @@ function initAutoClicker() {
     };
     const getCooldownRemainingMs = () => Math.max(0, getStoredCooldownUntil() - Date.now());
     const updateAutoButtonState = () => {
-        autoBtn.disabled = autoState.enabledUntil > Date.now() || getCooldownRemainingMs() > 0;
+        const active = autoState.enabledUntil > Date.now();
+        const cooldown = getCooldownRemainingMs() > 0;
+        autoBtn.disabled = active || cooldown;
+        autoBtn.dataset.state = active ? 'active' : (cooldown ? 'cooldown' : 'ready');
     };
 
     const disableAutoLocal = () => {
@@ -7272,6 +7298,7 @@ window.toggleSound = toggleSound;
 window.toggleMusic = toggleMusic;
 window.toggleVibration = toggleVibration;
 window.activateMegaBoost = activateMegaBoost;
+window.initMainTapButtonUx = initMainTapButtonUx;
 window.selectSkin = selectSkin;
 window.filterSkins = filterSkins;
 window.openSkins = openSkins;

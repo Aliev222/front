@@ -4,8 +4,12 @@
         const selectors = {
             coins: '[data-ui="hud-coins"], #coinBalance',
             perHour: '[data-ui="hud-profit-hour"], #profitPerHour',
-            perTap: '[data-ui="hud-profit-tap"], #profitPerTap'
+            perTap: '[data-ui="hud-profit-tap"], #profitPerTap',
+            reward: '#tapRewardValue',
+            rewardHud: '#coinRewardHud'
         };
+
+        let lastCoinsValue = null;
 
         function buildViewModel({
             coins = 0,
@@ -37,9 +41,21 @@
         }
 
         function render(viewModel = {}) {
+            const rewardHud = document.querySelector(selectors.rewardHud);
             setText(selectors.coins, viewModel.coinsText || '0');
             setText(selectors.perHour, viewModel.perHourText || '0');
             setText(selectors.perTap, viewModel.perTapText || '0');
+            setText(selectors.reward, viewModel.perTapText || '0');
+
+            const numericCoins = Number((viewModel.coinsText || '0').toString().replace(/[^\d.-]/g, '')) || 0;
+            if (rewardHud && lastCoinsValue !== null && numericCoins > lastCoinsValue) {
+                rewardHud.classList.remove('is-rewarding');
+                rewardHud.offsetWidth;
+                rewardHud.classList.add('is-rewarding');
+                clearTimeout(rewardHud._rewardPulseTimer);
+                rewardHud._rewardPulseTimer = setTimeout(() => rewardHud.classList.remove('is-rewarding'), 280);
+            }
+            lastCoinsValue = numericCoins;
         }
 
         return {

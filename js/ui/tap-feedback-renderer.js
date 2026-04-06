@@ -30,6 +30,7 @@
                 const idx = deps.State.temp.tapPoolIdx % pool.length;
                 deps.store.set('temp.tapPoolIdx', deps.State.temp.tapPoolIdx + 1);
                 const effect = pool[idx];
+                const clickButton = document.getElementById('ryoho');
                 const isNightMode = document.body.classList.contains('night-mode');
                 const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
                 const tapColor = ghostBoostActive ? '#9CEBFF' : (boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4'));
@@ -46,6 +47,14 @@
                 effect.style.opacity = '1';
                 effect.offsetWidth;
                 effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
+
+                if (clickButton && !isAutoTap) {
+                    clickButton.classList.remove('is-pressed');
+                    clickButton.offsetWidth;
+                    clickButton.classList.add('is-pressed');
+                    clearTimeout(clickButton._pressFxTimer);
+                    clickButton._pressFxTimer = setTimeout(() => clickButton.classList.remove('is-pressed'), 120);
+                }
 
                 const nowMs = Date.now();
                 const allowAutoFeedback = !isAutoTap || (nowMs - deps.State.temp.lastAutoFeedbackAt >= deps.autoFeedbackIntervalMs);
@@ -72,7 +81,8 @@
 
                 if (deps.State.settings.vibration && allowAutoFeedback) {
                     try {
-                        if (deps.tg?.HapticFeedback) deps.tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
+                        if (global.haptic) global.haptic(isAutoTap ? 'light' : 'medium');
+                        else if (deps.tg?.HapticFeedback) deps.tg.HapticFeedback.impactOccurred(isAutoTap ? 'soft' : 'light');
                         else if (navigator.vibrate) navigator.vibrate(isAutoTap ? 12 : 20);
                     } catch (_) {}
                 }

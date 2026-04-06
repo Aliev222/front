@@ -1,8 +1,0 @@
-body.theme-reference {
-    --screen-bg: var(--app-shell-bg);
-    --surface-bg: var(--app-surface);
-    --surface-muted-bg: var(--app-surface-muted);
-    --accent-bg: var(--app-accent);
-    --text-primary: var(--app-text);
-    --text-contrast: var(--app-text-inverse);
-}

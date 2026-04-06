@@ -1,41 +1,481 @@
+/* ============================================================
+   RESPONSIVE — Breakpoints for small phones, tablets, desktop
+   ============================================================ */
+
+/* ── Small Phones (< 360px) ───────────────────────────── */
 @media (max-width: 359px) {
-    :root {
-        --frame-padding-x: 10px;
-        --clicker-size: min(79vw, 286px);
-        --floating-size: 36px;
-        --upgrade-height: 60px;
-        --nav-height: 58px;
-    }
+  :root {
+    --pad-x: 10px;
+    --clicker-size: clamp(220px, 79vw, 286px);
+    --nav-h: 68px;
+    --header-h: 64px;
+  }
 
-    .toolbar-tasks {
-        gap: 10px;
-    }
+  .header {
+    padding: 2px 0;
+    gap: 6px;
+  }
 
-    .clicker-screen__stats {
-        gap: 16px;
-        margin-inline: 4px;
-    }
+  .header .nav-icon-img {
+    width: 18px;
+    height: 18px;
+  }
 
-    .dock-nav {
-        padding-inline: 10px;
-    }
+  .header-nav-label {
+    display: none;
+  }
 
-    .upgrade-card__action {
-        width: 96px;
-    }
+  .stats-row {
+    gap: var(--gap-sm);
+  }
+
+  .stats-row-compact {
+    max-width: 280px;
+  }
+
+  .stat-card {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .click-button {
+    min-width: 220px;
+    min-height: 220px;
+  }
+
+  .coin-balance-banner-value {
+    font-size: clamp(36px, 12vw, 44px);
+  }
+
+  .nav-bar {
+    padding: var(--space-1) var(--space-2);
+    gap: var(--gap-xs);
+  }
+
+  .nav-bar .nav-item {
+    padding: var(--space-1);
+    gap: 0;
+  }
+
+  .nav-bar .nav-icon-img {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-bar .nav-item span:last-child {
+    font-size: 9px;
+  }
+
+  .mini-boost-button,
+  .auto-boost-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .boost-corner {
+    gap: var(--space-2);
+  }
+
+  .upgrade-panel {
+    padding: var(--space-2);
+  }
+
+  .task-actions-simple {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-action-simple {
+    width: 100%;
+  }
 }
 
+/* ── Standard Phones (360px – 480px) ──────────────────── */
+@media (max-width: 480px) {
+  :root {
+    --container-max: 100%;
+  }
+
+  .game-container {
+    gap: var(--gap-sm);
+    padding-top: var(--space-1);
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-h) + var(--space-4));
+  }
+
+  .header {
+    padding: var(--space-1) var(--space-2);
+    min-height: 64px;
+    height: 64px;
+  }
+
+  .header .nav-item {
+    gap: var(--space-1);
+    padding: var(--space-1);
+  }
+
+  .header .nav-icon-img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .header-nav-label {
+    font-size: var(--fs-xs);
+  }
+
+  .stats-row {
+    gap: var(--gap-sm);
+  }
+
+  .stat-card {
+    min-height: 62px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .stat-label {
+    font-size: var(--fs-xs);
+  }
+
+  .stat-value {
+    font-size: clamp(20px, 5vw, 26px);
+  }
+
+  .energy-bar-container {
+    margin-top: 0;
+    margin-bottom: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .coin-balance-banner {
+    min-height: 64px;
+    gap: 2px;
+    padding: 2px 0 0;
+  }
+
+  .coin-balance-banner-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .coin-balance-banner-value {
+    font-size: clamp(38px, 12vw, 50px);
+  }
+
+  .coin-balance-banner-reward {
+    min-height: 40px;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .tap-zone-subtitle {
+    font-size: var(--fs-xs);
+  }
+
+  .clicker-area {
+    gap: var(--space-3);
+  }
+
+  .tap-stage {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: var(--space-2);
+  }
+
+  .energy-preview {
+    font-size: var(--fs-xs);
+  }
+
+  .click-button {
+    width: clamp(250px, 76vw, 390px);
+    height: clamp(250px, 76vw, 390px);
+  }
+
+  .boost-corner {
+    gap: var(--space-2);
+    transform: translateY(-6%);
+  }
+
+  .mini-boost-button,
+  .auto-boost-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .upgrade-panel {
+    min-height: 56px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .upgrade-panel-title,
+  .upgrade-panel-level,
+  .upgrade-panel-price {
+    font-size: var(--fs-md);
+  }
+
+  .nav-bar {
+    min-height: 66px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-1));
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .nav-bar .nav-item span:last-child {
+    font-size: var(--fs-xs);
+  }
+
+  /* Toast responsive */
+  #toast-hud {
+    left: var(--space-1);
+    right: var(--space-1);
+    gap: var(--space-2);
+  }
+
+  .toast-stack {
+    width: min(45vw, 220px);
+    gap: var(--space-2);
+  }
+
+  .spirit-toast {
+    max-width: 220px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+  }
+
+  .spirit-toast__icon {
+    width: 34px;
+    height: 34px;
+    font-size: var(--fs-md);
+  }
+
+  .spirit-toast__title {
+    font-size: 9px;
+    margin-bottom: var(--space-1);
+  }
+
+  .spirit-toast__text {
+    font-size: 11px;
+    line-height: 1.26;
+  }
+
+  #tasks-screen .tasks-modal-shell {
+    max-height: min(89vh, 760px);
+  }
+
+  #tasks-screen .modal-header-premium {
+    margin-bottom: var(--space-2);
+  }
+
+  #tasks-screen .tasks-hero {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    margin-bottom: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  #tasks-screen .tasks-hero-title {
+    font-size: var(--fs-xs);
+  }
+
+  #tasks-screen .tasks-hero-subtitle {
+    font-size: var(--fs-xs);
+    line-height: var(--lh-snug);
+  }
+
+  #tasks-screen .tasks-hero-badge {
+    min-width: 74px;
+    padding: var(--space-2);
+  }
+}
+
+/* ── Short Height (< 720px) ───────────────────────────── */
+@media (max-height: 720px) {
+  :root {
+    --nav-h: 70px;
+    --header-h: 64px;
+    --card-min-h: 60px;
+  }
+
+  .game-container {
+    gap: var(--gap-xs);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-h) + var(--space-3));
+  }
+
+  .header {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .glass {
+    padding: var(--space-3);
+  }
+
+  .click-button {
+    width: clamp(230px, 70vw, 360px);
+    height: clamp(230px, 70vw, 360px);
+  }
+
+  .tap-stage {
+    grid-template-columns: minmax(0, 1fr) 52px;
+  }
+
+  .energy-bar-container {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .tap-zone-header {
+    gap: 0;
+  }
+
+  .nav-bar {
+    width: clamp(240px, 88vw, 480px);
+  }
+
+  .upgrade-panel {
+    margin-bottom: var(--space-1);
+  }
+
+  #tasks-screen .tasks-modal-shell {
+    max-height: min(89vh, 760px);
+  }
+
+  #tasks-screen .modal-header-premium {
+    margin-bottom: var(--space-2);
+  }
+
+  #tasks-screen .tasks-hero {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    margin-bottom: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  #tasks-screen .tasks-hero-title {
+    font-size: var(--fs-xs);
+  }
+
+  #tasks-screen .tasks-hero-subtitle {
+    font-size: var(--fs-xs);
+    line-height: var(--lh-snug);
+  }
+
+  #tasks-screen .tasks-hero-badge {
+    min-width: 74px;
+    padding: var(--space-2);
+  }
+}
+
+/* ── Very Short Height (< 640px) ──────────────────────── */
+@media (max-height: 640px) {
+  :root {
+    --nav-h: 64px;
+  }
+
+  .game-container {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-h) + var(--space-2));
+  }
+
+  .click-button {
+    width: clamp(200px, 62vw, 320px);
+    height: clamp(200px, 62vw, 320px);
+  }
+
+  .tap-stage {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: var(--space-1);
+  }
+
+  .nav-bar {
+    width: clamp(220px, 86vw, 440px);
+  }
+
+  .energy-preview {
+    font-size: 11px;
+    margin-bottom: var(--space-1);
+  }
+}
+
+/* ── Tablets (768px+) ─────────────────────────────────── */
 @media (min-width: 768px) {
-    :root {
-        --viewport-max-width: 430px;
-    }
+  :root {
+    --container-max: 430px;
+    --clicker-size: 320px;
+  }
 
-    .app-shell {
-        min-height: auto;
-        padding-block: 20px;
-    }
+  .game-container {
+    padding-top: var(--space-4);
+  }
 
-    .clicker-screen {
-        min-height: 780px;
-    }
+  .tasks-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skins-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--gap-base);
+    padding: var(--space-5);
+  }
+
+  .skin-detail-content {
+    max-width: 520px;
+  }
+}
+
+/* ── Desktop (1024px+) ────────────────────────────────── */
+@media (min-width: 1024px) {
+  :root {
+    --container-max: 430px;
+  }
+
+  .game-container {
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+  }
+}
+
+/* ── Hover-capable Devices ────────────────────────────── */
+@media (hover: hover) and (pointer: fine) {
+  .task-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-lg), var(--shadow-inset-both);
+  }
+
+  .game-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-lg), var(--shadow-inset-both);
+  }
+
+  .skin-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-glow-accent);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+}
+
+/* ── Reduced Motion ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

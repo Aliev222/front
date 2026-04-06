@@ -1,39 +1,280 @@
+/* ============================================================
+   DESIGN TOKENS — SPIRIT CLICKER
+   Single source of truth for colors, spacing, typography,
+   shadows, radii, z-index, and component dimensions.
+   ============================================================ */
+
 :root {
-    --font-ui: "Jura", "Montserrat", sans-serif;
-    --font-body: "Montserrat", sans-serif;
+  --tone-60: #ebebeb;
+  --tone-30: #36e2f7;
+  --tone-30-strong: #20c9de;
+  --tone-30-soft: #7feefb;
+  --tone-10: #10367d;
+  --tone-10-soft: #315ea8;
+  --tone-10-contrast: #ebebeb;
+  /* ── Typography ─────────────────────────────────────── */
+  --font-ui: "Montserrat", "Jura", sans-serif;
+  --font-display: "Bebas Neue", "Montserrat", sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --font-number: "Orbitron", "Montserrat", sans-serif;
 
-    --viewport-max-width: 390px;
-    --app-page-bg: #f5f5f5;
-    --app-shell-bg: #090032;
-    --app-surface: #ffffff;
-    --app-surface-muted: #d3d3d3;
-    --app-accent: #18bdf3;
-    --app-text: #111111;
-    --app-text-inverse: #ffffff;
-    --app-border: #000000;
+  --fs-xs:   10px;
+  --fs-sm:   12px;
+  --fs-md:   14px;
+  --fs-base: 16px;
+  --fs-lg:   18px;
+  --fs-xl:   22px;
+  --fs-2xl:  28px;
+  --fs-3xl:  36px;
 
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 20px;
+  --lh-tight:  1;
+  --lh-snug:   1.15;
+  --lh-normal: 1.4;
 
-    --radius-sm: 4px;
-    --radius-md: 14px;
-    --radius-lg: 16px;
-    --radius-round: 999px;
+  --ls-tight:  -0.02em;
+  --ls-normal: 0;
+  --ls-wide:   0.04em;
+  --ls-wider:  0.1em;
 
-    --topbar-height: 52px;
-    --frame-padding-x: 14px;
-    --frame-padding-top: 7px;
-    --frame-padding-bottom: 19px;
-    --metric-height: 37px;
-    --energy-height: 14px;
-    --score-size: clamp(34px, 10.5vw, 46px);
-    --clicker-size: min(82vw, 318px);
-    --floating-size: 40px;
-    --upgrade-height: 64px;
-    --nav-height: 64px;
+  /* ── Spacing (4px grid) ─────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 
-    --shadow-soft: 0 12px 24px rgba(0, 0, 0, 0.08);
+  /* ── Border Radius ──────────────────────────────────── */
+  --radius-xs:  8px;
+  --radius-sm:  12px;
+  --radius-md:  16px;
+  --radius-lg:  20px;
+  --radius-xl:  24px;
+  --radius-2xl: 30px;
+  --radius-full: 999px;
+
+  /* ── Shadows (GPU-friendly, no heavy blur chains) ───── */
+  --shadow-xs: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.18);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.24);
+
+  --shadow-glow-accent: 0 0 20px rgba(16, 54, 125, 0.24);
+  --shadow-glow-gold:   0 0 20px rgba(255, 213, 79, 0.3);
+
+  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-inset-both:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+
+  /* ── Z-Index Scale ──────────────────────────────────── */
+  --z-base:      1;
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-overlay:   100;
+  --z-modal:     200;
+  --z-toast:     300;
+  --z-max:       999;
+
+  /* ── Transitions ────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── Touch Targets (minimum 44px) ───────────────────── */
+  --touch-min: 44px;
+  --touch-lg:  52px;
+  --touch-xl:  60px;
+
+  /* ── Layout Dimensions ──────────────────────────────── */
+  --container-max: 430px;
+  --pad-x:         clamp(12px, 3.4vw, 18px);
+  --gap-xs:        4px;
+  --gap-sm:        6px;
+  --gap-md:        8px;
+  --gap-base:      10px;
+  --gap-lg:        14px;
+
+  --header-h: 74px;
+  --nav-h:    78px;
+  --card-min-h: 68px;
+
+  --clicker-size: clamp(260px, 72vw, 420px);
+}
+
+/* ============================================================
+   LIGHT THEME (default)
+   ============================================================ */
+:root {
+  /* ── Surface Colors ─────────────────────────────────── */
+  --color-bg:          var(--tone-60);
+  --color-surface:     var(--tone-30);
+  --color-surface-alt: var(--tone-30-soft);
+  --color-surface-muted: color-mix(in srgb, var(--tone-30) 72%, white);
+
+  /* ── Text Colors ────────────────────────────────────── */
+  --color-text:        var(--tone-10);
+  --color-text-muted:  rgba(16, 54, 125, 0.72);
+  --color-text-dim:    rgba(16, 54, 125, 0.52);
+  --color-text-inverse:#ebebeb;
+
+  /* ── Accent ─────────────────────────────────────────── */
+  --color-accent:      var(--tone-10);
+  --color-accent-light:var(--tone-10-soft);
+  --color-accent-dim:  rgba(16, 54, 125, 0.12);
+  --color-accent-glow: rgba(16, 54, 125, 0.24);
+
+  /* ── Semantic ───────────────────────────────────────── */
+  --color-success: #27ae60;
+  --color-warning: #f39c12;
+  --color-danger:  #e74c3c;
+  --color-gold:    #FFD54F;
+
+  /* ── Border ─────────────────────────────────────────── */
+  --color-border:        rgba(16, 54, 125, 0.14);
+  --color-border-strong: rgba(16, 54, 125, 0.28);
+
+  /* ── Glass / Card ───────────────────────────────────── */
+  --glass-bg:      rgba(165, 206, 0, 0.88);
+  --glass-border:  rgba(16, 54, 125, 0.14);
+  --glass-shadow:  0 10px 28px rgba(16, 54, 125, 0.12);
+
+  /* ── Gradient Background ────────────────────────────── */
+  --bg-gradient:
+    radial-gradient(60% 40% at 25% 15%, rgba(165, 206, 0, 0.18), transparent 60%),
+    radial-gradient(40% 35% at 80% 0%, rgba(16, 54, 125, 0.08), transparent 70%),
+    var(--color-bg);
+
+  /* ── Card Gradient ──────────────────────────────────── */
+  --card-gradient:
+    linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05)),
+    linear-gradient(135deg, rgba(165,206,0,0.14), rgba(16,54,125,0.05));
+
+  /* ── Nav / Header ───────────────────────────────────── */
+  --nav-bg: linear-gradient(180deg, rgba(165, 206, 0, 0.96), rgba(148, 184, 0, 0.94));
+  --nav-text: rgba(16, 54, 125, 0.72);
+  --nav-text-active: #ebebeb;
+
+  /* ── Button ─────────────────────────────────────────── */
+  --btn-primary-bg: linear-gradient(135deg, var(--tone-10), var(--tone-10-soft));
+  --btn-primary-shadow: 0 10px 24px rgba(16, 54, 125, 0.22);
+  --btn-secondary-bg: var(--color-surface);
+  --btn-secondary-border: var(--color-border);
+
+  /* ── Progress ───────────────────────────────────────── */
+  --progress-track: rgba(16, 54, 125, 0.14);
+  --progress-fill: linear-gradient(90deg, var(--tone-10), var(--tone-10-soft));
+
+  /* ── Toast ──────────────────────────────────────────── */
+  --toast-bg: linear-gradient(155deg, rgba(235,255,238,0.98), rgba(219,232,188,0.96));
+  --toast-border: rgba(16, 54, 125, 0.3);
+  --toast-text: var(--tone-10);
+  --toast-title: var(--tone-10);
+}
+
+/* ============================================================
+   DARK THEME
+   ============================================================ */
+body.night-mode {
+  --tone-60: #10367d;
+  --tone-30: #36e2f7;
+  --tone-30-strong: #20c9de;
+  --tone-30-soft: #7feefb;
+  --tone-10: #ebebeb;
+  --tone-10-soft: #ffffff;
+  --tone-10-contrast: #10367d;
+
+  --color-bg:          var(--tone-60);
+  --color-surface:     var(--tone-30);
+  --color-surface-alt: var(--tone-30-soft);
+  --color-surface-muted: color-mix(in srgb, var(--tone-30) 78%, black 22%);
+
+  --color-text:        var(--tone-10);
+  --color-text-muted:  rgba(235, 235, 235, 0.78);
+  --color-text-dim:    rgba(235, 235, 235, 0.58);
+  --color-text-inverse:var(--tone-10-contrast);
+
+  --color-accent:      var(--tone-10);
+  --color-accent-light:var(--tone-10-soft);
+  --color-accent-dim:  rgba(235, 235, 235, 0.14);
+  --color-accent-glow: rgba(235, 235, 235, 0.28);
+
+  --color-border:        rgba(235, 235, 235, 0.16);
+  --color-border-strong: rgba(235, 235, 235, 0.3);
+
+  --glass-bg:      rgba(165, 206, 0, 0.9);
+  --glass-border:  rgba(235, 235, 235, 0.16);
+  --glass-shadow:  0 14px 32px rgba(0, 0, 0, 0.28);
+
+  --bg-gradient:
+    radial-gradient(60% 40% at 25% 15%, rgba(165, 206, 0, 0.2), transparent 60%),
+    radial-gradient(40% 35% at 80% 0%, rgba(235, 235, 235, 0.08), transparent 70%),
+    var(--color-bg);
+
+  --card-gradient:
+    linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.06)),
+    linear-gradient(135deg, rgba(165,206,0,0.14), rgba(255,255,255,0.04));
+
+  --nav-bg: linear-gradient(180deg, rgba(165, 206, 0, 0.96), rgba(148, 184, 0, 0.94));
+  --nav-text: rgba(235, 235, 235, 0.74);
+  --nav-text-active: var(--tone-10-contrast);
+
+  --btn-primary-bg: linear-gradient(135deg, var(--tone-10), var(--tone-10-soft));
+  --btn-primary-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  --btn-secondary-bg: var(--color-surface);
+  --btn-secondary-border: var(--color-border);
+
+  --progress-track: rgba(235, 235, 235, 0.18);
+  --progress-fill: linear-gradient(90deg, var(--tone-10), var(--tone-10-soft));
+
+  --toast-bg: linear-gradient(155deg, rgba(16,54,125,0.98), rgba(34,79,153,0.95));
+  --toast-border: rgba(235, 235, 235, 0.26);
+  --toast-text: var(--tone-10);
+  --toast-title: var(--tone-10-soft);
+}
+
+/* ============================================================
+   TELEGRAM THEME OVERRIDES (applied when running inside TG)
+   ============================================================ */
+body.telegram-theme {
+  --color-bg:     var(--tg-theme-bg-color, var(--color-bg));
+  --color-surface: var(--tg-theme-secondary-bg-color, var(--color-surface));
+  --color-text:    var(--tg-theme-text-color, var(--color-text));
+  --color-text-muted: var(--tg-theme-hint-color, var(--color-text-muted));
+  --color-accent:  var(--tg-theme-button-color, var(--color-accent));
+  --color-text-inverse: var(--tg-theme-button-text-color, var(--color-text-inverse));
+  --color-border:  var(--tg-theme-section-separator-color, var(--color-border));
+}
+
+/* ============================================================
+   RARITY COLORS (skins, leagues)
+   ============================================================ */
+:root {
+  --rarity-common-bg:      linear-gradient(135deg, #7f8c8d, #95a5a6);
+  --rarity-common-text:    #ffffff;
+  --rarity-rare-bg:        linear-gradient(135deg, #2980b9, #3498db);
+  --rarity-rare-text:      #ffffff;
+  --rarity-legendary-bg:   linear-gradient(135deg, #f39c12, #f1c40f);
+  --rarity-legendary-text: #1a1a2e;
+  --rarity-super-bg:       linear-gradient(135deg, #FF1493, #FFD700);
+  --rarity-super-text:     #ffffff;
+}
+
+/* ============================================================
+   LEAGUE COLORS
+   ============================================================ */
+:root {
+  --league-bronze:  #c28554;
+  --league-silver:  #b7c5d8;
+  --league-gold:    #e0bd58;
+  --league-diamond: #6ce2ff;
 }

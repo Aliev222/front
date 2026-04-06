@@ -1,0 +1,78 @@
+/* ============================================================
+   PREMIUM COLOR SCHEME — GLASSMORPHISM + GRADIENTS
+   TON Branding with Premium Feel
+   ============================================================ */
+
+:root {
+  /* ── PRIMARY (TON Blue) ──────────────────────────────── */
+  --primary: var(--tone-10);
+  --primary-light: var(--tone-10-soft);
+  --primary-dark: #0b2759;
+  --primary-glow: rgba(16, 54, 125, 0.4);
+
+  /* ── SECONDARY (Purple) ─────────────────────────────── */
+  --secondary: var(--tone-30);
+  --secondary-light: var(--tone-30-soft);
+  --secondary-dark: var(--tone-30-strong);
+  --secondary-glow: rgba(165, 206, 0, 0.35);
+
+  /* ── ACCENT (Cyan) ──────────────────────────────────── */
+  --accent: var(--tone-10);
+  --accent-light: var(--tone-10-soft);
+  --accent-dark: #0b2759;
+  --accent-glow: rgba(16, 54, 125, 0.5);
+
+  /* ── SUCCESS (Green) ────────────────────────────────── */
+  --success: #00E676;
+  --success-glow: rgba(0, 230, 118, 0.4);
+
+  /* ── WARNING (Gold) ─────────────────────────────────── */
+  --warning: #FFD700;
+  --warning-glow: rgba(255, 215, 0, 0.4);
+
+  /* ── DANGER (Red) ───────────────────────────────────── */
+  --danger: #FF3B5C;
+  --danger-glow: rgba(255, 59, 92, 0.4);
+
+  /* ── GRADIENTS ──────────────────────────────────────── */
+  --gradient-primary: linear-gradient(135deg, var(--tone-10) 0%, var(--tone-10-soft) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--tone-30) 0%, var(--tone-30-soft) 100%);
+  --gradient-premium: linear-gradient(135deg, var(--tone-10) 0%, var(--tone-30) 100%);
+  --gradient-gold: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  --gradient-bg: linear-gradient(180deg, var(--tone-60) 0%, color-mix(in srgb, var(--tone-60) 84%, var(--tone-10) 16%) 100%);
+
+  /* ── GLASSMORPHISM ──────────────────────────────────── */
+  --glass-light: rgba(255, 255, 255, 0.1);
+  --glass-light-border: rgba(255, 255, 255, 0.2);
+  --glass-light-hover: rgba(255, 255, 255, 0.15);
+  
+  --glass-dark: rgba(0, 0, 0, 0.2);
+  --glass-dark-border: rgba(0, 0, 0, 0.3);
+  --glass-dark-hover: rgba(0, 0, 0, 0.25);
+  
+  --glass-accent: rgba(16, 54, 125, 0.16);
+  --glass-accent-border: rgba(16, 54, 125, 0.28);
+
+  /* ── TOURNAMENT RANKS ───────────────────────────────── */
+  --bronze: #CD7F32;
+  --bronze-gradient: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+  --bronze-glow: rgba(205, 127, 50, 0.4);
+
+  --silver: #C0C0C0;
+  --silver-gradient: linear-gradient(135deg, #E8E8E8 0%, #A8A8A8 100%);
+  --silver-glow: rgba(192, 192, 192, 0.4);
+
+  --gold: #FFD700;
+  --gold-gradient: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  --gold-glow: rgba(255, 215, 0, 0.5);
+
+  --diamond: var(--tone-10-soft);
+  --diamond-gradient: linear-gradient(135deg, var(--tone-10) 0%, var(--tone-30) 100%);
+  --diamond-glow: rgba(16, 54, 125, 0.4);
+
+  /* ── TEXT ───────────────────────────────────────────── */
+  --text-primary: var(--tone-10);
+  --text-secondary: rgba(16, 54, 125, 0.8);
+  --text-muted: rgba(16, 54, 125, 0.56);
+  --text-disabled: rgba(16, 54, 125, 0.34);
+}

@@ -1,1 +1,209 @@
-﻿/* CSS reset for rebuild */
+/* ============================================================
+   NAVIGATION — Bottom dock nav, header nav items
+   ============================================================ */
+
+/* ── Bottom Navigation Bar ────────────────────────────── */
+.nav-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  justify-content: stretch;
+  gap: var(--gap-sm);
+  padding: 6px var(--space-3) 8px;
+  min-height: var(--nav-h);
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-2));
+  transform: translateX(-50%);
+  width: min(calc(100% - var(--pad-x) * 2), var(--container-max));
+  max-width: var(--container-max);
+  z-index: var(--z-sticky);
+  border-radius: var(--radius-full);
+  background: var(--nav-bg);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.16), var(--shadow-inset-both);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  flex-shrink: 0;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.nav-bar .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px var(--space-1);
+  min-height: var(--touch-min);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nav-text);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: transform var(--duration-normal) var(--ease-smooth),
+              color var(--duration-normal) var(--ease-smooth),
+              filter var(--duration-normal) var(--ease-smooth),
+              opacity var(--duration-normal) var(--ease-smooth),
+              background var(--duration-normal) var(--ease-smooth);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.nav-bar .nav-item .nav-icon {
+  font-size: clamp(17px, 4.2vw, 22px);
+  transition: transform var(--duration-fast) var(--ease-smooth);
+}
+
+.nav-bar .nav-item:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.nav-bar .nav-item:active .nav-icon {
+  transform: scale(0.85);
+}
+
+.nav-bar .nav-item.active {
+  color: var(--nav-text-active);
+  background: rgba(255,255,255,0.08);
+  filter: none;
+  box-shadow: none;
+  border: 0;
+  outline: none;
+}
+
+.nav-bar .nav-item.active .nav-icon {
+  transform: scale(1.1);
+}
+
+.nav-bar .nav-item:not(.active) {
+  filter: grayscale(0.15);
+  opacity: 0.9;
+}
+
+.nav-bar .nav-item span:last-child {
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* ── Wallet Nav Indicator ─────────────────────────────── */
+.nav-bar .nav-item.nav-item-wallet::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 34px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: rgba(140, 235, 255, 0.98);
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(140,235,255,0.75), 0 0 22px rgba(86,196,255,0.42);
+}
+
+.nav-bar .nav-item.nav-item-wallet::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 56px;
+  height: 42px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(132,232,255,0.32), rgba(132,232,255,0));
+  clip-path: polygon(24% 0, 76% 0, 100% 100%, 0 100%);
+  filter: blur(2px);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+/* ── Nav Icon Images ──────────────────────────────────── */
+.nav-bar .nav-icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  opacity: 0.72;
+  transition: opacity var(--duration-fast) var(--ease-smooth),
+              transform var(--duration-fast) var(--ease-smooth);
+}
+
+.nav-bar .nav-item.active .nav-icon-img {
+  opacity: 1;
+}
+
+/* ── Header Nav Items ─────────────────────────────────── */
+.header .nav-item {
+  background: var(--color-surface);
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-smooth);
+  min-width: 36px;
+  min-height: 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.header .nav-item:active {
+  transform: scale(0.9);
+}
+
+.header .nav-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* ── Nav Icon Wrap ────────────────────────────────────── */
+.nav-icon-img-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
+
+/* ── Icon visibility ──────────────────────────────────── */
+.icon-dark  { display: none; }
+.icon-light { display: block; }
+
+body.night-mode .icon-dark  { display: block; }
+body.night-mode .icon-light { display: none; }
+
+/* ── Boost/Auto icon visibility ───────────────────────── */
+.boost-icon-img.icon-dark,
+.auto-icon-img.icon-dark {
+  display: none;
+}
+
+body.night-mode .boost-icon-img.icon-dark,
+body.night-mode .auto-icon-img.icon-dark {
+  display: block;
+}
+
+body.night-mode .boost-icon-img.icon-light,
+body.night-mode .auto-icon-img.icon-light {
+  display: none;
+}
+
+/* ── Daily Gift Dot ───────────────────────────────────── */
+.nav-item-daily {
+  position: relative;
+}
+
+.daily-gift-dot {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 10px rgba(76, 217, 100, 0.6);
+  display: none;
+  animation: socialDotPulse 1.35s ease-in-out infinite;
+}

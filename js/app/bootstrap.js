@@ -5,12 +5,6 @@
             const doneStartup = deps.debugPerfStart('perf', 'startup/domcontentloaded');
             deps.DEBUG_BOOT.appStarted = true;
 
-            if (!deps.mobileAccessState.allowed) {
-                doneStartup(false, { reason: 'mobile_gate' });
-                deps.renderMobileOnlyGate();
-                return;
-            }
-
             deps.applyPerformanceMode();
             deps.applyStaticTranslations();
             deps.ensureToastLayer();
@@ -21,6 +15,7 @@
             deps.initTonWalletBridge();
             deps.initBgm();
             deps.initAdsgramController();
+            if (typeof deps.initMainTapButtonUx === 'function') deps.initMainTapButtonUx();
             deps.initAutoClicker();
             deps.initBadgePhysics();
 

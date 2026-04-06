@@ -1,1 +1,667 @@
-﻿/* CSS reset for rebuild */
+/* ============================================================
+   MODALS — overlay, shell, header, close, scroll/layout,
+   fullscreen wrappers and modal container states only
+   ============================================================ */
+
+/* ── Shared Overlay ───────────────────────────────────── */
+.modal-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(240, 242, 250, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: var(--space-3);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.night-mode .modal-screen {
+  background: rgba(14, 14, 18, 0.76);
+}
+
+.modal-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Shared Shell ─────────────────────────────────────── */
+.modal-screen > .glass,
+.skins-modal,
+.achievements-modal,
+.daily-modal-shell,
+.tasks-modal-shell,
+.games-modal-shell,
+.wallet-modal-shell {
+  width: min(94vw, 360px);
+  max-width: 360px;
+  max-height: min(88dvh, 760px);
+  border-radius: var(--radius-2xl);
+  border: 2px solid #8b63e8;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 42px rgba(108, 92, 231, 0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.night-mode .modal-screen > .glass,
+body.night-mode .skins-modal,
+body.night-mode .achievements-modal,
+body.night-mode .daily-modal-shell,
+body.night-mode .tasks-modal-shell,
+body.night-mode .games-modal-shell,
+body.night-mode .wallet-modal-shell {
+  background: rgba(23, 23, 28, 0.96);
+  border-color: #8b63e8;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+/* ── Shared Header ────────────────────────────────────── */
+.modal-header,
+.skins-header,
+.achievements-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  background: transparent;
+  border-bottom: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+.modal-header h2,
+.skins-title,
+.achievements-title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 700;
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-wide);
+  text-transform: none;
+  color: #7b5ce6;
+}
+
+body.night-mode .modal-header h2,
+body.night-mode .skins-title,
+body.night-mode .achievements-title {
+  color: #bfaeff;
+}
+
+.modal-header-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* ── Shared Close ─────────────────────────────────────── */
+.modal-close,
+.skins-close,
+.achievements-close,
+.detail-close {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(139, 99, 232, 0.18);
+  background: #ffffff;
+  color: #7a7f92;
+  box-shadow: 0 6px 16px rgba(88, 97, 122, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-bounce),
+              background var(--duration-fast) var(--ease-smooth),
+              color var(--duration-fast) var(--ease-smooth);
+}
+
+body.night-mode .modal-close,
+body.night-mode .skins-close,
+body.night-mode .achievements-close,
+body.night-mode .detail-close {
+  background: #1f2028;
+  color: #d8d9e6;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.modal-close:active,
+.skins-close:active,
+.achievements-close:active,
+.detail-close:active {
+  transform: scale(0.92);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ── Shared Content ───────────────────────────────────── */
+.modal-content,
+.modal-content-premium {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+/* ── Fullscreen Overlay Screens ───────────────────────── */
+#friends-screen > .glass,
+#tasks-screen .tasks-modal-shell,
+#games-screen .games-modal-shell,
+#daily-screen .daily-modal-shell,
+#skins-screen .skins-modal,
+#achievements-screen .achievements-modal,
+#wallet-screen .wallet-modal-shell {
+  background:
+    radial-gradient(circle at top right, rgba(127, 73, 180, 0.14), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(127, 73, 180, 0.08), transparent 40%),
+    rgba(255, 255, 255, 0.96);
+  border: 1.5px solid rgba(127, 73, 180, 0.7);
+}
+
+body.night-mode #friends-screen > .glass,
+body.night-mode #tasks-screen .tasks-modal-shell,
+body.night-mode #games-screen .games-modal-shell,
+body.night-mode #daily-screen .daily-modal-shell,
+body.night-mode #skins-screen .skins-modal,
+body.night-mode #achievements-screen .achievements-modal,
+body.night-mode #wallet-screen .wallet-modal-shell {
+  background:
+    radial-gradient(circle at top right, rgba(161, 126, 255, 0.16), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(118, 89, 209, 0.14), transparent 40%),
+    rgba(22, 24, 32, 0.96);
+  border-color: rgba(176, 145, 255, 0.8);
+}
+
+#friends-screen.active,
+#daily-screen.active,
+#tasks-screen.active,
+#games-screen.active,
+#skins-screen.active,
+#achievements-screen.active,
+#wallet-screen.active {
+  justify-content: stretch;
+  align-items: stretch;
+  padding: 0;
+}
+
+#friends-screen > .glass,
+#daily-screen .daily-modal-shell,
+#tasks-screen .tasks-modal-shell,
+#games-screen .games-modal-shell,
+#skins-screen .skins-modal,
+#achievements-screen .achievements-modal,
+#wallet-screen .wallet-modal-shell {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#daily-screen .daily-modal-shell,
+#tasks-screen .tasks-modal-shell,
+#games-screen .games-modal-shell,
+#skins-screen .skins-modal,
+#achievements-screen .achievements-modal,
+#wallet-screen .wallet-modal-shell {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+}
+
+#friends-screen .modal-content,
+#daily-screen .daily-modal-content,
+#tasks-screen .modal-content-premium,
+#games-screen .modal-content-premium,
+#skins-screen .skins-grid,
+#achievements-screen .achievements-list,
+#wallet-screen .wallet-modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#friends-screen .modal-header,
+#daily-screen .daily-modal-header,
+#skins-screen .skins-header,
+#achievements-screen .achievements-header {
+  flex: 0 0 auto;
+}
+
+/* ── Settings Modal ───────────────────────────────────── */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: var(--z-modal);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.settings-overlay.active {
+  display: flex;
+}
+
+.settings-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  padding: var(--space-5) 0 var(--space-8);
+  transform: translateY(100%);
+  transition: transform var(--duration-slow) var(--ease-smooth),
+              background var(--duration-normal) var(--ease-smooth);
+  border-top: 3px solid var(--color-accent);
+}
+
+.settings-overlay.active .settings-modal {
+  transform: translateY(0);
+}
+
+.settings-modal::before {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 4px;
+  background: var(--color-text-dim);
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-5);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-header h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--color-text);
+  letter-spacing: var(--ls-wide);
+}
+
+.settings-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  min-height: var(--touch-lg);
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.settings-icon {
+  width: var(--touch-lg);
+  height: var(--touch-lg);
+  background: var(--color-accent-dim);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-lg);
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.settings-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.settings-sub {
+  font-size: var(--fs-xs);
+  color: var(--color-text-dim);
+  font-weight: 600;
+}
+
+.settings-footer {
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--color-text-dim);
+  margin-top: var(--space-6);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+}
+
+/* ── Skins / Achievements Shell ───────────────────────── */
+.skins-modal {
+  width: min(96vw, 540px);
+  max-height: 90dvh;
+}
+
+.skins-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  grid-template-columns: 1fr auto;
+}
+
+.skins-title {
+  text-align: left;
+  font-size: var(--fs-xl);
+}
+
+.achievements-modal {
+  width: min(96vw, 520px);
+  max-height: 90dvh;
+  margin: auto;
+}
+
+.achievements-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  grid-template-columns: 1fr auto;
+}
+
+.achievements-title {
+  text-align: left;
+  font-size: var(--fs-xl);
+}
+
+/* ── Skin Detail Modal Shell ──────────────────────────── */
+.skin-detail-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-4);
+}
+
+.skin-detail-modal.active {
+  display: flex;
+}
+
+.skin-detail-content {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-2xl);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: auto;
+}
+
+/* ── Energy Recovery Shell ────────────────────────────── */
+.energy-recovery-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  background: rgba(20, 18, 32, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: var(--space-4);
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.energy-recovery-modal .modal-content {
+  width: min(92vw, 360px);
+  max-width: 360px;
+  margin: auto;
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-6);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  height: auto;
+  max-height: min(88dvh, 520px);
+}
+
+.energy-recovery-modal h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--color-accent);
+  margin-bottom: var(--space-3);
+  letter-spacing: var(--ls-wide);
+}
+
+.energy-recovery-modal p {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-5);
+  font-size: var(--fs-md);
+  line-height: var(--lh-normal);
+}
+
+/* ── Game Modal Shell ─────────────────────────────────── */
+.game-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: var(--z-modal);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+.game-modal.active {
+  display: flex;
+}
+
+.game-modal-content {
+  width: min(94vw, 420px);
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-6);
+  position: relative;
+  box-shadow: var(--shadow-xl);
+}
+
+.game-modal-content h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--color-accent);
+  text-align: center;
+  margin-bottom: var(--space-5);
+  letter-spacing: var(--ls-wide);
+}
+
+/* ── Daily Modal Shell ────────────────────────────────── */
+#daily-screen {
+  align-items: center;
+  justify-content: center;
+}
+
+.daily-modal-shell {
+  width: min(96vw, 560px);
+  height: min(92vh, 860px);
+  max-height: min(92vh, 860px);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.daily-modal-header {
+  align-items: center;
+}
+
+.daily-modal-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.daily-modal-kicker {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--color-text-dim);
+}
+
+.daily-modal-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+
+/* ── Tasks Modal Shell ────────────────────────────────── */
+#tasks-screen .tasks-modal-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#tasks-screen .modal-header-premium {
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+#tasks-screen .modal-header-copy {
+  gap: var(--space-1);
+}
+
+#tasks-screen .modal-kicker {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wider);
+}
+
+#tasks-screen .modal-header h2 {
+  font-size: clamp(21px, 5.2vw, 28px);
+  line-height: var(--lh-snug);
+}
+
+#tasks-screen .modal-content-premium {
+  padding-top: 0;
+}
+
+/* ── Wallet Modal Shell ───────────────────────────────── */
+#wallet-screen .wallet-modal-shell {
+  width: min(100vw, 560px);
+  max-width: 560px;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 auto;
+  border-radius: 0;
+  padding: var(--space-5) var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+#wallet-screen .modal-header-premium {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 0;
+}
+
+#wallet-screen .modal-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+#wallet-screen .modal-kicker {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+#wallet-screen .modal-header h2 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: var(--lh-snug);
+  color: var(--color-text);
+}
+
+#wallet-screen .wallet-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-1) var(--space-5);
+}
+
+/* ── Games Modal Shell ────────────────────────────────── */
+#games-screen.active {
+  padding: 0;
+}
+
+#games-screen .games-modal-shell {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: var(--space-4) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+#games-screen .modal-header-premium {
+  margin-bottom: var(--space-3);
+}
+
+#games-screen .modal-header h2 {
+  font-size: clamp(22px, 3.2vw, 28px);
+}
+
+#games-screen .modal-content-premium {
+  padding-right: 0;
+}
+
+/* ── Shared Modal Responsive ──────────────────────────── */
+@media (max-width: 380px) {
+  .modal-screen > .glass,
+  .skins-modal,
+  .achievements-modal,
+  .daily-modal-shell,
+  .tasks-modal-shell,
+  .games-modal-shell,
+  .wallet-modal-shell {
+    width: min(96vw, 340px);
+  }
+}
