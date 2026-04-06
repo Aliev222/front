@@ -136,7 +136,13 @@
 
         async function showRewardedAd(adSessionId = null, adUnavailableMessage) {
             debugLog('ads', 'controller init start', { adSessionId });
-            const controller = await initAdsgramController();
+            let controller;
+            try {
+                controller = await initAdsgramController();
+            } catch (err) {
+                debugError('ads', 'controller init error', err);
+                throw err;
+            }
             if (!controller) {
                 debugLog('ads', 'controller init ready=false', { adSessionId });
                 throw new Error(adUnavailableMessage || 'Ad unavailable');

@@ -872,10 +872,28 @@ function isAdsgramReady() {
     return !!(window.Adsgram?.init && getAdsgramBlockId());
 }
 
+async function waitForAdsgramReady(timeoutMs = 2500) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+        if (window.Adsgram?.init) {
+            return true;
+        }
+        await sleep(100);
+    }
+    return false;
+}
+
 async function initAdsgramController() {
     const blockId = getAdsgramBlockId();
-    if (!blockId || !window.Adsgram?.init) {
+    if (!blockId) {
         return null;
+    }
+
+    if (!window.Adsgram?.init) {
+        const ready = await waitForAdsgramReady(2500);
+        if (!ready) {
+            throw new Error('Рекламный модуль ещё загружается, попробуйте ещё раз через пару секунд');
+        }
     }
 
     if (!adsgramController || adsgramInitializedBlockId !== blockId) {
