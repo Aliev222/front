@@ -184,13 +184,10 @@
                 console.log(`AD_TRACE_SHOW_SUCCESS adSessionId=${adSessionId}`);
                 return result;
             } catch (err) {
-                console.log(`AD_TRACE_SHOW_ERROR adSessionId=${adSessionId} error=${err?.message} stack=${err?.stack}`);
+                console.log(`AD_TRACE_SHOW_ERROR adSessionId=${adSessionId} error=${err?.message || err?.description || String(err)} stack=${err?.stack}`);
                 debugError('ads', 'controller.show error', err);
-                const detail = String(err?.description || err?.message || '').trim();
-                if (detail) {
-                    throw new Error(detail);
-                }
-                throw err;
+                const detail = String(err?.description || err?.message || 'Ad display failed').trim();
+                throw new Error(detail);
             } finally {
                 setAdInputBlocked(false);
             }
