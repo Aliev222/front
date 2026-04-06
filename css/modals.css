@@ -40,7 +40,7 @@ body.night-mode .modal-screen {
   max-width: 360px;
   max-height: min(88dvh, 760px);
   border-radius: var(--radius-2xl);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: none;
   overflow: hidden;
@@ -56,7 +56,7 @@ body.night-mode .tasks-modal-shell,
 body.night-mode .games-modal-shell,
 body.night-mode .wallet-modal-shell {
   background: var(--color-surface);
-  border-color: var(--glass-border);
+  border-color: var(--color-border);
   box-shadow: none;
 }
 
@@ -88,13 +88,13 @@ body.night-mode .wallet-modal-shell {
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-wide);
   text-transform: none;
-  color: #7b5ce6;
+  color: var(--color-text);
 }
 
 body.night-mode .modal-header h2,
 body.night-mode .skins-title,
 body.night-mode .achievements-title {
-  color: #bfaeff;
+  color: var(--color-text);
 }
 
 .modal-header-actions {

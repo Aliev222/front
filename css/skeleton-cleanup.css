@@ -125,11 +125,12 @@ body.night-mode .space-bg {
 .game-stage-controls-left,
 .game-stage-controls-right {
   display: flex;
-  gap: 8px;
+  gap: 15px;
+  
 }
 
 .control-btn {
-  width: 42px;
+  width: 65px;
   height: 42px;
   border-radius: 14px;
   display: flex;
@@ -191,16 +192,19 @@ body.night-mode .space-bg {
 .stats-pills {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
+  
 }
 
 .stat-pill {
   border-radius: 16px;
   padding: 12px;
   display: flex;
-  flex-direction: column;
+
   align-items: center;
   gap: 4px;
+  height: 50px;
+
 }
 
 .stat-pill-label {
@@ -238,13 +242,13 @@ body.night-mode .space-bg {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 0;
+  padding: 1px 0;
 }
 
 .balance-value {
   font-family: var(--font-mono);
-  font-size: clamp(42px, 11vw, 52px);
-  font-weight: 900;
+  font-size: clamp(10px, 10vw, 40px);
+  font-weight: 600;
   color: var(--color-text);
   line-height: 1;
   letter-spacing: -0.02em;
