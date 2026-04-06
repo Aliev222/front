@@ -478,4 +478,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  /* keep tap feedback visible even with reduce motion */
+  .tap-effect-global {
+    animation-duration: 0.55s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.2s !important;
+  }
 }

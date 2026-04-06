@@ -33,8 +33,9 @@
                 const clickButton = document.getElementById('ryoho');
                 const isNightMode = document.body.classList.contains('night-mode');
                 const boostVisualActive = megaBoostActive || dailyInfiniteEnergyActive || ghostBoostActive;
-                const tapColor = ghostBoostActive ? '#9CEBFF' : (boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#7F49B4'));
-                const tapGlow = ghostBoostActive ? 'rgba(156,235,255,0.95)' : (boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : '#7F49B4'));
+                const tapColor = ghostBoostActive ? '#9CEBFF' : (boostVisualActive ? '#FFD700' : (isNightMode ? '#F7F4FF' : '#0090cc'));
+                const tapGlow = ghostBoostActive ? 'rgba(156,235,255,0.95)' : (boostVisualActive ? '#FFD700' : (isNightMode ? 'rgba(247,244,255,0.92)' : 'rgba(0,144,204,0.45)'));
+
                 effect.style.left = `${clientX}px`;
                 effect.style.top = `${clientY}px`;
                 effect.style.transform = 'translate(-50%, -50%)';
@@ -42,7 +43,7 @@
                 effect.style.fontSize = isAutoTap ? '22px' : '28px';
                 effect.style.fontWeight = isAutoTap ? '700' : 'bold';
                 effect.style.textShadow = `0 0 10px ${tapGlow}`;
-                effect.textContent = ghostBoostActive ? `+${previewGain} ??` : (boostVisualActive ? `+${previewGain} ??` : `+${previewGain}`);
+                effect.textContent = ghostBoostActive ? `+${previewGain} 🪽` : (boostVisualActive ? `+${previewGain} ⚡` : `+${previewGain}`);
                 effect.style.animation = 'none';
                 effect.style.opacity = '1';
                 effect.offsetWidth;
