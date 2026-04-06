@@ -13,7 +13,8 @@
 
             requestAnimationFrame(() => {
                 if (!deps.State.temp.tapPool) {
-                    deps.store.set('temp.tapPool', Array.from({ length: deps.isLitePerformanceMode() ? 6 : 10 }, () => {
+                    const poolSize = deps.isLitePerformanceMode() ? 4 : 6;
+                    deps.store.set('temp.tapPool', Array.from({ length: poolSize }, () => {
                         const el = document.createElement('div');
                         el.className = 'tap-effect-global';
                         el.style.position = 'fixed';

@@ -1189,6 +1189,18 @@ const formatTonAmount = (nano) => {
     return value.toFixed(4);
 };
 
+function updateTopMetaBar({ fundNano = null, rank = null } = {}) {
+    const fundEl = document.getElementById('top-meta-fund-value');
+    const rankEl = document.getElementById('top-meta-rank');
+
+    const normalizedFundNano = Number(fundNano);
+    const hasFund = Number.isFinite(normalizedFundNano) && normalizedFundNano > 0;
+    if (fundEl) fundEl.textContent = hasFund ? `${formatTonAmount(normalizedFundNano)} TON` : '-- TON';
+
+    const normalizedRank = Number(rank);
+    if (rankEl) rankEl.textContent = Number.isFinite(normalizedRank) && normalizedRank > 0 ? `#${normalizedRank}` : '#--';
+}
+
 const formatUsdFromCents = (cents) => {
     const value = Number(cents || 0) / 100;
     return new Intl.NumberFormat(UI_LANG === 'ru' ? 'ru-RU' : 'en-US', {
@@ -4932,6 +4944,12 @@ function renderEventOverview(data) {
     const player = data?.player || null;
     const league = player?.league || deriveEventLeague(getDisplayLevel(State.game.level) || 1);
     const meta = getEventLeagueMeta(league);
+    const fundNano = Number(
+        data?.payout_fund_nano ??
+        data?.fund_nano ??
+        (typeof data?.payout_fund_ton === 'number' ? data.payout_fund_ton * 1_000_000_000 : null) ??
+        (typeof data?.payout_fund === 'number' ? data.payout_fund * 1_000_000_000 : null)
+    );
 
     const leagueEl = document.getElementById('event-player-league');
     const rankEl = document.getElementById('event-player-rank');
@@ -4945,6 +4963,7 @@ function renderEventOverview(data) {
     if (zoneEl) zoneEl.textContent = getEventZoneText(player);
     if (subtitleEl) subtitleEl.textContent = tr('games.leagueLeaderboard', { league: meta.label });
 
+    updateTopMetaBar({ fundNano, rank: player?.rank });
     renderEventLeagueSplits(data?.fund_splits || {});
     renderEventPayoutGrid(data?.payout_splits || null, data?.top3_splits || {}, data?.rest_split || 0);
     renderPrizePoolDrawer(data);

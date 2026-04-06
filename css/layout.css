@@ -282,17 +282,20 @@
   background: var(--progress-track);
   border-radius: var(--radius-full);
   overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 10px var(--color-accent-glow);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  position: relative;
 }
 
 .energy-bar-fill {
   height: 100%;
   background: var(--progress-fill);
   border-radius: var(--radius-full);
-  transition: width var(--duration-normal) var(--ease-smooth);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), filter 0.45s ease, box-shadow 0.45s ease;
   position: relative;
   overflow: hidden;
   will-change: width;
+  box-shadow: 0 0 16px rgba(0, 194, 255, 0.36);
+  animation: energyPulse 2.4s ease-in-out infinite;
 }
 
 .energy-bar-fill::after {
@@ -308,6 +311,13 @@
 
 @keyframes shine {
   to { transform: translateX(200%); }
+}
+
+@keyframes energyPulse {
+  0%   { filter: drop-shadow(0 0 10px rgba(0,194,255,0)); }
+  35%  { filter: drop-shadow(0 0 30px rgba(0,194,255,0.48)); }
+  65%  { filter: drop-shadow(0 0 30px rgba(0,194,255,0.48)); }
+  100% { filter: drop-shadow(0 0 30px rgba(0,194,255,0.48)); }
 }
 
 .energy-preview {

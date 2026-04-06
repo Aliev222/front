@@ -113,10 +113,10 @@
         <div class="space-bg"></div>
 
         <!-- TOP META BAR -->
-        <div class="top-meta-bar">
+            <div class="top-meta-bar">
             <div class="top-meta-left">
                 <div class="top-meta-fund">
-                    <span>●</span>
+                    <span class="top-meta-dot" aria-hidden="true"></span>
                     <span id="top-meta-fund-value">1.999 TON</span>
                 </div>
                 <div class="top-meta-rank" id="top-meta-rank">#4 место</div>
@@ -642,160 +642,6 @@
         </div>
     </div>
     </div>
-    <canvas id="stars-canvas"></canvas>
-    <script>
-    (function() {
-        const canvas = document.getElementById('stars-canvas');
-        const ctx = canvas.getContext('2d');
-        const litePerformance =
-            window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ||
-            (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
-            (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
-            Math.min(window.innerWidth, window.innerHeight) <= 430;
-
-        if (litePerformance) {
-            document.body.classList.add('lite-performance');
-        }
-
-        const STAR_COUNT = litePerformance ? 90 : 260;
-        const stars = [];
-        const shooting = [];
-        let frameId = 0;
-
-        function resize() {
-            canvas.width  = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        function randomStar() {
-            const isBig = Math.random() < 0.18; // 18% РєСЂСѓРїРЅС‹Рµ
-            return {
-                x:  Math.random() * canvas.width  - canvas.width  / 2,
-                y:  Math.random() * canvas.height - canvas.height / 2,
-                z:  Math.random() * canvas.width,
-                pz: 0,
-                big: isBig,
-                layer: Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1),
-                tw: Math.random() * Math.PI * 2
-            };
-        }
-
-        resize();
-        window.addEventListener('resize', resize);
-        for (let i = 0; i < STAR_COUNT; i++) stars.push(randomStar());
-
-        function isNight() {
-            return document.body.classList.contains('night-mode');
-        }
-
-        function draw() {
-            if (document.hidden) {
-                requestAnimationFrame(draw);
-                return;
-            }
-
-            frameId += 1;
-            if (litePerformance && frameId % 2 !== 0) {
-                requestAnimationFrame(draw);
-                return;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const cx = canvas.width  / 2;
-            const cy = canvas.height / 2;
-            const baseSpeed = litePerformance ? 3 : 4;
-
-            for (let s of stars) {
-                s.pz = s.z;
-                s.z -= baseSpeed * s.layer;
-                if (s.z <= 0) {
-                    s.x   = Math.random() * canvas.width  - cx;
-                    s.y   = Math.random() * canvas.height - cy;
-                    s.z   = canvas.width;
-                    s.pz  = s.z;
-                    s.big = Math.random() < 0.18;
-                    s.layer = Math.random() < 0.35 ? 0.5 : (Math.random() < 0.5 ? 0.8 : 1);
-                    s.tw = Math.random() * Math.PI * 2;
-                }
-
-                const sx  = (s.x / s.z)  * canvas.width  + cx;
-                const sy  = (s.y / s.z)  * canvas.height + cy;
-                const spx = (s.x / s.pz) * canvas.width  + cx;
-                const spy = (s.y / s.pz) * canvas.height + cy;
-
-                const progress = 1 - s.z / canvas.width;
-                const twinkle  = 0.5 + 0.5 * Math.sin(s.tw += 0.035 + 0.02 * s.layer);
-                const opacity  = Math.min(1, (progress * 1.8) * twinkle + 0.35);
-                const size     = s.big
-                    ? Math.max(1.2, progress * 5.5 * s.layer)
-                    : Math.max(0.9, progress * 3.2 * s.layer);
-
-                const r = isNight()
-                    ? (s.layer < 0.7 ? '210,190,255' : '255,245,255')
-                    : (s.layer < 0.7 ? '140,110,255' : '170,140,255'); // day в†’ С„РёРѕР»РµС‚РѕРІС‹Р№ РѕС‚С‚РµРЅРѕРє
-
-                // РҐРІРѕСЃС‚
-                ctx.beginPath();
-                ctx.moveTo(spx, spy);
-                ctx.lineTo(sx, sy);
-                const longTail = progress > 0.2;
-                ctx.strokeStyle = `rgba(${r},${opacity * (longTail ? 0.95 : 0.8)})`;
-                ctx.lineWidth = longTail ? size * 1.2 : size * 0.7;
-                ctx.stroke();
-
-                // РўРѕС‡РєР° РЅР° РєРѕРЅС†Рµ
-                ctx.beginPath();
-                ctx.arc(sx, sy, size * 0.8, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${r},${opacity})`;
-                ctx.fill();
-
-                // РЎРІРµС‡РµРЅРёРµ РґР»СЏ РєСЂСѓРїРЅС‹С… Р·РІС‘Р·Рґ
-                if (progress > 0.2) {
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2);
-                    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 2.5);
-                    glow.addColorStop(0, `rgba(${r},${opacity * 0.55})`);
-                    glow.addColorStop(1, `rgba(${r},0)`);
-                    ctx.fillStyle = glow;
-                    ctx.fill();
-                }
-            }
-
-            // РџР°РґР°СЋС‰РёРµ Р·РІС‘Р·РґС‹
-            if (!litePerformance && Math.random() < 0.008 && shooting.length < 4) {
-                shooting.push({
-                    x: Math.random() * canvas.width * 0.7,
-                    y: Math.random() * canvas.height * 0.2,
-                    vx: 11 + Math.random() * 10,
-                    vy: 5 + Math.random() * 5,
-                    life: 0,
-                    maxLife: 56
-                });
-            }
-
-            for (let i = shooting.length - 1; i >= 0; i--) {
-                const sh = shooting[i];
-                sh.life++;
-                sh.x += sh.vx;
-                sh.y += sh.vy;
-                const fade = 1 - sh.life / sh.maxLife;
-                ctx.beginPath();
-                ctx.strokeStyle = `rgba(255,255,255,${0.95 * fade})`;
-                ctx.lineWidth = 3;
-                ctx.moveTo(sh.x - sh.vx * 5, sh.y - sh.vy * 5);
-                ctx.lineTo(sh.x, sh.y);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.fillStyle = `rgba(255,255,255,${0.9 * fade})`;
-                ctx.arc(sh.x, sh.y, 3.4, 0, Math.PI * 2);
-                ctx.fill();
-                if (sh.life >= sh.maxLife) shooting.splice(i, 1);
-            }
-            requestAnimationFrame(draw);
-        }
-        draw();
-    })();
-    </script>
     <div class="modal-screen" id="achievements-screen">
         <div class="achievements-modal">
             <div class="achievements-header">
