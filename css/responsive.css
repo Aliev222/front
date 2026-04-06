@@ -470,23 +470,4 @@
 }
 
 /* ── Reduced Motion ───────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  /* keep tap feedback visible even with reduce motion */
-  .tap-effect-global {
-    animation-duration: 0.55s !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.2s !important;
-  }
-  /* keep fund pulse visible even with reduce motion */
-  .top-meta-dot {
-    animation-duration: 1.6s !important;
-    animation-iteration-count: infinite !important;
-  }
-}
+/* Reduced-motion override removed: keep full effects on all devices */
