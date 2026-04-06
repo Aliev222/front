@@ -86,7 +86,7 @@
                 serverEnergyBase: 0,
                 serverMaxEnergy: 0,
                 serverEnergySyncedAtMs: 0,
-                energyRegenMs: 2000,
+                energyRegenMs: 200, // 5 energy/sec => 1 tick per 200ms
                 pendingEnergySpend: 0,
                 lastTapAt: 0,
                 lastStateUpdatedAtMs: 0,

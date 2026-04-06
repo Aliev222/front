@@ -1876,8 +1876,9 @@ function applyServerEnergySnapshot(payload) {
         State.game.maxEnergy = payload.max_energy;
     }
     if (typeof payload.regen_seconds === 'number') {
-        State.temp.energyRegenMs = payload.regen_seconds * 1000;
+        // Server value ignored: we enforce 5 energy/sec locally.
     }
+    State.temp.energyRegenMs = 200; // 5 energy per second
 
     // Use server-derived timing for visual regen, not client arrival time.
     // Priority: state_updated_at > server_time > Date.now()
