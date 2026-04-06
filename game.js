@@ -884,23 +884,34 @@ async function waitForAdsgramReady(timeoutMs = 2500) {
 }
 
 async function initAdsgramController() {
+    console.log(`AD_TRACE_SDK_CHECK window.Adsgram=${!!window.Adsgram} window.Adsgram.init=${!!window.Adsgram?.init}`);
     const blockId = getAdsgramBlockId();
+    console.log(`AD_TRACE_BLOCKID blockId=${blockId}`);
     if (!blockId) {
+        console.log(`AD_TRACE_BLOCKID_MISSING`);
         throw new Error('Рекламный модуль не настроен');
     }
 
     if (!window.Adsgram?.init) {
+        console.log(`AD_TRACE_SDK_WAIT_START`);
         const ready = await waitForAdsgramReady(2500);
+        console.log(`AD_TRACE_SDK_WAIT_END ready=${ready}`);
         if (!ready) {
+            console.log(`AD_TRACE_SDK_TIMEOUT`);
             throw new Error('Рекламный модуль ещё загружается, попробуйте ещё раз через пару секунд');
         }
     }
 
+    console.log(`AD_TRACE_SDK_INIT_CALL blockId=${blockId}`);
     if (!adsgramController || adsgramInitializedBlockId !== blockId) {
         adsgramController = window.Adsgram.init({ blockId });
         adsgramInitializedBlockId = blockId;
+        console.log(`AD_TRACE_SDK_INIT_NEW controller=${!!adsgramController}`);
+    } else {
+        console.log(`AD_TRACE_SDK_INIT_CACHED controller=${!!adsgramController}`);
     }
 
+    console.log(`AD_TRACE_SDK_RETURN controller=${!!adsgramController}`);
     return adsgramController;
 }
 
@@ -3971,10 +3982,15 @@ function activateCustomBoost(multiplier, minutes) {
 }
 
 async function watchVideoForTask(taskId) {
+    console.log(`AD_TRACE_TASK_START taskId=${taskId}`);
     const task = VIDEO_TASKS.find(t => t.id === taskId);
-    if (!task || task.completed || !task.available) return;
+    if (!task || task.completed || !task.available) {
+        console.log(`AD_TRACE_TASK_SKIP taskId=${taskId} completed=${task?.completed} available=${task?.available}`);
+        return;
+    }
     
     if (!isAdsgramReady()) {
+        console.log(`AD_TRACE_TASK_NOT_READY taskId=${taskId}`);
         showToast(tr('toasts.adUnavailableTemp'), true);
         return;
     }
@@ -3982,11 +3998,15 @@ async function watchVideoForTask(taskId) {
     showToast(tr('toasts.videoLoading'));
     
     try {
+        console.log(`AD_TRACE_TASK_OPEN_START taskId=${taskId}`);
         const adSessionId = await openRewardedAdWithSession('video_task');
+        console.log(`AD_TRACE_TASK_OPEN_END taskId=${taskId} sessionId=${adSessionId}`);
         await confirmAdsgramAdSession(adSessionId);
+        console.log(`AD_TRACE_TASK_CONFIRM_END taskId=${taskId}`);
         trackAchievementProgress('adsWatched', 1);
 
         const response = await claimAdActionWithRetry(() => claimVideoReward(task, adSessionId));
+        console.log(`AD_TRACE_TASK_CLAIM_END taskId=${taskId} coins=${response?.coins}`);
 
         if (typeof response?.coins === 'number') {
             setCoins('watchVideoForTask', response.coins, response);
@@ -4002,7 +4022,9 @@ async function watchVideoForTask(taskId) {
             side: task.category === 'passive' ? 'right' : 'left'
         });
         createConfetti();
+        console.log(`AD_TRACE_TASK_SUCCESS taskId=${taskId}`);
     } catch (error) {
+        console.log(`AD_TRACE_TASK_ERROR taskId=${taskId} error=${error?.message} stack=${error?.stack}`);
         console.error('Video error:', error);
         showToast(
             isAdConfirmationPendingError(error)
@@ -5242,34 +5264,43 @@ function closeEnergyRecoveryModal() {
 }
 
 async function recoverEnergyWithAd() {
+    console.log(`AD_TRACE_ENERGY_START`);
     closeEnergyRecoveryModal();
 
     const cooldownRemainingMs = getAdCooldownRemainingMs('energy_refill');
     if (cooldownRemainingMs > 0) {
+        console.log(`AD_TRACE_ENERGY_COOLDOWN cooldownMs=${cooldownRemainingMs}`);
         showToast(`Energy refill cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
         return;
     }
 
     if (!isAdsgramReady()) {
+        console.log(`AD_TRACE_ENERGY_NOT_READY`);
         showToast(tr('toasts.adUnavailable'), true);
         return;
     }
 
     try {
         showToast(tr('toasts.adLoading'));
+        console.log(`AD_TRACE_ENERGY_OPEN_START`);
         const adSessionId = await openRewardedAdWithSession('energy_refill_max');
+        console.log(`AD_TRACE_ENERGY_OPEN_END sessionId=${adSessionId}`);
         await confirmAdsgramAdSession(adSessionId);
+        console.log(`AD_TRACE_ENERGY_CONFIRM_END`);
         const data = await claimAdActionWithRetry(() => API.post('/api/update-energy', {
             user_id: userId,
             ad_session_id: adSessionId
         }));
+        console.log(`AD_TRACE_ENERGY_CLAIM_END energy=${data?.energy}`);
 
         applyServerEnergySnapshot(data);
         debugLog('ads', 'reward applied in UI', { flow: 'energy_refill', energy: data?.energy, maxEnergy: data?.max_energy });
         setAdCooldownFromIso('energy_refill', data?.cooldown_until || null, Number(data?.cooldown_minutes || 10));
         updateUI();
         showToast(tr('toasts.energyRecovered'));
+        console.log(`AD_TRACE_ENERGY_SUCCESS`);
     } catch (err) {
+        console.log(`AD_TRACE_ENERGY_ERROR error=${err?.message} stack=${err?.stack}`);
         console.error('Energy recover error:', err);
         showToast(
             resolveRewardedAdErrorMessage(err, tr('toasts.serverError')),
@@ -5319,7 +5350,9 @@ function updateMegaBoostTimerLabel(timerEl = document.getElementById('mega-boost
 }
 
 async function activateMegaBoost() {
+    console.log(`AD_TRACE_BOOST_START`);
     if (!userId) {
+        console.log(`AD_TRACE_BOOST_NO_USER`);
         showToast(tr('toasts.authRequired'), true);
         return;
     }
@@ -5327,11 +5360,13 @@ async function activateMegaBoost() {
     
     const boostBtn = document.getElementById('mega-boost-btn');
     if (boostBtn?.classList.contains('active')) {
+        console.log(`AD_TRACE_BOOST_ALREADY_ACTIVE`);
         showToast(tr('toasts.boostActive'), true);
         return;
     }
 
     if (megaBoostCooldownUntil && megaBoostCooldownUntil > new Date()) {
+        console.log(`AD_TRACE_BOOST_COOLDOWN`);
         showToast(`Mega boost cooldown ${formatCooldownClock((megaBoostCooldownUntil - new Date()) / 1000)}`, true);
         return;
     }
@@ -5340,16 +5375,21 @@ async function activateMegaBoost() {
         const status = await API.get(`/api/mega-boost-status/${userId}`);
         megaBoostCooldownUntil = parseServerDate(status?.cooldown_until) || null;
         if (status?.cooldown_active && megaBoostCooldownUntil && megaBoostCooldownUntil > new Date()) {
+            console.log(`AD_TRACE_BOOST_STATUS_COOLDOWN`);
             showToast(`Mega boost cooldown ${formatCooldownClock((megaBoostCooldownUntil - new Date()) / 1000)}`, true);
             return;
         }
         if (status?.active) {
+            console.log(`AD_TRACE_BOOST_STATUS_ACTIVE`);
             showToast(tr('toasts.boostActive'), true);
             return;
         }
-    } catch (err) {}
+    } catch (err) {
+        console.log(`AD_TRACE_BOOST_STATUS_ERROR error=${err?.message}`);
+    }
     
     if (!isAdsgramReady()) {
+        console.log(`AD_TRACE_BOOST_NOT_READY`);
         showToast(tr('toasts.adUnavailable'), true);
         return;
     }
@@ -5357,45 +5397,54 @@ async function activateMegaBoost() {
     showToast(tr('toasts.adLoading'));
 
     (async () => {
-        const adSessionId = await openRewardedAdWithSession('mega_boost');
-        boostEndTime = new Date(Date.now() + MEGA_BOOST_DURATION_MS);
-        if (boostBtn) boostBtn.classList.add('active');
-        syncMegaBoostUi();
-        showToast(tr('toasts.megaBoostActivated'));
-        debugLog('ads', 'reward applied in UI', {
-            flow: 'mega_boost',
-            optimistic: true,
-            expiresAt: boostEndTime?.toISOString?.()
-        });
-        await confirmAdsgramAdSession(adSessionId);
-        const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
-            user_id: userId,
-            ad_session_id: adSessionId
-        }));
+        try {
+            console.log(`AD_TRACE_BOOST_OPEN_START`);
+            const adSessionId = await openRewardedAdWithSession('mega_boost');
+            console.log(`AD_TRACE_BOOST_OPEN_END sessionId=${adSessionId}`);
+            boostEndTime = new Date(Date.now() + MEGA_BOOST_DURATION_MS);
+            if (boostBtn) boostBtn.classList.add('active');
+            syncMegaBoostUi();
+            showToast(tr('toasts.megaBoostActivated'));
+            debugLog('ads', 'reward applied in UI', {
+                flow: 'mega_boost',
+                optimistic: true,
+                expiresAt: boostEndTime?.toISOString?.()
+            });
+            console.log(`AD_TRACE_BOOST_CONFIRM_START`);
+            await confirmAdsgramAdSession(adSessionId);
+            console.log(`AD_TRACE_BOOST_CONFIRM_END`);
+            const activation = await claimAdActionWithRetry(() => API.post('/api/activate-mega-boost', {
+                user_id: userId,
+                ad_session_id: adSessionId
+            }));
+            console.log(`AD_TRACE_BOOST_CLAIM_END`);
 
-        if (activation?.already_active && activation.expires_at) {
-            boostEndTime = parseServerDate(activation.expires_at);
-        } else {
-            boostEndTime = parseServerDate(activation?.expires_at) || boostEndTime;
+            if (activation?.already_active && activation.expires_at) {
+                boostEndTime = parseServerDate(activation.expires_at);
+            } else {
+                boostEndTime = parseServerDate(activation?.expires_at) || boostEndTime;
+            }
+            megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
+            setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
+            debugLog('ads', 'reward applied in UI', {
+                flow: 'mega_boost',
+                optimistic: false,
+                expiresAt: activation?.expires_at,
+                cooldownUntil: activation?.cooldown_until
+            });
+            
+            syncMegaBoostUi();
+            console.log(`AD_TRACE_BOOST_SUCCESS`);
+        } catch (err) {
+            console.log(`AD_TRACE_BOOST_ERROR error=${err?.message} stack=${err?.stack}`);
+            boostEndTime = null;
+            syncMegaBoostUi();
+            showToast(
+                resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
+                true
+            );
         }
-        megaBoostCooldownUntil = parseServerDate(activation?.cooldown_until) || megaBoostCooldownUntil;
-        setAdCooldownFromIso('mega_boost', activation?.cooldown_until || null, Number(activation?.cooldown_minutes || 10));
-        debugLog('ads', 'reward applied in UI', {
-            flow: 'mega_boost',
-            optimistic: false,
-            expiresAt: activation?.expires_at,
-            cooldownUntil: activation?.cooldown_until
-        });
-        
-        syncMegaBoostUi();
-    })().catch((err) => {
-        boostEndTime = null;
-        syncMegaBoostUi();
-        showToast(
-            resolveRewardedAdErrorMessage(err, tr('toasts.watchError')),
-            true
-        );
-    });
+    })();
 }
 
 function showBoostIndicator() {
@@ -7047,50 +7096,70 @@ function initAutoClicker() {
         loop();
     };
 
-    window.toggleAutoClick = async function toggleAutoClick() {
-        if (!autoBtn) return;
-        if (autoState.enabledUntil > Date.now()) return; // уже активен
-        if (isAdsgramReady()) prewarmAdActionSession('autoclicker');
-        const cooldownRemainingMs = getCooldownRemainingMs();
-        if (cooldownRemainingMs > 0) {
-            showToast(`Auto click cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
-            updateAutoButtonState();
-            return;
-        }
+     window.toggleAutoClick = async function toggleAutoClick() {
+         console.log(`AD_TRACE_AUTO_START`);
+         if (!autoBtn) {
+             console.log(`AD_TRACE_AUTO_NO_BTN`);
+             return;
+         }
+         if (autoState.enabledUntil > Date.now()) {
+             console.log(`AD_TRACE_AUTO_ALREADY_ACTIVE`);
+             return;
+         }
+         if (isAdsgramReady()) prewarmAdActionSession('autoclicker');
+         const cooldownRemainingMs = getCooldownRemainingMs();
+         if (cooldownRemainingMs > 0) {
+             console.log(`AD_TRACE_AUTO_COOLDOWN cooldownMs=${cooldownRemainingMs}`);
+             showToast(`Auto click cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}`, true);
+             updateAutoButtonState();
+             return;
+         }
 
-        const enable = () => { showToast(tr('toasts.autoTapEnabled')); enableAuto(AUTO_CLICK_DURATION_MS); };
+         const enable = () => { 
+             console.log(`AD_TRACE_AUTO_ENABLE`);
+             showToast(tr('toasts.autoTapEnabled')); 
+             enableAuto(AUTO_CLICK_DURATION_MS); 
+         };
 
-        if (!isAdsgramReady()) {
-            showToast(tr('toasts.adUnavailable'), true);
-            return;
-        }
-        showToast(tr('toasts.adLoading'));
+         if (!isAdsgramReady()) {
+             console.log(`AD_TRACE_AUTO_NOT_READY`);
+             showToast(tr('toasts.adUnavailable'), true);
+             return;
+         }
+         showToast(tr('toasts.adLoading'));
          try {
+             console.log(`AD_TRACE_AUTO_OPEN_START`);
              const adSessionId = await openRewardedAdWithSession('autoclicker');
+             console.log(`AD_TRACE_AUTO_OPEN_END sessionId=${adSessionId}`);
              debugLog('ads', 'reward applied in UI', {
                  flow: 'autoclicker',
                  optimistic: true,
                  duration: AUTO_CLICK_DURATION_MS / 1000
              });
+             console.log(`AD_TRACE_AUTO_CONFIRM_START`);
              await confirmAdsgramAdSession(adSessionId);
+             console.log(`AD_TRACE_AUTO_CONFIRM_END`);
              const activation = await claimAdActionWithRetry(() => API.post('/api/autoclicker/activate', {
                  user_id: userId,
                  ad_session_id: adSessionId
              }));
+             console.log(`AD_TRACE_AUTO_CLAIM_END`);
              enable();
              debugLog('ads', 'reward applied in UI', {
                  flow: 'autoclicker',
                  optimistic: false,
                  duration: activation?.duration_seconds
              });
+             console.log(`AD_TRACE_AUTO_SUCCESS`);
          } catch (e) {
+             console.log(`AD_TRACE_AUTO_ERROR error=${e?.message} stack=${e?.stack}`);
              disableAutoLocal();
              showToast(
                  resolveRewardedAdErrorMessage(e, tr('toasts.autoTapError')),
                  true
              );
          }
-    };
+     };
 
     const pointerDown = (e) => {
         autoState.fingerDown = true;
