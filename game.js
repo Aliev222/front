@@ -802,7 +802,7 @@ const SOCIAL_TASKS = [
     {
         id: 'telegram_sub',
         name: 'Telegram',
-        icon: '??',
+        icon: '✈️',
         image: 'imgg/skins/telega.png',
         colorClass: 'telegram',
         link: 'https://t.me/Spirit_cliker',
@@ -811,7 +811,7 @@ const SOCIAL_TASKS = [
     {
         id: 'tiktok_sub',
         name: 'TikTok',
-        icon: '??',
+        icon: '🎵',
         image: 'imgg/skins/tiktok.png',
         colorClass: 'tiktok',
         link: 'https://www.tiktok.com/@spirit.cliker?_r=1&_t=ZG-94zyH9Al2Fl',
@@ -820,7 +820,7 @@ const SOCIAL_TASKS = [
     {
         id: 'instagram_sub',
         name: 'Instagram',
-        icon: '??',
+        icon: '📸',
         image: 'imgg/skins/insta.png',
         colorClass: 'instagram',
         link: 'https://www.instagram.com/spirit_cliker/',
@@ -1815,24 +1815,24 @@ function trackTournamentToastState(rank, topLimit) {
 // ==================== ДОСТИЖЕНИЯ ====================
 const ACHIEVEMENTS_KEY = 'ryohoAchievements';
 const ACHIEVEMENTS = [
-    { id: 'click_100',    title: 'Warm Up',            description: 'Make 100 taps',         icon: '??', condition: (s) => s.clicks >= 100,    reward: 1000 },
-    { id: 'click_500',    title: 'Rhythm',             description: 'Make 500 taps',         icon: '??', condition: (s) => s.clicks >= 500,    reward: 2000 },
-    { id: 'click_1000',   title: 'Experienced Clicker',description: 'Make 1000 taps',        icon: '??', condition: (s) => s.clicks >= 1000,   reward: 5000 },
-    { id: 'click_5000',   title: 'Flow',               description: 'Make 5000 taps',        icon: '??', condition: (s) => s.clicks >= 5000,   reward: 12000 },
-    { id: 'click_25000',  title: 'Tap Master',         description: 'Make 25000 taps',       icon: '??', condition: (s) => s.clicks >= 25000,  reward: 40000 },
+    { id: 'click_100',    title: 'Warm Up',            description: 'Make 100 taps',         icon: '🟢', condition: (s) => s.clicks >= 100,    reward: 1000 },
+    { id: 'click_500',    title: 'Rhythm',             description: 'Make 500 taps',         icon: '🎯', condition: (s) => s.clicks >= 500,    reward: 2000 },
+    { id: 'click_1000',   title: 'Experienced Clicker',description: 'Make 1000 taps',        icon: '🔥', condition: (s) => s.clicks >= 1000,   reward: 5000 },
+    { id: 'click_5000',   title: 'Flow',               description: 'Make 5000 taps',        icon: '🌊', condition: (s) => s.clicks >= 5000,   reward: 12000 },
+    { id: 'click_25000',  title: 'Tap Master',         description: 'Make 25000 taps',       icon: '🏆', condition: (s) => s.clicks >= 25000,  reward: 40000 },
 
-    { id: 'upgrade_5',    title: 'Engineer',           description: 'Buy 5 upgrades',        icon: '???', condition: (s) => s.upgrades >= 5,   reward: 2000 },
-    { id: 'upgrade_15',   title: 'Architect',          description: 'Buy 15 upgrades',       icon: '??', condition: (s) => s.upgrades >= 15,  reward: 8000 },
-    { id: 'upgrade_30',   title: 'System Builder',     description: 'Buy 30 upgrades',       icon: '??', condition: (s) => s.upgrades >= 30,  reward: 20000 },
+    { id: 'upgrade_5',    title: 'Engineer',           description: 'Buy 5 upgrades',        icon: '🛠️', condition: (s) => s.upgrades >= 5,   reward: 2000 },
+    { id: 'upgrade_15',   title: 'Architect',          description: 'Buy 15 upgrades',       icon: '🏗️', condition: (s) => s.upgrades >= 15,  reward: 8000 },
+    { id: 'upgrade_30',   title: 'System Builder',     description: 'Buy 30 upgrades',       icon: '🧠', condition: (s) => s.upgrades >= 30,  reward: 20000 },
 
-    { id: 'level_33',     title: 'Silver Gate',        description: 'Reach level 33',         icon: '??', condition: (s) => s.level >= 33,     reward: 5000 },
-    { id: 'level_66',     title: 'Gold Pulse',         description: 'Reach level 66',         icon: '??', condition: (s) => s.level >= 66,     reward: 12000 },
+    { id: 'level_33',     title: 'Silver Gate',        description: 'Reach level 33',         icon: '🔓', condition: (s) => s.level >= 33,     reward: 5000 },
+    { id: 'level_66',     title: 'Gold Pulse',         description: 'Reach level 66',         icon: '⚡', condition: (s) => s.level >= 66,     reward: 12000 },
 
-    { id: 'referral_1',   title: 'First Friend',       description: 'Invite 1 friend',       icon: '??', condition: (s) => s.referrals >= 1,  reward: 2000 },
-    { id: 'referral_5',   title: 'Popular',            description: 'Invite 5 friends',      icon: '??', condition: (s) => s.referrals >= 5,  reward: 10000 },
-    { id: 'referral_15',  title: 'Ambassador',         description: 'Invite 15 friends',     icon: '??', condition: (s) => s.referrals >= 15, reward: 25000 },
+    { id: 'referral_1',   title: 'First Friend',       description: 'Invite 1 friend',       icon: '👥', condition: (s) => s.referrals >= 1,  reward: 2000 },
+    { id: 'referral_5',   title: 'Popular',            description: 'Invite 5 friends',      icon: '🤝', condition: (s) => s.referrals >= 5,  reward: 10000 },
+    { id: 'referral_15',  title: 'Ambassador',         description: 'Invite 15 friends',     icon: '🌐', condition: (s) => s.referrals >= 15, reward: 25000 },
 
-    { id: 'ads_5',        title: 'Supporter',          description: 'Watch 5 videos',        icon: '??', condition: (s) => s.adsWatched >= 5, reward: 5000 }
+    { id: 'ads_5',        title: 'Supporter',          description: 'Watch 5 videos',        icon: '🎥', condition: (s) => s.adsWatched >= 5, reward: 5000 }
 ];
 
 function loadAchievementsFromStorage() {
@@ -4123,20 +4123,20 @@ function updateSettingsUI() {
     const lang = normalizeUiLanguage(State.settings.language || UI_LANG);
     
     setToggle('themeTrack', isNight);
-    setIcon('themeIcon', isNight ? '??' : '??');
+    setIcon('themeIcon', isNight ? '🌙' : '☀️');
     setLabel('themeLabel', isNight ? t('common.night') : t('common.day'));
     setLabel('languageLabel', lang === 'ru' ? t('common.russian') : t('common.english'));
     
     setToggle('soundTrack', soundOn);
-    setIcon('soundIcon', soundOn ? '??' : '??');
+    setIcon('soundIcon', soundOn ? '🔊' : '🔇');
     setLabel('soundLabel', soundOn ? t('common.on') : t('common.off'));
 
     setToggle('musicTrack', musicOn);
-    setIcon('musicIcon', musicOn ? '??' : '??');
+    setIcon('musicIcon', musicOn ? '🎵' : '🔇');
     setLabel('musicLabel', musicOn ? t('common.on') : t('common.off'));
     
     setToggle('vibTrack', vibOn);
-    setIcon('vibIcon', vibOn ? '??' : '??');
+    setIcon('vibIcon', vibOn ? '📳' : '📴');
     setLabel('vibLabel', vibOn ? t('common.on') : t('common.off'));
 
     document.getElementById('lang-en-btn')?.classList.toggle('active', lang === 'en');

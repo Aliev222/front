@@ -88,7 +88,9 @@
                         store.set('temp.lastStateUpdatedAtMs', incomingTs);
                     }
 
-                    setCoins((data.coins || 0) + (state.temp.clickValueBuffer || 0));
+                    const incomingCoins = Number(data.coins || 0);
+                    const safeCoins = Math.max(state.game.coins, incomingCoins);
+                    setCoins(safeCoins);
                     if (typeof data.profit_per_tap === 'number') {
                         const nextTap = Math.max(1, Number(data.profit_per_tap || 0));
                         const expectedMinTap = Math.max(1, Number(state.game.level || 0) + 1);
