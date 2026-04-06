@@ -113,10 +113,10 @@ body.night-mode .achievements-title {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(139, 99, 232, 0.18);
-  background: #ffffff;
-  color: #7a7f92;
-  box-shadow: 0 6px 16px rgba(88, 97, 122, 0.08);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: none;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -131,9 +131,9 @@ body.night-mode .modal-close,
 body.night-mode .skins-close,
 body.night-mode .achievements-close,
 body.night-mode .detail-close {
-  background: #1f2028;
-  color: #d8d9e6;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
 
 .modal-close:active,
@@ -142,7 +142,7 @@ body.night-mode .detail-close {
 .detail-close:active {
   transform: scale(0.92);
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-inverse);
 }
 
 /* ── Shared Content ───────────────────────────────────── */
@@ -159,11 +159,8 @@ body.night-mode .detail-close {
 #skins-screen .skins-modal,
 #achievements-screen .achievements-modal,
 #wallet-screen .wallet-modal-shell {
-  background:
-    radial-gradient(circle at top right, rgba(127, 73, 180, 0.14), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(127, 73, 180, 0.08), transparent 40%),
-    rgba(255, 255, 255, 0.96);
-  border: 1.5px solid rgba(127, 73, 180, 0.7);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 body.night-mode #friends-screen > .glass,
@@ -173,11 +170,8 @@ body.night-mode #daily-screen .daily-modal-shell,
 body.night-mode #skins-screen .skins-modal,
 body.night-mode #achievements-screen .achievements-modal,
 body.night-mode #wallet-screen .wallet-modal-shell {
-  background:
-    radial-gradient(circle at top right, rgba(161, 126, 255, 0.16), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(118, 89, 209, 0.14), transparent 40%),
-    rgba(22, 24, 32, 0.96);
-  border-color: rgba(176, 145, 255, 0.8);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 #friends-screen.active,

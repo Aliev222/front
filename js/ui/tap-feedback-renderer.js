@@ -40,6 +40,7 @@
                 effect.style.left = `${clientX}px`;
                 effect.style.top = `${clientY}px`;
                 effect.style.transform = 'translate(-50%, -50%)';
+                effect.style.position = 'fixed';
                 effect.style.color = tapColor;
                 effect.style.fontSize = isAutoTap ? '22px' : '28px';
                 effect.style.fontWeight = isAutoTap ? '700' : 'bold';

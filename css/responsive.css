@@ -484,4 +484,9 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.2s !important;
   }
+  /* keep fund pulse visible even with reduce motion */
+  .top-meta-dot {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
