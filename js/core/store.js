@@ -21,6 +21,8 @@
             },
             game: {
                 coins: 0,
+                coinsConfirmed: 0,
+                coinsOptimisticDelta: 0,
                 energy: 500,
                 maxEnergy: 500,
                 profitPerTap: 1,

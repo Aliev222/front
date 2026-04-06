@@ -1,11 +1,16 @@
 (function initSpiritClickDomain(global) {
     function createClickDomain({ store, state, userId, API, setCoins, applyBoostStateFromPayload, applyServerEnergySnapshot, updateUI, fullSyncWithServer }) {
         function setCoinsValue(next) {
+            store.set('game.coinsConfirmed', next);
+            store.set('game.coinsOptimisticDelta', 0);
             store.set('game.coins', next);
         }
 
         function addCoins(delta) {
-            store.set('game.coins', state.game.coins + delta);
+            const nextDelta = state.game.coinsOptimisticDelta + delta;
+            const nextDisplay = state.game.coinsConfirmed + nextDelta;
+            store.set('game.coinsOptimisticDelta', nextDelta);
+            store.set('game.coins', nextDisplay);
         }
 
         function computeTapPreviewGain({ isMegaBoostActive, isDailyInfiniteEnergyActive, isGhostBoostActive, isTaskTapBoostActive, ghostBoostMultiplier }) {
@@ -79,49 +84,71 @@
                 if (data.success) {
                     store.set('temp.pendingClickBatchId', null);
 
-                    const incomingTs = data.state_updated_at || data.state_version || 0;
-                    const currentTs = state.temp.lastStateUpdatedAtMs || 0;
-                    if (incomingTs > 0 && incomingTs <= currentTs) {
-                        return;
-                    }
-                    if (incomingTs > 0) {
-                        store.set('temp.lastStateUpdatedAtMs', incomingTs);
-                    }
+                const incomingTs = data.state_updated_at || data.state_version || 0;
+                const currentTs = state.temp.lastStateUpdatedAtMs || 0;
+                if (incomingTs > 0 && incomingTs <= currentTs) {
+                    const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+                    const nextDisplay = state.game.coinsConfirmed + nextDelta;
+                    store.set('game.coinsOptimisticDelta', nextDelta);
+                    store.set('game.coins', nextDisplay);
+                    return;
+                }
+                if (incomingTs > 0) {
+                    store.set('temp.lastStateUpdatedAtMs', incomingTs);
+                }
 
-                    const incomingCoins = Number(data.coins || 0);
-                    const safeCoins = Math.max(state.game.coins, incomingCoins);
-                    setCoins(safeCoins);
-                    if (typeof data.profit_per_tap === 'number') {
-                        const nextTap = Math.max(1, Number(data.profit_per_tap || 0));
-                        const expectedMinTap = Math.max(1, Number(state.game.level || 0) + 1);
-                        if (nextTap >= expectedMinTap) {
-                            store.set('game.profitPerTap', nextTap);
-                        }
+                const incomingCoins = Number(data.coins || 0);
+                const nextConfirmed = incomingCoins;
+                const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+                const nextDisplay = nextConfirmed + nextDelta;
+                store.set('game.coinsConfirmed', nextConfirmed);
+                store.set('game.coinsOptimisticDelta', nextDelta);
+                store.set('game.coins', nextDisplay);
+                
+                if (typeof data.profit_per_tap === 'number') {
+                    const nextTap = Math.max(1, Number(data.profit_per_tap || 0));
+                    const expectedMinTap = Math.max(1, Number(state.game.level || 0) + 1);
+                    if (nextTap >= expectedMinTap) {
+                        store.set('game.profitPerTap', nextTap);
                     }
-                    store.set('game.profitPerHour', data.profit_per_hour ?? state.game.profitPerHour);
-                    applyBoostStateFromPayload(data);
+                }
+                store.set('game.profitPerHour', data.profit_per_hour ?? state.game.profitPerHour);
+                applyBoostStateFromPayload(data);
 
-                    store.set('temp.pendingEnergySpend', Math.max(0, state.temp.pendingEnergySpend - pendingSpendForThisBatch));
+                const actualEnergySpent = typeof data.effective_clicks === 'number' ? data.effective_clicks : pendingSpendForThisBatch;
+                store.set('temp.pendingEnergySpend', Math.max(0, state.temp.pendingEnergySpend - actualEnergySpent));
                     applyServerEnergySnapshot(data);
                     updateUI();
                 }
-            } catch (err) {
-                if (err?.status === 409) {
-                    store.set('temp.pendingClickBatchId', null);
-                    store.set('temp.pendingEnergySpend', Math.max(0, state.temp.pendingEnergySpend - pendingSpendForThisBatch));
-                    await fullSyncWithServer();
-                    return;
-                }
-                if (err?.status === 500 || err?.status === 502 || err?.status === 503 || err?.status === 504) {
-                    console.error('Click batch server error:', err);
-                    store.set('temp.clickBuffer', state.temp.clickBuffer + clicks);
-                    store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + optimisticGain);
-                    return;
-                }
-                console.error('Click batch error:', err);
+        } catch (err) {
+            if (err?.status === 409) {
+                store.set('temp.pendingClickBatchId', null);
+                const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+                const nextDisplay = state.game.coinsConfirmed + nextDelta;
+                store.set('game.coinsOptimisticDelta', nextDelta);
+                store.set('game.coins', nextDisplay);
+                store.set('temp.pendingEnergySpend', 0);
+                await fullSyncWithServer();
+                return;
+            }
+            if (err?.status === 500 || err?.status === 502 || err?.status === 503 || err?.status === 504) {
+                console.error('Click batch server error:', err);
                 store.set('temp.clickBuffer', state.temp.clickBuffer + clicks);
                 store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + optimisticGain);
-            } finally {
+                const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+                const nextDisplay = state.game.coinsConfirmed + nextDelta;
+                store.set('game.coinsOptimisticDelta', nextDelta);
+                store.set('game.coins', nextDisplay);
+                return;
+            }
+            console.error('Click batch error:', err);
+            store.set('temp.clickBuffer', state.temp.clickBuffer + clicks);
+            store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + optimisticGain);
+            const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+            const nextDisplay = state.game.coinsConfirmed + nextDelta;
+            store.set('game.coinsOptimisticDelta', nextDelta);
+            store.set('game.coins', nextDisplay);
+        } finally {
                 store.set('temp.clickBatchInFlight', false);
             }
         }
