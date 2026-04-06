@@ -50,6 +50,7 @@ body.night-mode .space-bg {
 
 .top-meta-bar,
 .control-btn,
+.control-btns,
 .stat-pill,
 .side-action-btn,
 .click-button,
@@ -70,7 +71,7 @@ body.night-mode .space-bg {
   height: 50px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 16px;
   z-index: 100;
   max-width: 430px;
@@ -86,7 +87,8 @@ body.night-mode .space-bg {
 }
 
 .top-meta-right {
-  align-items: flex-end;
+  align-items: flex-start;
+  margin-left: 12px;
 }
 
 .top-meta-fund,
@@ -110,29 +112,45 @@ body.night-mode .space-bg {
 
 .game-stage-controls {
   position: fixed;
-  top: 50px;
-  left: 0;
-  right: 0;
+  top: 6px;
+  left: 51%;
+  transform: translateX(-50%);
+  width: 100%;
   max-width: 430px;
-  margin: 0 auto;
-  padding: 12px 16px;
+  height: 37px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  z-index: 50;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: auto;
+  z-index: 120;
 }
 
 .game-stage-controls-left,
 .game-stage-controls-right {
   display: flex;
-  gap: 15px;
-  
+  gap: 8px;
+  pointer-events: auto;
 }
 
 .control-btn {
-  width: 65px;
-  height: 42px;
-  border-radius: 14px;
+  width: 40px;
+  height: 35px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--duration-fast) var(--ease-bounce),
+              box-shadow var(--duration-fast) var(--ease-smooth),
+              background var(--duration-fast) var(--ease-smooth);
+}
+.control-btns {
+  width: 40px;
+  height: 35px;
+  border-radius: 10px 1px 10px 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,16 +190,19 @@ body.night-mode .space-bg {
 .control-btn.has-notification .daily-gift-dot {
   display: block;
 }
+.control-btns.has-notification .daily-gift-dot {
+  display: block;
+}
 
 .main-screen-skeleton {
   position: fixed;
   top: 50px;
   left: 0;
   right: 0;
-  bottom: 110px;
+  bottom: 1px;
   max-width: 430px;
   margin: 0 auto;
-  padding: 60px 16px 16px;
+  padding: 10px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -200,7 +221,6 @@ body.night-mode .space-bg {
   border-radius: 16px;
   padding: 12px;
   display: flex;
-
   align-items: center;
   gap: 4px;
   height: 50px;
@@ -260,6 +280,7 @@ body.night-mode .space-bg {
   min-height: 0;
   align-items: center;
   justify-content: center;
+  margin: 0 auto;
   gap: 16px;
   position: relative;
   
@@ -270,15 +291,16 @@ body.night-mode .space-bg {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .click-button {
-  width: 300px !important;
-  height: 300px !important;
-  max-width: 300px !important;
-  max-height: 300px !important;
-  min-width: 300px !important;
-  min-height: 300px !important;
+  width: clamp(200px, 68vw, 320px) !important;
+  height: clamp(200px, 68vw, 320px) !important;
+  max-width: clamp(200px, 68vw, 320px) !important;
+  max-height: clamp(200px, 68vw, 320px) !important;
+  min-width: clamp(200px, 60vw, 320px) !important;
+  min-height: clamp(200px, 60vw, 320px) !important;
   border-radius: 50% !important;
   align-items: center !important;
   justify-content: center !important;
@@ -327,7 +349,7 @@ body.night-mode .space-bg {
   gap: 12px;
   position: absolute;
   right: -3px;
-  bottom: 60px;
+
 }
 
 .side-action-btn {
@@ -531,6 +553,7 @@ body.night-mode .space-bg {
 
 body.night-mode .top-meta-bar,
 body.night-mode .control-btn,
+body.night-mode .control-btns,
 body.night-mode .stat-pill,
 body.night-mode .side-action-btn,
 body.night-mode .click-button,
