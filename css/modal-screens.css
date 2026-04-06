@@ -70,6 +70,20 @@
   gap: var(--gap-base);
   width: 100%;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.skins-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.skins-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.skins-grid::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 2px;
 }
 
 .skin-card {
@@ -821,6 +835,8 @@ body.night-mode .daily-skin-teaser { background: var(--color-surface); }
 #games-screen .games-hero {
   margin-bottom: var(--space-3);
   padding: var(--space-3) var(--space-4);
+  background-color: var(--nav-bg);
+  width: 95%;
 }
 
 #games-screen .games-hero-title { font-size: var(--fs-md); line-height: var(--lh-snug); }
