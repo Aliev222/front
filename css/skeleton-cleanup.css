@@ -22,6 +22,19 @@ body.night-mode .space-bg {
   background: var(--tone-60) !important;
 }
 
+/* GPU hint for frequently animated fixed layers */
+.top-meta-bar,
+.game-stage-controls,
+.stat-pill,
+.click-button,
+.upgrade-panel,
+.nav-bar,
+.side-actions,
+.control-btn {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 .space-bg {
   box-shadow: none !important;
 }
