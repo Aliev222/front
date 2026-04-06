@@ -55,11 +55,11 @@ body.night-mode .space-bg {
 .click-button,
 .upgrade-panel,
 .nav-bar {
-  background: var(--tone-30) !important;
-  border: 1px solid rgba(16, 54, 125, 0.12) !important;
-  box-shadow:
-    0 12px 28px rgba(16, 54, 125, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
 }
 
 .top-meta-bar {
@@ -96,14 +96,14 @@ body.night-mode .space-bg {
   gap: 4px;
   font-size: 14px;
   font-weight: 800;
-  color: var(--tone-10);
+  color: var(--color-text) !important;
 }
 
 .top-meta-fund-label,
 .top-meta-timer {
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted) !important;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -147,6 +147,7 @@ body.night-mode .space-bg {
 .upgrade-panel-btn:active,
 .nav-bar .nav-item:active {
   transform: translateY(2px) scale(0.98) !important;
+  box-shadow: none !important;
 }
 
 .control-icon {
@@ -207,14 +208,14 @@ body.night-mode .space-bg {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--tone-10);
+  color: var(--color-text-muted) !important;
 }
 
 .stat-pill-value {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 700;
-  color: var(--tone-10);
+  color: var(--color-text) !important;
 }
 
 .energy-line {
@@ -244,7 +245,7 @@ body.night-mode .space-bg {
   font-family: var(--font-mono);
   font-size: clamp(42px, 11vw, 52px);
   font-weight: 900;
-  color: var(--tone-10);
+  color: var(--color-text);
   line-height: 1;
   letter-spacing: -0.02em;
   text-shadow: 0 0 20px rgba(16, 54, 125, 0.14);
@@ -279,7 +280,12 @@ body.night-mode .space-bg {
   justify-content: center !important;
   cursor: pointer !important;
   transition: transform var(--duration-fast) var(--ease-bounce),
-              box-shadow var(--duration-fast) var(--ease-smooth) !important;
+              filter var(--duration-fast) var(--ease-smooth) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
 }
 
 .click-button::before,
@@ -292,18 +298,14 @@ body.night-mode .space-bg {
 .click-button:active,
 .click-button.is-pressed {
   transform: translateY(4px) scale(0.985) !important;
-  box-shadow:
-    0 16px 34px rgba(16, 54, 125, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  filter: none !important;
+  box-shadow: none !important;
+  filter: saturate(1.02) !important;
 }
 
 .click-button.is-low-energy,
 .click-button.is-empty-energy {
   opacity: 1 !important;
-  box-shadow:
-    0 12px 26px rgba(16, 54, 125, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
 }
 
 .click-image {
@@ -470,15 +472,16 @@ body.night-mode .space-bg {
   border-radius: 14px !important;
   border: 0 !important;
   background: transparent !important;
-  color: var(--tone-10) !important;
+  color: var(--color-text) !important;
   filter: none !important;
   opacity: 1 !important;
 }
 
 .nav-bar .nav-item.active {
   background: var(--tone-10) !important;
-  color: var(--tone-10-contrast) !important;
-  box-shadow: 0 10px 24px rgba(16, 54, 125, 0.24) !important;
+  color: var(--color-text-inverse) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 144, 204, 0.28) !important;
 }
 
 .nav-bar .nav-item.nav-item-wallet::before,
@@ -496,7 +499,7 @@ body.night-mode .space-bg {
 .top-meta-timer,
 .stat-pill-label,
 .stat-pill-value {
-  color: inherit;
+  color: inherit !important;
 }
 
 .nav-bar .nav-item span:last-child {
@@ -532,4 +535,12 @@ body.night-mode .nav-bar {
   box-shadow:
     0 14px 32px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+/* hide fixed panels when any modal is open */
+body.modal-open .upgrade-panel,
+body.modal-open .nav-bar,
+body.modal-open [data-ui="rebirth-panel"],
+body.modal-open #rebirth-panel {
+  display: none !important;
 }
