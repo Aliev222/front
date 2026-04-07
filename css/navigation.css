@@ -4,10 +4,10 @@
 
 /* ── Bottom Navigation Bar ────────────────────────────── */
 .nav-bar {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--gap-sm);
   padding: 6px var(--space-3) 8px;
   min-height: var(--nav-h);
@@ -31,7 +31,7 @@
 .nav-bar .nav-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   gap: 2px;
   padding: 6px var(--space-1);
@@ -43,6 +43,7 @@
   cursor: pointer;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
   transition: transform var(--duration-normal) var(--ease-smooth),
               color var(--duration-normal) var(--ease-smooth),
               filter var(--duration-normal) var(--ease-smooth),
