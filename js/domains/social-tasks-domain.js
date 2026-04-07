@@ -143,7 +143,7 @@
                 deps.persistSocialTasksState();
 
                 if (typeof response.coins === 'number') {
-                    deps.setCoins('claimSocialTask', response.coins, response);
+                    deps.applyNonClickCoinsSnapshot('claimSocialTask', response);
                 }
 
                 if (response.skin_id) {

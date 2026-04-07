@@ -2084,6 +2084,47 @@ function addCoins(_label, delta, _payload = null) {
     clickDomain.addCoins(delta);
 }
 
+function applyNonClickCoinsSnapshot(source, response) {
+    if (!response || typeof response.coins !== 'number') {
+        return;
+    }
+
+    const incomingCoins = Number(response.coins || 0);
+    const incomingTs = response.state_updated_at || response.state_version || 0;
+    const currentTs = State.temp.lastStateUpdatedAtMs || 0;
+    const currentDelta = State.game.coinsOptimisticDelta || 0;
+
+    // Stale response check: ignore if older than current state
+    if (incomingTs > 0 && incomingTs < currentTs) {
+        if (DEBUG) {
+            console.log(`applyNonClickCoinsSnapshot: ignoring stale response from ${source}`, {
+                incomingTs,
+                currentTs,
+                incomingCoins
+            });
+        }
+        return;
+    }
+
+    // Fresh response: update confirmed base, preserve optimistic delta
+    Store.set('game.coinsConfirmed', incomingCoins);
+    Store.set('game.coins', incomingCoins + currentDelta);
+
+    // Update ordering timestamp
+    if (incomingTs > 0) {
+        Store.set('temp.lastStateUpdatedAtMs', incomingTs);
+    }
+
+    if (DEBUG) {
+        console.log(`applyNonClickCoinsSnapshot: applied from ${source}`, {
+            incomingCoins,
+            currentDelta,
+            displayCoins: incomingCoins + currentDelta,
+            incomingTs
+        });
+    }
+}
+
 Object.assign(StateActions, {
     setCoins(value) {
         Store.set('game.coins', Number(value || 0));
@@ -2882,17 +2923,13 @@ function openDailyRewards() {
 }
 
 async function claimDailyReward() {
-    if (!userId || !State.daily.claimAvailable) return;
-
-    try {
         const actionButton = document.getElementById('dailyRewardAction');
-        const prevText = actionButton?.textContent || '';
-        if (actionButton) {
-            actionButton.textContent = t('common.loading');
-            actionButton.disabled = true;
-        }
+        if (!actionButton) return;
+        actionButton.disabled = true;
+        actionButton.textContent = '...';
+
         const response = await API.post('/api/daily-reward/claim', { user_id: userId });
-        setCoins('claimDailyReward', response.coins ?? State.game.coins, response);
+        applyNonClickCoinsSnapshot('claimDailyReward', response);
         if (response.skin_id) {
             State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
             await loadSkinsList();
@@ -2903,7 +2940,7 @@ async function claimDailyReward() {
             State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at;
         }
         updateUI();
-        showToast(`?? +${formatNumber(response.coins_reward || 0)}`);
+        showToast(`🎁 +${formatNumber(response.coins_reward || 0)}`);
         await loadDailyRewardStatus();
     } catch (err) {
         showToast(err?.detail || tr('toasts.serverError'), true);
@@ -3623,7 +3660,7 @@ async function upgradeBoost(type, internal = false) {
         });
         
         if (result) {
-            setCoins('upgradeBoost', result.coins, result);
+            applyNonClickCoinsSnapshot('upgradeBoost', result);
             State.game.level = Number(
                 result.level
                 ?? result.new_level
@@ -3704,15 +3741,16 @@ async function upgradeAll(internal = false) {
 
         nextUpgradeRequestAt = Date.now() + UPGRADE_REQUEST_GAP_MS;
         const result = await API.post('/api/upgrade-all', {
-            user_id: userId
+            user_id: userId,
+            boost_type: 'global'
         });
-
-        if (!result?.success) {
+        
+        if (!result) {
             showToast(tr('toasts.upgradeApplyError'), true);
             return;
         }
-
-        setCoins('upgradeAll', result.coins, result);
+        
+        applyNonClickCoinsSnapshot('upgradeAll', result);
         State.game.level = Number(
             result.level
             ?? result.new_level
@@ -3898,7 +3936,7 @@ socialTasksDomain = window.SpiritSocialTasksDomain.createSocialTasksDomain({
     renderVideoTasks,
     showToast,
     tr,
-    setCoins,
+    applyNonClickCoinsSnapshot,
     normalizeOwnedSkinIds,
     loadSkinsList,
     renderSkins,
@@ -4072,7 +4110,7 @@ async function watchVideoForTask(taskId) {
         console.log(`AD_TRACE_TASK_CLAIM_END taskId=${taskId} coins=${response?.coins}`);
 
         if (typeof response?.coins === 'number') {
-            setCoins('watchVideoForTask', response.coins, response);
+            applyNonClickCoinsSnapshot('watchVideoForTask', response);
             debugLog('ads', 'reward applied in UI', { flow: 'video_task', taskId: task.id, coins: response.coins });
         }
 
@@ -7424,8 +7462,8 @@ async function checkOfflinePassiveIncome({ silent = false } = {}) {
     try {
         const data = await API.post('/api/passive-income', { user_id: userId });
         if (data.income > 0) {
-            // Apply passive income as a delta to avoid overwriting newer realtime coins.
-            addCoins('passiveIncome', data.income, data);
+            // Apply passive income as authoritative snapshot, preserving optimistic delta
+            applyNonClickCoinsSnapshot('passiveIncome', data);
             updateUI();
             if (!silent) {
                 showToast(data.message || `+${formatNumber(data.income)} passive income`);
