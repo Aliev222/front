@@ -3011,7 +3011,18 @@ async function fullSyncWithServer() {
         StateActions.applyProgressSnapshot(data);
 
         applyBoostStateFromPayload(data);
-        applyServerEnergySnapshot(data);
+        
+        // Apply energy only if timestamp is newer than current energy sync
+        if (typeof data.energy === 'number') {
+            const energyTs = incomingTs;
+            const currentEnergyTs = State.temp.serverEnergySyncedAtMs || 0;
+            if (energyTs > currentEnergyTs) {
+                applyServerEnergySnapshot(data);
+            }
+        } else {
+            applyServerEnergySnapshot(data);
+        }
+        
         updateUI();
     } catch (e) {
         console.error('Full sync error:', e);
@@ -5294,6 +5305,7 @@ async function recoverEnergyWithAd() {
         console.log(`AD_TRACE_ENERGY_CLAIM_END energy=${data?.energy}`);
 
         applyServerEnergySnapshot(data);
+        State.temp.pendingEnergySpend = 0;
         debugLog('ads', 'reward applied in UI', { flow: 'energy_refill', energy: data?.energy, maxEnergy: data?.max_energy });
         setAdCooldownFromIso('energy_refill', data?.cooldown_until || null, Number(data?.cooldown_minutes || 10));
         updateUI();
