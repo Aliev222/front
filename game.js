@@ -1147,43 +1147,6 @@ async function ensureApiSession(forceRefresh = false) {
         apiSessionRefreshPromise = null;
     }
 }
-    if (apiSessionRefreshPromise) {
-        done(true, { source: 'inflight' });
-        return apiSessionRefreshPromise;
-    }
-
-    apiSessionRefreshPromise = (async () => {
-        return runWithRetry(async () => {
-            const res = await originalFetch(`${CONFIG.API_URL}/api/auth/session`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Telegram-Init-Data': telegramInitData,
-                    'X-Telegram-Platform': telegramPlatform || 'unknown',
-                    'X-Client-Mobile': mobileAccessState.allowed ? '1' : '0'
-                }
-            });
-            if (!res.ok) {
-                persistApiSession('', 0);
-                const err = new Error(`Session auth failed: HTTP ${res.status}`);
-                err.status = res.status;
-                throw err;
-            }
-            const data = await res.json();
-            const expiresAtMs = Number(data?.expires_at || 0) * 1000;
-            persistApiSession(data?.token || '', expiresAtMs);
-            return apiSessionToken;
-        }, forceRefresh ? 2 : 3, 1500);
-    })();
-
-    try {
-        const token = await apiSessionRefreshPromise;
-        done(true, { hasToken: !!token });
-        return token;
-    } finally {
-        apiSessionRefreshPromise = null;
-    }
-}
 
 // ==================== СОСТОЯНИЕ ====================
 const State = window.SpiritStore.createInitialState({
