@@ -2923,22 +2923,26 @@ function openDailyRewards() {
 }
 
 async function claimDailyReward() {
-        const actionButton = document.getElementById('dailyRewardAction');
-        if (!actionButton) return;
-        actionButton.disabled = true;
-        actionButton.textContent = '...';
+    const actionButton = document.getElementById('dailyRewardAction');
+    if (!actionButton) return;
+    actionButton.disabled = true;
+    actionButton.textContent = '...';
 
+    try {
         const response = await API.post('/api/daily-reward/claim', { user_id: userId });
         applyNonClickCoinsSnapshot('claimDailyReward', response);
+
         if (response.skin_id) {
             State.skins.owned = normalizeOwnedSkinIds([...(State.skins.owned || []), response.skin_id]);
             await loadSkinsList();
             renderSkins();
             updateCollectionProgress();
         }
+
         if (response.infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at;
         }
+
         updateUI();
         showToast(`🎁 +${formatNumber(response.coins_reward || 0)}`);
         await loadDailyRewardStatus();
