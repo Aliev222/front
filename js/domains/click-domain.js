@@ -66,7 +66,7 @@
             if (clicks === 0 || !userId() || state.temp.clickBatchInFlight) return;
 
             const optimisticGain = state.temp.clickValueBuffer;
-            const batchId = state.temp.pendingClickBatchId || `${userId()}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+            const batchId = `${userId()}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
             const pendingSpendForThisBatch = state.temp.pendingEnergySpend;
 
             store.set('temp.clickBuffer', 0);
@@ -86,9 +86,25 @@
 
                 const incomingTs = data.state_updated_at || data.state_version || 0;
                 const currentTs = state.temp.lastStateUpdatedAtMs || 0;
+                
+                // Debug logging for coin balance issues
+                console.log('[CLICK] Response received:', {
+                    batchId,
+                    clicks,
+                    optimisticGain,
+                    incomingCoins: data.coins,
+                    currentConfirmed: state.game.coinsConfirmed,
+                    currentDelta: state.game.coinsOptimisticDelta,
+                    incomingTs,
+                    currentTs,
+                    isStale: incomingTs > 0 && incomingTs <= currentTs
+                });
+                
                 if (incomingTs > 0 && incomingTs <= currentTs) {
+                    // Stale response - only subtract optimistic delta, don't update confirmed
                     const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
                     const nextDisplay = state.game.coinsConfirmed + nextDelta;
+                    console.log('[CLICK] Stale response ignored, delta adjusted:', { nextDelta, nextDisplay });
                     store.set('game.coinsOptimisticDelta', nextDelta);
                     store.set('game.coins', nextDisplay);
                     return;
@@ -101,6 +117,14 @@
                 const nextConfirmed = incomingCoins;
                 const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
                 const nextDisplay = nextConfirmed + nextDelta;
+                
+                console.log('[CLICK] Balance updated:', {
+                    nextConfirmed,
+                    nextDelta,
+                    nextDisplay,
+                    diff: nextDisplay - state.game.coins
+                });
+                
                 store.set('game.coinsConfirmed', nextConfirmed);
                 store.set('game.coinsOptimisticDelta', nextDelta);
                 store.set('game.coins', nextDisplay);
