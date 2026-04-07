@@ -2384,19 +2384,43 @@ async function loadSkinsList() {
 function isDailyInfiniteEnergyActive() {
     if (!State.daily.infiniteEnergyExpiresAt) return false;
     const expiresAt = parseServerDate(State.daily.infiniteEnergyExpiresAt);
-    if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
-    return expiresAt.getTime() > Date.now();
+    if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
+        State.daily.infiniteEnergyExpiresAt = null;
+        return false;
+    }
+    const isActive = expiresAt.getTime() > Date.now();
+    // Auto-cleanup expired state
+    if (!isActive) {
+        State.daily.infiniteEnergyExpiresAt = null;
+    }
+    return isActive;
 }
 
 function isMegaBoostActive() {
-    return !!(boostEndTime && boostEndTime > new Date());
+    if (!boostEndTime) return false;
+    const isActive = boostEndTime > new Date();
+    // Auto-cleanup expired state
+    if (!isActive) {
+        boostEndTime = null;
+    }
+    return isActive;
 }
 
 function isGhostBoostActive() {
     if (!State.temp.ghostBoostExpiresAt) return false;
     const expiresAt = parseServerDate(State.temp.ghostBoostExpiresAt);
-    if (!expiresAt || Number.isNaN(expiresAt.getTime())) return false;
-    return expiresAt.getTime() > Date.now();
+    if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
+        State.temp.ghostBoostExpiresAt = null;
+        State.temp.ghostBoostActive = false;
+        return false;
+    }
+    const isActive = expiresAt.getTime() > Date.now();
+    // Auto-cleanup expired state
+    if (!isActive) {
+        State.temp.ghostBoostExpiresAt = null;
+        State.temp.ghostBoostActive = false;
+    }
+    return isActive;
 }
 
 function isFreeEnergyActive() {
@@ -2455,28 +2479,24 @@ function applyBoostStateFromPayload(payload) {
         if (payload.mega_boost_active && payload.mega_boost_expires_at) {
             boostEndTime = parseServerDate(payload.mega_boost_expires_at);
         } else if (!payload.mega_boost_active) {
-            if (!boostEndTime || boostEndTime <= new Date()) {
-                boostEndTime = null;
-            }
+            // Server says boost is inactive - unconditionally clear state
+            // to prevent client/server time desync issues
+            boostEndTime = null;
         }
         syncMegaBoostUi();
     }
     if (payload.daily_infinite_energy_expires_at) {
         State.daily.infiniteEnergyExpiresAt = payload.daily_infinite_energy_expires_at;
     } else if (payload.daily_infinite_energy_active === false) {
-        const localDaily = parseServerDate(State.daily.infiniteEnergyExpiresAt);
-        if (!localDaily || localDaily.getTime() <= Date.now()) {
-            State.daily.infiniteEnergyExpiresAt = null;
-        }
+        // Server says boost is inactive - unconditionally clear state
+        State.daily.infiniteEnergyExpiresAt = null;
     }
     if (typeof payload.ghost_boost_active === 'boolean') {
         if (payload.ghost_boost_active && payload.ghost_boost_expires_at) {
             setGhostBoostState(true, payload.ghost_boost_expires_at);
         } else if (!payload.ghost_boost_active) {
-            const localGhost = parseServerDate(State.temp.ghostBoostExpiresAt);
-            if (!localGhost || localGhost.getTime() <= Date.now()) {
-                setGhostBoostState(false, null);
-            }
+            // Server says boost is inactive - unconditionally clear state
+            setGhostBoostState(false, null);
         }
     }
 }
