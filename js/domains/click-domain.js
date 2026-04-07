@@ -64,9 +64,16 @@
         async function sendClickBatch() {
             const clicks = state.temp.clickBuffer;
             if (clicks === 0 || !userId() || state.temp.clickBatchInFlight) return;
+            
+            // Validate userId before sending
+            const currentUserId = userId();
+            if (!currentUserId || currentUserId <= 0) {
+                console.error('[CLICK] Invalid userId, skipping batch');
+                return;
+            }
 
             const optimisticGain = state.temp.clickValueBuffer;
-            const batchId = `${userId()}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+            const batchId = `${currentUserId}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
             const pendingSpendForThisBatch = state.temp.pendingEnergySpend;
             
             // Snapshot the optimistic delta at batch send time
@@ -79,7 +86,7 @@
 
             try {
                 const data = await API.post('/api/clicks', {
-                    user_id: userId(),
+                    user_id: currentUserId,
                     clicks,
                     batch_id: batchId
                 }, { idempotent: true });

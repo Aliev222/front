@@ -1096,12 +1096,57 @@ async function runWithRetry(task, attempts = 3, initialDelayMs = 1200) {
 }
 
 async function ensureApiSession(forceRefresh = false) {
-    const done = debugPerfStart('perf', 'auth/session', { forceRefresh });
-    if (!telegramInitData) return null;
+    const done = debugPerfStart('perf', 'ensureApiSession', { forceRefresh });
+    if (!telegramInitData) {
+        done(false, { reason: 'no_telegram_init_data' });
+        return null;
+    }
     if (!forceRefresh && apiSessionToken && apiSessionExpiresAt > Date.now() + 30000) {
         done(true, { source: 'cache' });
         return apiSessionToken;
     }
+    if (apiSessionRefreshPromise) {
+        done(true, { source: 'inflight' });
+        return apiSessionRefreshPromise;
+    }
+
+    apiSessionRefreshPromise = (async () => {
+        return runWithRetry(async () => {
+            const res = await originalFetch(`${CONFIG.API_URL}/api/auth/session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Telegram-Init-Data': telegramInitData,
+                    'X-Telegram-Platform': telegramPlatform || 'unknown',
+                    'X-Client-Mobile': mobileAccessState.allowed ? '1' : '0'
+                },
+                body: JSON.stringify({}) // Send empty body to satisfy backend
+            });
+            if (!res.ok) {
+                persistApiSession('', 0);
+                const text = await res.text().catch(() => '');
+                const err = new Error(`Session auth failed: HTTP ${res.status} ${text}`);
+                err.status = res.status;
+                throw err;
+            }
+            const data = await res.json();
+            const expiresAtMs = Number(data?.expires_at || 0) * 1000;
+            persistApiSession(data?.token || '', expiresAtMs);
+            return apiSessionToken;
+        }, forceRefresh ? 2 : 3, 1500);
+    })();
+
+    try {
+        const token = await apiSessionRefreshPromise;
+        done(true, { hasToken: !!token });
+        return token;
+    } catch (err) {
+        done(false, { error: err?.message });
+        throw err;
+    } finally {
+        apiSessionRefreshPromise = null;
+    }
+}
     if (apiSessionRefreshPromise) {
         done(true, { source: 'inflight' });
         return apiSessionRefreshPromise;
@@ -3026,7 +3071,31 @@ async function fullSyncWithServer() {
         }
         StateActions.setStateVersion(incomingTs);
 
-        setCoins('fullSyncWithServer', (data.coins || 0) + (State.temp.clickValueBuffer || 0), data);
+        // BUGFIX: Correct balance reconciliation without double count
+        // Server coins are authoritative snapshot at state_updated_at
+        // Any optimistic delta from clicks AFTER that timestamp should be preserved
+        const incomingCoins = Number(data.coins || 0);
+        const currentConfirmed = State.game.coinsConfirmed || 0;
+        const currentDelta = State.game.coinsOptimisticDelta || 0;
+        const currentDisplay = State.game.coins || 0;
+        
+        // If incoming coins >= current display, server has caught up with all our clicks
+        // Reset delta to 0 and use server coins as new confirmed base
+        if (incomingCoins >= currentDisplay) {
+            Store.set('game.coinsConfirmed', incomingCoins);
+            Store.set('game.coinsOptimisticDelta', 0);
+            Store.set('game.coins', incomingCoins);
+        }
+        // If incoming coins >= current confirmed but < current display,
+        // server has caught up partially - use server as new confirmed, keep remaining delta
+        else if (incomingCoins >= currentConfirmed) {
+            const remainingDelta = currentDisplay - incomingCoins;
+            Store.set('game.coinsConfirmed', incomingCoins);
+            Store.set('game.coinsOptimisticDelta', Math.max(0, remainingDelta));
+            Store.set('game.coins', incomingCoins + Math.max(0, remainingDelta));
+        }
+        // else: server coins are stale (< current confirmed), ignore entirely
+        
         StateActions.applyProfitSnapshot(data);
         StateActions.applyProgressSnapshot(data);
 
@@ -5180,16 +5249,10 @@ function updateOnlineCounterVisibility() {
 async function sendOnlineHeartbeat() {
     if (!userId) return;
     try {
-        const res = await fetch(`${CONFIG.API_URL}/api/online/heartbeat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(tg?.initData ? { 'X-Telegram-Init-Data': tg.initData } : {})
-            },
-            body: JSON.stringify({ user_id: userId })
+        // Use API.post to ensure Bearer token is included
+        await API.post('/api/online/heartbeat', {
+            user_id: userId
         });
-        const data = await res.json();
-        if (data.success && canSeeOnlineCounter()) setOnlineCount(data.online_now);
     } catch (err) {
         if (DEBUG) console.warn('Online heartbeat failed:', err);
     }
@@ -5324,8 +5387,10 @@ async function recoverEnergyWithAd() {
         }));
         console.log(`AD_TRACE_ENERGY_CLAIM_END energy=${data?.energy}`);
 
-        applyServerEnergySnapshot(data);
+        // BUGFIX: Clear pending energy spend BEFORE applying snapshot
+        // This ensures visual energy shows full immediately
         State.temp.pendingEnergySpend = 0;
+        applyServerEnergySnapshot(data);
         debugLog('ads', 'reward applied in UI', { flow: 'energy_refill', energy: data?.energy, maxEnergy: data?.max_energy });
         setAdCooldownFromIso('energy_refill', data?.cooldown_until || null, Number(data?.cooldown_minutes || 10));
         updateUI();
