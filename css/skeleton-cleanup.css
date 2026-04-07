@@ -247,13 +247,14 @@ body.night-mode .space-bg {
 }
 
 .stat-pill {
-  border-radius: 16px;
+  border-radius: 30px;
   padding: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
   height: 50px;
-
+  align-items: center;
+  justify-content: center;
 }
 
 .stat-pill-label {
@@ -262,6 +263,7 @@ body.night-mode .space-bg {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--color-text-muted) !important;
+  align-items: center;
 }
 
 .stat-pill-value {
@@ -269,6 +271,7 @@ body.night-mode .space-bg {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-text) !important;
+  align-items: center;
 }
 
 .energy-line {
@@ -436,7 +439,7 @@ body.modal-open .side-actions {
   max-width: 430px !important;
   width: min(calc(100% - 20px), 430px) !important;
   height: 78px !important;
-  border-radius: 18px !important;
+  border-radius: 40px 40px 10px 10px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -516,7 +519,7 @@ body.modal-open .side-actions {
   max-width: 430px !important;
   width: min(calc(100% - 20px), 430px) !important;
   height: 78px !important;
-  border-radius: 18px !important;
+  border-radius: 10px 10px 40px 40px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-around !important;
@@ -533,7 +536,7 @@ body.modal-open .side-actions {
   gap: 4px !important;
   min-width: 60px !important;
   padding: 8px !important;
-  border-radius: 14px !important;
+  border-radius: 29px !important;
   border: 0 !important;
   background: transparent !important;
   color: var(--color-text) !important;
