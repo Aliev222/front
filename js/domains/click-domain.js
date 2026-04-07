@@ -68,6 +68,9 @@
             const optimisticGain = state.temp.clickValueBuffer;
             const batchId = `${userId()}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
             const pendingSpendForThisBatch = state.temp.pendingEnergySpend;
+            
+            // Snapshot the optimistic delta at batch send time
+            const optimisticDeltaAtSend = state.game.coinsOptimisticDelta;
 
             store.set('temp.clickBuffer', 0);
             store.set('temp.clickValueBuffer', 0);
@@ -92,6 +95,7 @@
                     batchId,
                     clicks,
                     optimisticGain,
+                    optimisticDeltaAtSend,
                     incomingCoins: data.coins,
                     currentConfirmed: state.game.coinsConfirmed,
                     currentDelta: state.game.coinsOptimisticDelta,
@@ -114,14 +118,21 @@
                 }
 
                 const incomingCoins = Number(data.coins || 0);
+                
+                // Calculate how much delta was added AFTER this batch was sent
+                const deltaAddedAfterSend = state.game.coinsOptimisticDelta - optimisticDeltaAtSend;
+                
+                // New confirmed = server coins
+                // New delta = only the clicks that happened AFTER this batch
                 const nextConfirmed = incomingCoins;
-                const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
+                const nextDelta = Math.max(0, deltaAddedAfterSend);
                 const nextDisplay = nextConfirmed + nextDelta;
                 
                 console.log('[CLICK] Balance updated:', {
                     nextConfirmed,
                     nextDelta,
                     nextDisplay,
+                    deltaAddedAfterSend,
                     diff: nextDisplay - state.game.coins
                 });
                 
