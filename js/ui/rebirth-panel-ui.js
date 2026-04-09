@@ -7,9 +7,14 @@
                 return;
             }
 
-            panel.style.display = viewModel.visible ? '' : 'none';
+            const levelNode = document.querySelector('[data-ui="bottom-level"], #globalLevel');
+            const displayedLevel = Number(levelNode?.textContent || 0);
+            const hasRequiredDisplayLevel = Number.isFinite(displayedLevel) ? displayedLevel >= 101 : true;
+            const effectiveVisible = Boolean(viewModel.visible && hasRequiredDisplayLevel);
+
+            panel.style.display = effectiveVisible ? '' : 'none';
             if (mainUpgradePanel) {
-                mainUpgradePanel.style.display = viewModel.visible ? 'none' : '';
+                mainUpgradePanel.style.display = effectiveVisible ? 'none' : '';
             }
 
             const actionBtn = document.querySelector('[data-ui="rebirth-action-btn"], #rebirth-action-btn');
