@@ -3427,7 +3427,17 @@ function openSkinDetail(skinId) {
         rarityEl.textContent = skin.rarity || 'common';
         rarityEl.className = 'skin-rarity-badge ' + (skin.rarity || 'common');
         
-        document.getElementById('skin-detail-description').textContent = skin.description || tr('skinsDyn.noDescription');
+        const descriptionEl = document.getElementById('skin-detail-description');
+        const descriptionText = (skin.description || '').trim();
+        if (descriptionEl) {
+            if (descriptionText) {
+                descriptionEl.textContent = descriptionText;
+                descriptionEl.style.display = '';
+            } else {
+                descriptionEl.textContent = '';
+                descriptionEl.style.display = 'none';
+            }
+        }
         
         const bonusEl = document.getElementById('skin-detail-bonus');
         if (skin.bonus) {

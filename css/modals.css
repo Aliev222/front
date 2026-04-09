@@ -412,13 +412,14 @@ body.night-mode #wallet-screen .wallet-modal-shell {
 .skin-detail-content {
   width: 100%;
   max-width: 400px;
-  background: var(--color-surface);
-  border: 2px solid var(--color-accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 92%, #041430 8%), var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-border) 45%);
   border-radius: var(--radius-2xl);
   display: flex;
   flex-direction: column;
   position: relative;
   margin: auto;
+  box-shadow: 0 18px 44px rgba(0, 20, 45, 0.45);
 }
 
 /* ── Energy Recovery Shell ────────────────────────────── */
