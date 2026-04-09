@@ -449,7 +449,6 @@ const I18N = {
             reqLevel: 'Level {value} required',
             reqWatch: 'Watch {count} videos',
             reqWatchSkin: 'Watch {count} videos for this skin',
-            reqStars: 'Buy for {price} Stars',
             reqTon: 'Buy for {price} TON',
             reqSpecial: 'Special condition',
             noBonus: 'No bonus',
@@ -730,7 +729,6 @@ const I18N = {
             reqLevel: 'Требуется уровень {value}',
             reqWatch: 'Посмотри {count} видео',
             reqWatchSkin: 'Посмотри {count} видео для этого скина',
-            reqStars: 'Купить за {price} Stars',
             reqTon: 'Купить за {price} TON',
             reqSpecial: 'Условие: особое',
             noBonus: 'Бонус: нет',
@@ -2417,16 +2415,16 @@ function getLocalSkins() {
         { id: "retro.pngSP", name: "Day 30 Reward", image: "imgg/skins/retro.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.7 }, requirement: { type: "daily", value: 30 } },
 
         // TON skins (super, x2). All cost 1 TON.
-        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
-        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
-        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars1.pngSP", name: "Premium 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars2.pngSP", name: "Premium 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars3.pngSP", name: "Premium 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
 
-        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
-        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
-        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars4.pngSP", name: "Premium 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars5.pngSP", name: "Premium 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars6.pngSP", name: "Premium 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
 
-        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
-        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars7.pngSP", name: "Premium 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars8.pngSP", name: "Premium 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
     ];
 }
 
