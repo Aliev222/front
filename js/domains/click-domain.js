@@ -2,7 +2,9 @@
     function createClickDomain({ store, state, userId, API, setCoins, applyBoostStateFromPayload, applyServerEnergySnapshot, updateUI, fullSyncWithServer, config = {} }) {
         const clickBatchThreshold = Math.max(1, Number(config.CLICK_BATCH_FLUSH_THRESHOLD || 500));
         const clickBatchMaxWaitMs = Math.max(1000, Number(config.CLICK_BATCH_MAX_WAIT_MS || 60000));
+        const clickBatchIdleFlushMs = Math.max(120, Number(config.CLICK_BATCH_IDLE_FLUSH_MS || 300));
         let lastBatchSentAtMs = 0;
+        let idleFlushTimer = null;
 
         function setCoinsValue(next) {
             store.set('game.coinsConfirmed', next);
@@ -66,12 +68,29 @@
             }
             store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + previewGain);
             addCoins(previewGain);
+            scheduleIdleFlush();
             return { ok: true };
+        }
+
+        function scheduleIdleFlush() {
+            if (idleFlushTimer) {
+                clearTimeout(idleFlushTimer);
+            }
+            idleFlushTimer = setTimeout(() => {
+                idleFlushTimer = null;
+                if (state.temp.clickBuffer > 0 && !state.temp.clickBatchInFlight) {
+                    sendClickBatch({ force: true }).catch(() => {});
+                }
+            }, clickBatchIdleFlushMs);
         }
 
         async function sendClickBatch({ force = false } = {}) {
             const clicks = state.temp.clickBuffer;
             if (clicks === 0 || !userId() || state.temp.clickBatchInFlight) return;
+            if (idleFlushTimer) {
+                clearTimeout(idleFlushTimer);
+                idleFlushTimer = null;
+            }
 
             const nowMs = Date.now();
             const bufferStartedAtMs = Number(state.temp.clickBufferStartedAtMs || nowMs);
