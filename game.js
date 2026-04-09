@@ -411,12 +411,12 @@ const I18N = {
             skinClaimError: 'Claim error',
             skinAdProgress: '+1 video view for skin!',
             adNotConfirmed: 'You did not finish the ad or the reward was not confirmed.',
-            starsUnavailable: 'Stars payments are not available in this client',
-            starsInvoiceError: 'Failed to create payment invoice',
-            starsPending: 'Waiting for payment confirmation',
+            starsUnavailable: 'TON payment is not available in this client',
+            starsInvoiceError: 'Failed to prepare TON payment',
+            starsPending: 'Waiting for TON confirmation',
             starsCancelled: 'Payment cancelled',
-            starsFailed: 'Payment failed',
-            starsSuccess: 'Payment successful',
+            starsFailed: 'TON payment failed',
+            starsSuccess: 'TON payment successful',
             boostActive: 'Boost is already active!',
             boostFinished: 'Boost finished',
             megaBoostActivated: 'Boost activated for 3 minutes!',
@@ -450,6 +450,7 @@ const I18N = {
             reqWatch: 'Watch {count} videos',
             reqWatchSkin: 'Watch {count} videos for this skin',
             reqStars: 'Buy for {price} Stars',
+            reqTon: 'Buy for {price} TON',
             reqSpecial: 'Special condition',
             noBonus: 'No bonus',
             incomeBonus: 'x{value} income'
@@ -691,12 +692,12 @@ const I18N = {
             skinClaimError: 'Ошибка получения',
             skinAdProgress: '+1 просмотр для скина!',
             adNotConfirmed: 'Вы не досмотрели рекламу или награда не была подтверждена.',
-            starsUnavailable: 'Оплата Stars недоступна в этом клиенте',
-            starsInvoiceError: 'Не удалось создать счёт на оплату',
-            starsPending: 'Ожидаем подтверждение оплаты',
+            starsUnavailable: 'Оплата TON недоступна в этом клиенте',
+            starsInvoiceError: 'Не удалось подготовить оплату TON',
+            starsPending: 'Ожидаем подтверждение TON',
             starsCancelled: 'Оплата отменена',
-            starsFailed: 'Ошибка оплаты',
-            starsSuccess: 'Оплата прошла успешно',
+            starsFailed: 'Ошибка оплаты TON',
+            starsSuccess: 'Оплата TON прошла успешно',
             boostActive: 'Буст уже активен!',
             boostFinished: 'Буст закончился',
             megaBoostActivated: 'Буст активирован на 3 минуты!',
@@ -730,6 +731,7 @@ const I18N = {
             reqWatch: 'Посмотри {count} видео',
             reqWatchSkin: 'Посмотри {count} видео для этого скина',
             reqStars: 'Купить за {price} Stars',
+            reqTon: 'Купить за {price} TON',
             reqSpecial: 'Условие: особое',
             noBonus: 'Бонус: нет',
             incomeBonus: 'x{value} к доходу'
@@ -2414,17 +2416,17 @@ function getLocalSkins() {
         { id: "insta.pngSP", name: "Instagram Reward", image: "imgg/skins/insta.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.5 }, requirement: { type: "social", value: "instagram_sub" } },
         { id: "retro.pngSP", name: "Day 30 Reward", image: "imgg/skins/retro.png", rarity: "legendary", bonus: { type: "multiplier", value: 1.7 }, requirement: { type: "daily", value: 30 } },
 
-        // Stars skins (super, x2). Prices: 3 at 149, 3 at 249, 2 at 500
-        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
-        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
-        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 149 } },
+        // TON skins (super, x2). All cost 1 TON.
+        { id: "stars1.pngSP", name: "Stars 1", image: "imgg/skins/stars1.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars2.pngSP", name: "Stars 2", image: "imgg/skins/stars2.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars3.pngSP", name: "Stars 3", image: "imgg/skins/stars3.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
 
-        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
-        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
-        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 249 } },
+        { id: "stars4.pngSP", name: "Stars 4", image: "imgg/skins/stars4.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars5.pngSP", name: "Stars 5", image: "imgg/skins/stars5.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars6.pngSP", name: "Stars 6", image: "imgg/skins/stars6.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
 
-        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
-        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "stars", price: 500 } },
+        { id: "stars7.pngSP", name: "Stars 7", image: "imgg/skins/stars7.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
+        { id: "stars8.pngSP", name: "Stars 8", image: "imgg/skins/stars8.png", rarity: "super", bonus: { type: "multiplier", value: 2.0 }, requirement: { type: "ton", price: 1 } },
     ];
 }
 
@@ -3516,11 +3518,11 @@ function openSkinDetail(skinId) {
                     actionBtn.textContent = tr('skinsDyn.watchVideo');
                     actionBtn.onclick = () => watchAdForSkin(skin.id);
                 }
-            } else if (skin.requirement?.type === 'stars') {
-                reqText.textContent = tr('skinsDyn.reqStars', { price: skin.requirement.price });
+            } else if (skin.requirement?.type === 'ton') {
+                reqText.textContent = tr('skinsDyn.reqTon', { price: skin.requirement.price });
                 reqProgress.style.display = 'none';
                 actionBtn.textContent = tr('skinsDyn.buy');
-                actionBtn.onclick = () => buySkinWithStarsPlaceholder(skin);
+                actionBtn.onclick = () => buySkinWithTon(skin);
             } else {
                 reqText.textContent = tr('skinsDyn.reqSpecial');
                 reqProgress.style.display = 'none';
@@ -3548,50 +3550,67 @@ async function unlockSkinFromDetail(skinId) {
     });
 }
 
-async function buySkinWithStarsPlaceholder(skin) {
+async function buySkinWithTon(skin) {
     if (!userId) {
         showToast(tr('toasts.authRequired'), true);
         return;
     }
 
-    if (!tg?.openInvoice) {
-        showToast(tr('toasts.starsUnavailable'), true);
+    if (!tonConnectUI) {
+        showToast(tr('toasts.tonWalletUnavailable'), true);
+        return;
+    }
+
+    if (!tonConnectUI?.wallet?.account?.address) {
+        showToast(tr('toasts.tonWalletUnavailable'), true);
+        await connectTonWallet();
         return;
     }
 
     try {
-        const response = await API.post('/api/skins/stars-invoice', {
+        const response = await API.post('/api/skins/ton-invoice', {
             user_id: userId,
             skin_id: skin.id
         });
 
-        if (!response?.invoice_link) {
+        if (!response?.transaction?.messages?.length) {
             showToast(tr('toasts.starsInvoiceError'), true);
             return;
         }
 
-        tg.openInvoice(response.invoice_link, async (status) => {
-            if (status === 'paid') {
-                showToast(tr('toasts.starsSuccess'));
-                await loadUserData();
-                renderSkins();
-                updateCollectionProgress();
-                openSkinDetail(skin.id);
-                return;
-            }
+        await tonConnectUI.sendTransaction(response.transaction);
 
-            if (status === 'pending') {
-                showToast(tr('toasts.starsPending'));
-                return;
+        let unlocked = false;
+        let lastErr = null;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+            try {
+                const confirm = await API.post('/api/skins/ton-purchase-confirm', {
+                    user_id: userId,
+                    skin_id: skin.id
+                });
+                if (confirm?.success && confirm?.unlocked) {
+                    unlocked = true;
+                    break;
+                }
+            } catch (confirmErr) {
+                lastErr = confirmErr;
+                if ((confirmErr?.detail || '').includes('Payment not found yet')) {
+                    await new Promise((resolve) => setTimeout(resolve, 1800));
+                    continue;
+                }
+                throw confirmErr;
             }
+        }
 
-            if (status === 'cancelled') {
-                showToast(tr('toasts.starsCancelled'));
-                return;
-            }
+        if (!unlocked) {
+            throw lastErr || new Error('Payment not found yet');
+        }
 
-            showToast(tr('toasts.starsFailed'), true);
-        });
+        showToast(tr('toasts.starsSuccess'));
+        await loadUserData();
+        renderSkins();
+        updateCollectionProgress();
+        openSkinDetail(skin.id);
     } catch (err) {
         if (err?.detail === 'Skin already owned') {
             showToast(tr('toasts.skinAlreadyOwned'));
