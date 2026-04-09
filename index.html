@@ -208,7 +208,7 @@
         </div>
 
         <!-- UPGRADE PANEL -->
-        <div class="upgrade-panel" onclick="upgradeAll()">
+        <div class="upgrade-panel" data-ui="main-upgrade-panel" onclick="upgradeAll()">
             <div class="upgrade-panel-left">
                 <div class="upgrade-panel-info">
                     <div class="upgrade-panel-title" data-ui="bottom-upgrade-title">Upgrade</div>
@@ -326,17 +326,18 @@
                 </div>
             </div>
         </div>
-        <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" data-ui="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
-            <div class="upgrade-panel-left">
-                <div class="upgrade-panel-icons"></div>
-                <div class="upgrade-panel-info">
-                    <div class="upgrade-panel-title">Перерождение</div>
-                    <div class="upgrade-panel-bonuses">Сброс уровня и постоянный бонус к тапу</div>
-                </div>
+    </div>
+
+    <div class="upgrade-panel glass rebirth-panel" id="rebirth-panel" data-ui="rebirth-panel" onclick="openRebirthConfirm()" style="display: none;">
+        <div class="upgrade-panel-left">
+            <div class="upgrade-panel-icons"></div>
+            <div class="upgrade-panel-info">
+                <div class="upgrade-panel-title">Перерождение</div>
+                <div class="upgrade-panel-bonuses">Сброс уровня и постоянный бонус к тапу</div>
             </div>
-            <div class="upgrade-panel-right">
-                <button class="btn-primary" id="rebirth-action-btn" data-ui="rebirth-action-btn" type="button">Переродиться</button>
-            </div>
+        </div>
+        <div class="upgrade-panel-right">
+            <button class="btn-primary" id="rebirth-action-btn" data-ui="rebirth-action-btn" type="button">Переродиться</button>
         </div>
     </div>
 
@@ -476,9 +477,9 @@
                 <h2>Перерождение</h2>
             </div>
             <div class="modal-content">
-                <p><strong>Ты потеряешь:</strong> текущий уровень и прогрессию тапа.</p>
-                <p><strong>Ты сохранишь:</strong> апгрейды энергии, апгрейды дохода, скины, задания, кошелёк и прочие системы прогрессии.</p>
-                <p><strong>Ты получишь:</strong> постоянный бонус +1 к тапу за каждый уровень после перерождения.</p>
+                <p><strong>Сбросится:</strong> уровень, прокачка и текущая энергия.</p>
+                <p><strong>Сохранится:</strong> скины, задания, кошелёк и остальной аккаунт.</p>
+                <p><strong>Бонус:</strong> постоянный +1 к силе тапа за каждое перерождение.</p>
                 <p><strong>Стоимость:</strong> 1 000 000 монет.</p>
                 <div class="event-wallet-actions">
                     <button class="btn-secondary" type="button" onclick="closeModal('rebirth-confirm-screen')">Отмена</button>

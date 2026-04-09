@@ -1,4 +1,4 @@
-(function initSpiritRebirthDomain(global) {
+﻿(function initSpiritRebirthDomain(global) {
     const REBIRTH_MIN_LEVEL = 100;
     const REBIRTH_COST_COINS = 1_000_000;
 
@@ -46,7 +46,7 @@
 
         function openConfirmModal() {
             if (!shouldShowEntry()) {
-                showToast('Требуется 100 уровень.', true);
+                showToast(`Требуется ${REBIRTH_MIN_LEVEL} уровень.`, true);
                 return;
             }
             openModal('rebirth-confirm-screen');
@@ -108,7 +108,7 @@
                 showToast(`Перерождение успешно! Бонус к тапу: +${formatNumber(State.game.rebirthCount)}.`);
             } catch (err) {
                 const detail = String(err?.detail || '');
-                if (detail.includes('level 100')) {
+                if (detail.includes('level 100') || detail.includes('level 101')) {
                     showToast('Недостаточный уровень для перерождения.', true);
                 } else if (detail.includes('Not enough coins')) {
                     showToast('Недостаточно коинов для перерождения.', true);

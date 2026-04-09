@@ -2,9 +2,15 @@
     function createRebirthPanelUi() {
         function render(viewModel = {}) {
             const panel = document.querySelector('[data-ui="rebirth-panel"], #rebirth-panel');
-            if (!panel) return;
+            const mainUpgradePanel = document.querySelector('[data-ui="main-upgrade-panel"]');
+            if (!panel) {
+                return;
+            }
 
             panel.style.display = viewModel.visible ? '' : 'none';
+            if (mainUpgradePanel) {
+                mainUpgradePanel.style.display = viewModel.visible ? 'none' : '';
+            }
 
             const actionBtn = document.querySelector('[data-ui="rebirth-action-btn"], #rebirth-action-btn');
             if (!actionBtn) return;
