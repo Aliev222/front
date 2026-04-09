@@ -1,5 +1,9 @@
 (function initSpiritClickDomain(global) {
-    function createClickDomain({ store, state, userId, API, setCoins, applyBoostStateFromPayload, applyServerEnergySnapshot, updateUI, fullSyncWithServer }) {
+    function createClickDomain({ store, state, userId, API, setCoins, applyBoostStateFromPayload, applyServerEnergySnapshot, updateUI, fullSyncWithServer, config = {} }) {
+        const clickBatchThreshold = Math.max(1, Number(config.CLICK_BATCH_FLUSH_THRESHOLD || 500));
+        const clickBatchMaxWaitMs = Math.max(1000, Number(config.CLICK_BATCH_MAX_WAIT_MS || 60000));
+        let lastBatchSentAtMs = 0;
+
         function setCoinsValue(next) {
             store.set('game.coinsConfirmed', next);
             store.set('game.coinsOptimisticDelta', 0);
@@ -55,15 +59,25 @@
                 updateEnergyUIImmediate();
             }
 
-            store.set('temp.clickBuffer', state.temp.clickBuffer + 1);
+            const nextClickBuffer = state.temp.clickBuffer + 1;
+            store.set('temp.clickBuffer', nextClickBuffer);
+            if (nextClickBuffer === 1) {
+                store.set('temp.clickBufferStartedAtMs', Date.now());
+            }
             store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + previewGain);
             addCoins(previewGain);
             return { ok: true };
         }
 
-        async function sendClickBatch() {
+        async function sendClickBatch({ force = false } = {}) {
             const clicks = state.temp.clickBuffer;
             if (clicks === 0 || !userId() || state.temp.clickBatchInFlight) return;
+
+            const nowMs = Date.now();
+            const bufferStartedAtMs = Number(state.temp.clickBufferStartedAtMs || nowMs);
+            const bufferAgeMs = Math.max(0, nowMs - bufferStartedAtMs);
+            const shouldFlush = force || clicks >= clickBatchThreshold || bufferAgeMs >= clickBatchMaxWaitMs;
+            if (!shouldFlush) return;
             
             // Validate userId before sending
             const currentUserId = userId();
@@ -81,8 +95,10 @@
 
             store.set('temp.clickBuffer', 0);
             store.set('temp.clickValueBuffer', 0);
+            store.set('temp.clickBufferStartedAtMs', 0);
             store.set('temp.clickBatchInFlight', true);
             store.set('temp.pendingClickBatchId', batchId);
+            lastBatchSentAtMs = nowMs;
 
             try {
                 const data = await API.post('/api/clicks', {
@@ -177,6 +193,9 @@
                 console.error('Click batch server error:', err);
                 store.set('temp.clickBuffer', state.temp.clickBuffer + clicks);
                 store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + optimisticGain);
+                if (!state.temp.clickBufferStartedAtMs) {
+                    store.set('temp.clickBufferStartedAtMs', nowMs);
+                }
                 const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
                 const nextDisplay = state.game.coinsConfirmed + nextDelta;
                 store.set('game.coinsOptimisticDelta', nextDelta);
@@ -186,6 +205,9 @@
             console.error('Click batch error:', err);
             store.set('temp.clickBuffer', state.temp.clickBuffer + clicks);
             store.set('temp.clickValueBuffer', state.temp.clickValueBuffer + optimisticGain);
+            if (!state.temp.clickBufferStartedAtMs) {
+                store.set('temp.clickBufferStartedAtMs', nowMs);
+            }
             const nextDelta = Math.max(0, state.game.coinsOptimisticDelta - optimisticGain);
             const nextDisplay = state.game.coinsConfirmed + nextDelta;
             store.set('game.coinsOptimisticDelta', nextDelta);
@@ -200,7 +222,8 @@
             addCoins,
             computeTapPreviewGain,
             applyTapLocalMutation,
-            sendClickBatch
+            sendClickBatch,
+            getLastBatchSentAtMs: () => lastBatchSentAtMs
         };
     }
 

@@ -29,7 +29,7 @@
                     if (deps.DEBUG) console.warn('Deferred post-hydration startup failed:', err);
                 });
                 deps.startOnlinePresence();
-                setInterval(deps.sendClickBatch, 1500);
+                setInterval(deps.sendClickBatch, deps.CONFIG.CLICK_BATCH_INTERVAL || 5000);
             } else {
                 const saved = localStorage.getItem('ryohoGame');
                 if (saved) Object.assign(deps.State.game, JSON.parse(saved));

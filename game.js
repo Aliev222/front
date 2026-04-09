@@ -80,7 +80,9 @@ function getAudioContextForSfx() {
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
     API_URL: window.API_URL,
-    CLICK_BATCH_INTERVAL: 1000,
+    CLICK_BATCH_INTERVAL: 5000,
+    CLICK_BATCH_FLUSH_THRESHOLD: 500,
+    CLICK_BATCH_MAX_WAIT_MS: 60000,
     ENERGY_RECHARGE_INTERVAL: 1000,
     PASSIVE_INCOME_INTERVAL: 60000,
     CACHE_TTL: 30000,
@@ -2047,7 +2049,8 @@ clickDomain = window.SpiritClickDomain.createClickDomain({
     applyBoostStateFromPayload,
     applyServerEnergySnapshot,
     updateUI,
-    fullSyncWithServer
+    fullSyncWithServer,
+    config: CONFIG
 });
 tapDomain = window.SpiritTapDomain.createTapDomain({
     clickDomain,
