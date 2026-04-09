@@ -84,12 +84,13 @@ const CONFIG = {
     CLICK_BATCH_FLUSH_THRESHOLD: 500,
     CLICK_BATCH_MAX_WAIT_MS: 60000,
     ENERGY_RECHARGE_INTERVAL: 1000,
-    PASSIVE_INCOME_INTERVAL: 60000,
+    PASSIVE_INCOME_INTERVAL: 300000,
+    PASSIVE_INCOME_MIN_GAP_MS: 300000,
     CACHE_TTL: 30000,
     ENERGY_SYNC_INTERVAL_MS: 60000,
     ENERGY_SYNC_INTERVAL_LITE_MS: 90000,
-    ONLINE_HEARTBEAT_INTERVAL_MS: 60000,
-    ONLINE_COUNT_REFRESH_INTERVAL_MS: 60000,
+    ONLINE_HEARTBEAT_INTERVAL_MS: 120000,
+    ONLINE_COUNT_REFRESH_INTERVAL_MS: 120000,
     CRASH_SYNC_INTERVAL_MS: 1200
 };
 
@@ -7622,8 +7623,22 @@ function initBadgePhysics() {
 }
 
 // ==================== ПАССИВНЫЙ ДОХОД ====================
-async function checkOfflinePassiveIncome({ silent = false } = {}) {
+let passiveIncomeInFlight = false;
+let lastPassiveIncomeCheckAtMs = 0;
+
+async function checkOfflinePassiveIncome({ silent = false, force = false } = {}) {
     if (!userId) return;
+    if (!force && passiveIncomeInFlight) return;
+    if (!force && silent && document.hidden) return;
+
+    const nowMs = Date.now();
+    const minGapMs = Number(CONFIG.PASSIVE_INCOME_MIN_GAP_MS || 120000);
+    if (!force && (nowMs - lastPassiveIncomeCheckAtMs) < minGapMs) {
+        return;
+    }
+
+    passiveIncomeInFlight = true;
+    lastPassiveIncomeCheckAtMs = nowMs;
     try {
         const data = await API.post('/api/passive-income', { user_id: userId });
         if (data.income > 0) {
@@ -7636,6 +7651,8 @@ async function checkOfflinePassiveIncome({ silent = false } = {}) {
         }
     } catch (e) {
         console.error('Passive income error:', e);
+    } finally {
+        passiveIncomeInFlight = false;
     }
 }
 
