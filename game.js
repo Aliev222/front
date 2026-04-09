@@ -377,53 +377,53 @@ const I18N = {
         achievements: { title: 'Achievements' }
         ,
         toasts: {
-            loadDataError: '?? Data loading error',
-            authRequired: '? Please sign in',
-            adUnavailable: '? Ad unavailable',
-            adUnavailableTemp: '? Ad temporarily unavailable',
-            adLoading: '?? Loading ad...',
-            videoLoading: '?? Loading video...',
-            serverError: '? Server error',
-            copyError: '? Copy failed',
-            linkNotLoaded: '? Link not loaded',
-            linkCopied: '? Link copied!',
-            rewardReceived: '? Reward received!',
-            watchError: '? Video error',
-            notEnoughCoins: '? Need {amount} coins',
-            minBet: '? Minimum bet is 10',
-            betRequired: '? Enter a bet',
-            maxLevel: '?? Max level reached',
-            upgradeBusy: '? Upgrade is already processing',
-            fullUpgradeNoCoins: '? Not enough coins for full upgrade',
-            fullUpgradeMax: '?? One upgrade is already at max',
-            upgradeApplyError: '? Failed to apply upgrades',
-            uiError: '? Interface error',
-            rouletteNumber: '? Enter a number from 0 to 36',
-            skinLocked: '? Skin "{name}" is not unlocked yet!',
-            skinSelected: '? Skin selected!',
-            skinNew: '? New skin!',
-            skinUnlockError: '? Skin unlock error',
-            skinSelectError: '? Skin selection error',
-            skinAlreadyOwned: '? You already own this skin',
-            skinClaimError: '? Claim error',
-            skinAdProgress: '? +1 video view for skin!',
+            loadDataError: 'Data loading error',
+            authRequired: 'Please sign in',
+            adUnavailable: 'Ad unavailable',
+            adUnavailableTemp: 'Ad temporarily unavailable',
+            adLoading: 'Loading ad...',
+            videoLoading: 'Loading video...',
+            serverError: 'Server error',
+            copyError: 'Copy failed',
+            linkNotLoaded: 'Link not loaded',
+            linkCopied: 'Link copied!',
+            rewardReceived: 'Reward received!',
+            watchError: 'Video error',
+            notEnoughCoins: 'Need {amount} coins',
+            minBet: 'Minimum bet is 10',
+            betRequired: 'Enter a bet',
+            maxLevel: 'Max level reached',
+            upgradeBusy: 'Upgrade is already processing',
+            fullUpgradeNoCoins: 'Not enough coins for full upgrade',
+            fullUpgradeMax: 'One upgrade is already at max',
+            upgradeApplyError: 'Failed to apply upgrades',
+            uiError: 'Interface error',
+            rouletteNumber: 'Enter a number from 0 to 36',
+            skinLocked: 'Skin "{name}" is not unlocked yet!',
+            skinSelected: 'Skin selected!',
+            skinNew: 'New skin!',
+            skinUnlockError: 'Skin unlock error',
+            skinSelectError: 'Skin selection error',
+            skinAlreadyOwned: 'You already own this skin',
+            skinClaimError: 'Claim error',
+            skinAdProgress: '+1 video view for skin!',
             adNotConfirmed: 'You did not finish the ad or the reward was not confirmed.',
-            starsUnavailable: '? Stars payments are not available in this client',
-            starsInvoiceError: '? Failed to create payment invoice',
-            starsPending: '? Waiting for payment confirmation',
-            starsCancelled: '?? Payment cancelled',
-            starsFailed: '? Payment failed',
-            starsSuccess: '? Payment successful',
-            boostActive: '? Boost is already active!',
-            boostFinished: '? Boost finished',
-            megaBoostActivated: '?? BOOST ACTIVATED FOR 3 MINUTES!',
-            autoTapEnabled: '? Auto Tap 2 min',
-            autoTapFallback: '?? Ad unavailable, auto for 30 sec',
-            autoTapError: '? Failed to enable auto',
-            charmUpdated: '? Charm updated',
-            energyRecovered: '? Energy restored!',
-            energyFull: '? Energy fully restored!',
-            cooldownsReset: '?? Cooldowns reset',
+            starsUnavailable: 'Stars payments are not available in this client',
+            starsInvoiceError: 'Failed to create payment invoice',
+            starsPending: 'Waiting for payment confirmation',
+            starsCancelled: 'Payment cancelled',
+            starsFailed: 'Payment failed',
+            starsSuccess: 'Payment successful',
+            boostActive: 'Boost is already active!',
+            boostFinished: 'Boost finished',
+            megaBoostActivated: 'Boost activated for 3 minutes!',
+            autoTapEnabled: 'Auto Tap 2 min',
+            autoTapFallback: 'Ad unavailable, auto for 30 sec',
+            autoTapError: 'Failed to enable auto',
+            charmUpdated: 'Charm updated',
+            energyRecovered: 'Energy restored!',
+            energyFull: 'Energy fully restored!',
+            cooldownsReset: 'Cooldowns reset',
             tonWalletConnected: 'TON wallet connected',
             walletConnectedTitle: 'Wallet connected',
             tonWalletSyncError: 'Failed to sync TON wallet',
@@ -436,20 +436,20 @@ const I18N = {
         skinsDyn: {
             noSkins: 'No skins',
             noDescription: 'No description',
-            selected: '? SELECTED',
+            selected: 'SELECTED',
             select: 'SELECT',
             claim: 'CLAIM',
             upgrade: 'UPGRADE',
             watchVideo: 'WATCH VIDEO',
             buy: 'BUY',
             unavailable: 'UNAVAILABLE',
-            reqLevel: '?? Level {value} required',
-            reqWatch: '?? Watch {count} videos',
-            reqWatchSkin: '?? Watch {count} videos for this skin',
-            reqStars: '?? Buy for {price} Stars',
-            reqSpecial: '?? Special condition',
-            noBonus: '? No bonus',
-            incomeBonus: '? x{value} income'
+            reqLevel: 'Level {value} required',
+            reqWatch: 'Watch {count} videos',
+            reqWatchSkin: 'Watch {count} videos for this skin',
+            reqStars: 'Buy for {price} Stars',
+            reqSpecial: 'Special condition',
+            noBonus: 'No bonus',
+            incomeBonus: 'x{value} income'
         },
         tasksList: {
             tap_surge: { title: 'Tap Surge', description: 'x2 tap income for 5 minutes', tag: 'tap', reward: 'x2 • 5 min' },
@@ -457,19 +457,19 @@ const I18N = {
             coin_drop: { title: 'Coin Drop', description: 'Random reward from 200 to 30,000 coins', tag: 'coins', reward: '200-30K' }
         },
         minigames: {
-            coinflipSpinning: '?? Flipping...',
-            coinflipPlayed: '?? Played!',
-            coinflipWin: '?? You won! +{bet}',
-            coinflipLose: '?? You lost',
-            slotsSpinning: '?? Spinning...',
-            slotsJackpot: '?? JACKPOT! +{win}',
-            slotsLose: '?? Better luck next time',
-            diceRolling: '?? Rolling...',
-            diceWin: '?? You won! x{multiplier}',
-            diceLose: '?? You lost',
-            rouletteSpinning: '?? Spinning...',
-            rouletteWin: '?? Landed on {number}. You won x{multiplier}',
-            rouletteLose: '?? Landed on {number}. You lost',
+            coinflipSpinning: 'Flipping...',
+            coinflipPlayed: 'Played!',
+            coinflipWin: 'You won! +{bet}',
+            coinflipLose: 'You lost',
+            slotsSpinning: 'Spinning...',
+            slotsJackpot: 'JACKPOT! +{win}',
+            slotsLose: 'Better luck next time',
+            diceRolling: 'Rolling...',
+            diceWin: 'You won! x{multiplier}',
+            diceLose: 'You lost',
+            rouletteSpinning: 'Spinning...',
+            rouletteWin: 'Landed on {number}. You won x{multiplier}',
+            rouletteLose: 'Landed on {number}. You lost',
             luckyPick: 'Pick your box.',
             luckyOpening: 'Opening boxes...',
             luckyBust: 'Bust',
@@ -657,53 +657,53 @@ const I18N = {
         },
         achievements: { title: 'Достижения' },
         toasts: {
-            loadDataError: '?? Ошибка загрузки данных',
-            authRequired: '? Авторизуйтесь',
-            adUnavailable: '? Реклама недоступна',
-            adUnavailableTemp: '? Реклама временно недоступна',
-            adLoading: '?? Загружаем рекламу...',
-            videoLoading: '?? Загружаем видео...',
-            serverError: '? Ошибка сервера',
-            copyError: '? Ошибка копирования',
-            linkNotLoaded: '? Ссылка не загружена',
-            linkCopied: '? Ссылка скопирована!',
-            rewardReceived: '? Награда получена!',
-            watchError: '? Ошибка при просмотре видео',
-            notEnoughCoins: '? Нужно {amount} монет',
-            minBet: '? Минимальная ставка 10',
-            betRequired: '? Введите ставку',
-            maxLevel: '?? Максимальный уровень достигнут',
-            upgradeBusy: '? Улучшение уже обрабатывается',
-            fullUpgradeNoCoins: '? Недостаточно монет для полного апгрейда',
-            fullUpgradeMax: '?? Один из апгрейдов уже на максимуме',
-            upgradeApplyError: '? Не удалось применить улучшения',
-            uiError: '? Ошибка интерфейса',
-            rouletteNumber: '? Введите число от 0 до 36',
-            skinLocked: '? Скин "{name}" ещё не открыт!',
-            skinSelected: '? Скин выбран!',
-            skinNew: '? Новый скин!',
-            skinUnlockError: '? Ошибка разблокировки',
-            skinSelectError: '? Ошибка выбора скина',
-            skinAlreadyOwned: '? Скин уже есть',
-            skinClaimError: '? Ошибка получения',
-            skinAdProgress: '? +1 просмотр для скина!',
+            loadDataError: 'Ошибка загрузки данных',
+            authRequired: 'Авторизуйтесь',
+            adUnavailable: 'Реклама недоступна',
+            adUnavailableTemp: 'Реклама временно недоступна',
+            adLoading: 'Загружаем рекламу...',
+            videoLoading: 'Загружаем видео...',
+            serverError: 'Ошибка сервера',
+            copyError: 'Ошибка копирования',
+            linkNotLoaded: 'Ссылка не загружена',
+            linkCopied: 'Ссылка скопирована!',
+            rewardReceived: 'Награда получена!',
+            watchError: 'Ошибка при просмотре видео',
+            notEnoughCoins: 'Нужно {amount} монет',
+            minBet: 'Минимальная ставка 10',
+            betRequired: 'Введите ставку',
+            maxLevel: 'Максимальный уровень достигнут',
+            upgradeBusy: 'Улучшение уже обрабатывается',
+            fullUpgradeNoCoins: 'Недостаточно монет для полного апгрейда',
+            fullUpgradeMax: 'Один из апгрейдов уже на максимуме',
+            upgradeApplyError: 'Не удалось применить улучшения',
+            uiError: 'Ошибка интерфейса',
+            rouletteNumber: 'Введите число от 0 до 36',
+            skinLocked: 'Скин "{name}" ещё не открыт!',
+            skinSelected: 'Скин выбран!',
+            skinNew: 'Новый скин!',
+            skinUnlockError: 'Ошибка разблокировки',
+            skinSelectError: 'Ошибка выбора скина',
+            skinAlreadyOwned: 'Скин уже есть',
+            skinClaimError: 'Ошибка получения',
+            skinAdProgress: '+1 просмотр для скина!',
             adNotConfirmed: 'Вы не досмотрели рекламу или награда не была подтверждена.',
-            starsUnavailable: '? Оплата Stars недоступна в этом клиенте',
-            starsInvoiceError: '? Не удалось создать счёт на оплату',
-            starsPending: '? Ожидаем подтверждение оплаты',
-            starsCancelled: '?? Оплата отменена',
-            starsFailed: '? Ошибка оплаты',
-            starsSuccess: '? Оплата прошла успешно',
-            boostActive: '? Буст уже активен!',
-            boostFinished: '? Буст закончился',
-            megaBoostActivated: '?? БУСТ АКТИВИРОВАН НА 3 МИНУТЫ!',
-            autoTapEnabled: '? Автокликер на 2 мин',
-            autoTapFallback: '?? Реклама недоступна, авто на 30 сек',
-            autoTapError: '? Не удалось включить авто',
-            charmUpdated: '? Брелок обновлен',
-            energyRecovered: '? Энергия восстановлена!',
-            energyFull: '? Энергия полностью восстановлена!',
-            cooldownsReset: '?? Кулдауны сброшены',
+            starsUnavailable: 'Оплата Stars недоступна в этом клиенте',
+            starsInvoiceError: 'Не удалось создать счёт на оплату',
+            starsPending: 'Ожидаем подтверждение оплаты',
+            starsCancelled: 'Оплата отменена',
+            starsFailed: 'Ошибка оплаты',
+            starsSuccess: 'Оплата прошла успешно',
+            boostActive: 'Буст уже активен!',
+            boostFinished: 'Буст закончился',
+            megaBoostActivated: 'Буст активирован на 3 минуты!',
+            autoTapEnabled: 'Автокликер на 2 мин',
+            autoTapFallback: 'Реклама недоступна, авто на 30 сек',
+            autoTapError: 'Не удалось включить авто',
+            charmUpdated: 'Брелок обновлен',
+            energyRecovered: 'Энергия восстановлена!',
+            energyFull: 'Энергия полностью восстановлена!',
+            cooldownsReset: 'Кулдауны сброшены',
             tonWalletConnected: 'TON-кошелёк подключён',
             walletConnectedTitle: 'Кошелёк подключён',
             tonWalletSyncError: 'Не удалось синхронизировать TON-кошелёк',
@@ -716,20 +716,20 @@ const I18N = {
         skinsDyn: {
             noSkins: 'Нет скинов',
             noDescription: 'Нет описания',
-            selected: '? ВЫБРАН',
+            selected: 'ВЫБРАН',
             select: 'ВЫБРАТЬ',
             claim: 'ПОЛУЧИТЬ',
             upgrade: 'ПРОКАЧАТЬ',
             watchVideo: 'СМОТРЕТЬ ВИДЕО',
             buy: 'КУПИТЬ',
             unavailable: 'НЕДОСТУПНО',
-            reqLevel: '?? Требуется уровень {value}',
-            reqWatch: '?? Посмотри {count} видео',
-            reqWatchSkin: '?? Посмотри {count} видео для этого скина',
-            reqStars: '?? Купить за {price} Stars',
-            reqSpecial: '?? Условие: особое',
-            noBonus: '? Бонус: нет',
-            incomeBonus: '? x{value} к доходу'
+            reqLevel: 'Требуется уровень {value}',
+            reqWatch: 'Посмотри {count} видео',
+            reqWatchSkin: 'Посмотри {count} видео для этого скина',
+            reqStars: 'Купить за {price} Stars',
+            reqSpecial: 'Условие: особое',
+            noBonus: 'Бонус: нет',
+            incomeBonus: 'x{value} к доходу'
         },
         tasksList: {
             tap_surge: { title: 'Тап-рывок', description: 'x2 к тапу на 5 минут', tag: 'тап', reward: 'x2 • 5 мин' },
@@ -737,19 +737,19 @@ const I18N = {
             coin_drop: { title: 'Coin Drop', description: 'Случайная награда от 200 до 30 000 монет', tag: 'коины', reward: '200-30K' }
         },
         minigames: {
-            coinflipSpinning: '?? Подбрасываем...',
-            coinflipPlayed: '?? Сыграно!',
-            coinflipWin: '?? Вы выиграли! +{bet}',
-            coinflipLose: '?? Вы проиграли',
-            slotsSpinning: '?? Крутим...',
-            slotsJackpot: '?? ДЖЕКПОТ! +{win}',
-            slotsLose: '?? Повезет в следующий раз',
-            diceRolling: '?? Бросаем...',
-            diceWin: '?? Вы выиграли! x{multiplier}',
-            diceLose: '?? Вы проиграли',
-            rouletteSpinning: '?? Крутим...',
-            rouletteWin: '?? Выпало {number}. Вы выиграли x{multiplier}',
-            rouletteLose: '?? Выпало {number}. Вы проиграли',
+            coinflipSpinning: 'Подбрасываем...',
+            coinflipPlayed: 'Сыграно!',
+            coinflipWin: 'Вы выиграли! +{bet}',
+            coinflipLose: 'Вы проиграли',
+            slotsSpinning: 'Крутим...',
+            slotsJackpot: 'ДЖЕКПОТ! +{win}',
+            slotsLose: 'Повезет в следующий раз',
+            diceRolling: 'Бросаем...',
+            diceWin: 'Вы выиграли! x{multiplier}',
+            diceLose: 'Вы проиграли',
+            rouletteSpinning: 'Крутим...',
+            rouletteWin: 'Выпало {number}. Вы выиграли x{multiplier}',
+            rouletteLose: 'Выпало {number}. Вы проиграли',
             luckyPick: 'Выбери свой бокс.',
             luckyOpening: 'Открываем боксы...',
             luckyBust: 'Пусто',
@@ -1282,7 +1282,7 @@ const AMBIENT_TOAST_VARIANTS = [
         variant: 'warning'
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Crew pressure',
         body: () => State.skins.friendsInvited > 0
             ? `Your ${State.skins.friendsInvited} friend${State.skins.friendsInvited > 1 ? 's are' : ' is'} boosting the run.`
@@ -1291,7 +1291,7 @@ const AMBIENT_TOAST_VARIANTS = [
         variant: 'reward'
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Strange signal',
         body: () => 'A ghost just audited your taps and said nothing. Bad sign. Good omen.',
         side: 'right',
@@ -1299,7 +1299,7 @@ const AMBIENT_TOAST_VARIANTS = [
         rare: true
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Soft static',
         body: () => 'The screen whispered back. Tap slower and it whispers louder.',
         side: 'left',
@@ -1307,7 +1307,7 @@ const AMBIENT_TOAST_VARIANTS = [
         rare: true
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Focus line',
         body: () => State.game.level > 0
             ? `Level ${getDisplayLevel(State.game.level)} already looks dangerous. Keep stacking clean taps.`
@@ -1319,14 +1319,14 @@ const AMBIENT_TOAST_VARIANTS = [
 
 const IDLE_TOAST_VARIANTS = [
     {
-        icon: '??',
+        icon: '✨',
         title: 'Quiet mode',
         body: 'You went silent for a minute. The spirit is waiting for the next combo.',
         side: 'left',
         variant: 'info'
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Stillness',
         body: 'No taps for 60 seconds. Even ghosts started wondering if you left.',
         side: 'right',
@@ -1350,14 +1350,14 @@ const FAST_TAP_TOAST_VARIANTS = [
         variant: 'reward'
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Combo pace',
         body: 'That speed is nasty. Keep that rhythm alive.',
         side: 'left',
         variant: 'reward'
     },
     {
-        icon: '??',
+        icon: '✨',
         title: 'Tap burst',
         body: 'You just spiked the tempo hard.',
         side: 'right',
@@ -1452,7 +1452,7 @@ function showToast(msg, isError = false, options = {}) {
     toast.innerHTML = buildToastMarkup({
         title: normalized.title || '',
         body: msg,
-        icon: normalized.icon || (isError ? '??' : '?'),
+        icon: normalized.icon || (isError ? '⚠️' : 'ℹ️'),
         actionLabel: normalized.actionLabel || '',
         variant,
         side
@@ -1559,7 +1559,7 @@ function renderOnboardingHandHint() {
     hint.className = 'onboarding-hand-hint';
     hint.innerHTML = `
         <div class="onboarding-hand-hint__bubble">${step === 'upgrade' ? 'Upgrade' : 'Tap'}</div>
-        <div class="onboarding-hand-hint__hand">??</div>
+        <div class="onboarding-hand-hint__hand">👉</div>
     `;
     hint.style.left = `${rect.left + rect.width * (step === 'upgrade' ? 0.78 : 0.72)}px`;
     hint.style.top = `${rect.top + rect.height * (step === 'upgrade' ? 0.45 : 0.76)}px`;
@@ -1582,7 +1582,7 @@ function setSoftOnboardingStep(step) {
         renderOnboardingHandHint();
         showToast('Tap the spirit. Every run starts with your first hit.', false, {
             title: 'First move',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'reward',
             key: 'onboarding:tap',
@@ -1596,7 +1596,7 @@ function setSoftOnboardingStep(step) {
         renderOnboardingHandHint();
         showToast('You have enough coins now. Hit Upgrade to reach level 2.', false, {
             title: 'Level up',
-            icon: '??',
+            icon: '✨',
             side: 'left',
             variant: 'reward',
             key: 'onboarding:upgrade',
@@ -1609,7 +1609,7 @@ function setSoftOnboardingStep(step) {
     if (step === 'tasks') {
         showToast('Good. Open Tasks for fast coins, skins and social rewards.', false, {
             title: 'Next step',
-            icon: '??',
+            icon: '✨',
             side: 'left',
             variant: 'info',
             key: 'onboarding:tasks',
@@ -1621,7 +1621,7 @@ function setSoftOnboardingStep(step) {
     if (step === 'daily') {
         showToast('Nice. The gift button holds your daily streak. Open it next.', false, {
             title: 'Daily rewards',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'reward',
             key: 'onboarding:daily',
@@ -1705,21 +1705,21 @@ function maybeShowDiscoveryToast(tab) {
             key: 'friends',
             title: 'Friends',
             body: 'Invite friends to unlock referral coins, passive share and the referral skin.',
-            icon: '??',
+            icon: '✨',
             side: 'left'
         },
         skins: {
             key: 'skins',
             title: 'Skins',
             body: 'Skins are not just cosmetic. Some of them multiply your tap income.',
-            icon: '??',
+            icon: '✨',
             side: 'right'
         },
         games: {
             key: 'games',
             title: 'Event',
             body: 'Push your weekly clicks, stay in the top 50 and fight for the final payouts.',
-            icon: '??',
+            icon: '✨',
             side: 'right'
         }
     };
@@ -1804,7 +1804,7 @@ function handleReferralToast(nextCount) {
     if (previousCount === null) {
         showToast('Friends make you stronger. Their income pressure is already feeding your run.', false, {
             title: 'Squad buff',
-            icon: '??',
+            icon: '✨',
             side: 'left',
             variant: 'reward',
             key: 'friends:intro',
@@ -1816,7 +1816,7 @@ function handleReferralToast(nextCount) {
     if (nextCount > previousCount) {
         showToast(`Your crew grew to ${nextCount}. The referral flow just got louder.`, false, {
             title: 'New friend joined',
-            icon: '??',
+            icon: '✨',
             side: 'left',
             variant: 'reward',
             key: 'friends:joined',
@@ -1836,7 +1836,7 @@ function trackTournamentToastState(rank, topLimit) {
     if (wasInTop && !isInTop && !State.temp.tournamentDropWarned) {
         showToast(`You slipped out of the Top ${topLimit}. Push back in before the pool locks tighter.`, false, {
             title: 'Event alert',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'warning',
             key: 'event:drop',
@@ -1992,7 +1992,7 @@ function checkAchievements() {
 function showAchievementNotification(achievement) {
     showToast(`${achievement.title}`, false, {
         title: 'Achievement unlocked',
-        icon: achievement.icon || '??',
+        icon: achievement.icon || '🏆',
         side: 'right',
         variant: 'reward',
         duration: 5000
@@ -2597,7 +2597,7 @@ function renderGhostBoostIndicator(expiresAt) {
 
     const diff = Math.max(0, parseServerDate(expiresAt) - new Date());
     const secs = Math.floor(diff / 1000);
-    indicator.textContent = `?? x${GHOST_BOOST_MULTIPLIER} ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+    indicator.textContent = `👻 x${GHOST_BOOST_MULTIPLIER} ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 }
 
 function setGhostBoostState(active, expiresAt = null) {
@@ -2628,7 +2628,7 @@ function setGhostBoostState(active, expiresAt = null) {
             clearGhostBoostIndicator();
             showToast('The ghost bonus faded. The screen feels normal again.', false, {
                 title: 'Ghost boost ended',
-                icon: '???',
+                icon: '👻',
                 side: 'right',
                 variant: 'info',
                 duration: 3600
@@ -2721,7 +2721,7 @@ async function claimLuckyGhost(event) {
         removeLuckyGhost();
         showToast(tr('toasts.adUnavailable'), true, {
             title: 'Ghost escaped',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'error'
         });
@@ -2731,7 +2731,7 @@ async function claimLuckyGhost(event) {
     try {
         showToast('Catch the ad and the ghost pays back with x5 taps and infinite energy.', false, {
             title: 'Lucky ghost',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'weird',
             duration: 3200
@@ -2760,7 +2760,7 @@ async function claimLuckyGhost(event) {
         removeLuckyGhost();
         showToast(`x${activation?.multiplier || GHOST_BOOST_MULTIPLIER} taps and infinite energy for 1 minute.`, false, {
             title: 'Ghost caught',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'reward',
             duration: 4800
@@ -2774,7 +2774,7 @@ async function claimLuckyGhost(event) {
             true,
             {
             title: 'Ghost lost',
-            icon: '??',
+            icon: '✨',
             side: 'right',
             variant: 'error'
         });
@@ -2801,7 +2801,7 @@ function spawnLuckyGhost() {
     ghost.style.top = `${top}px`;
     ghost.innerHTML = `
         <span class="lucky-ghost-event__pulse"></span>
-        <span class="lucky-ghost-event__sprite">??</span>
+        <span class="lucky-ghost-event__sprite">👻</span>
         <span class="lucky-ghost-event__label">x${GHOST_BOOST_MULTIPLIER}</span>
     `;
     ghost.addEventListener('click', claimLuckyGhost);
@@ -2809,7 +2809,7 @@ function spawnLuckyGhost() {
 
     showToast('A strange ghost showed up. Tap it before it fades.', false, {
         title: 'Rare encounter',
-        icon: '??',
+        icon: '✨',
         side: 'right',
         variant: 'weird',
         duration: 5000
@@ -3328,7 +3328,7 @@ function renderSkins() {
                 </div>
                 <div class="skin-name">${skin.name}</div>
                 <div class="skin-rarity ${skin.rarity}">${skin.rarity}</div>
-                ${isLocked ? '<div class="skin-lock">??</div>' : ''}
+                ${isLocked ? '<div class="skin-lock">🔒</div>' : ''}
                 ${isSelected ? '<div class="skin-selected-badge">?</div>' : ''}
             </div>
         `;
@@ -3904,7 +3904,7 @@ const VIDEO_TASKS = [
         title: 'Tap Surge',
         description: 'x2 tap income for 5 minutes',
         reward: 'x2 • 5 min',
-        icon: '??',
+        icon: '✨',
         type: 'tap_boost',
         cooldown: 75,
         lastUsed: null,
@@ -3932,7 +3932,7 @@ const VIDEO_TASKS = [
         title: 'Coin Drop',
         description: 'Random reward from 200 to 30,000 coins',
         reward: '200-30K',
-        icon: '??',
+        icon: '✨',
         type: 'coin_drop',
         cooldown: 60,
         lastUsed: null,
@@ -4070,7 +4070,7 @@ function renderVideoTasks() {
                 <div class="task-actions-simple">
                     <span class="task-reward-pill task-reward-pill-simple">${view.rewardLabel}</span>
                     <button class="task-action task-action-simple ${task.category}" onclick="handleVideoTask('${task.id}')" ${!available ? 'disabled' : ''}>
-                        ${available ? `?? ${view.actionLabel}` : `? ${view.actionLabel}`}
+                        ${available ? `🎬 ${view.actionLabel}` : `⏳ ${view.actionLabel}`}
                     </button>
                 </div>
                 ${!available && timeLeft > 0 ? `
@@ -4104,7 +4104,7 @@ function giveRandomReward() {
     switch(random.type) {
         case 'coins':
             addCoins('randomReward', random.value, { reward: random.value });
-            showToast(`?? +${random.value} ${tr('tasks.coinsSuffix')}`);
+            showToast(`💰 +${random.value} ${tr('tasks.coinsSuffix')}`);
             break;
         case 'energy':
             // Visual-only energy reward (task/ad bonus). Does NOT affect
@@ -4112,7 +4112,7 @@ function giveRandomReward() {
             // Do NOT clear pendingEnergySpend — that would lose track of
             // real gameplay energy spent on taps.
             State.game.energy = Math.min(State.game.maxEnergy, State.game.energy + random.value);
-            showToast(`?? +${random.value} energy!`);
+            showToast(`⚡ +${random.value} energy!`);
             break;
         case 'boost':
             activateCustomBoost(random.multiplier, random.minutes);
@@ -4130,7 +4130,7 @@ function activateCustomBoost(multiplier, minutes) {
     
     // Увеличиваем доход
     State.game.profitPerTap *= multiplier;
-    showToast(`?? x${multiplier} for ${minutes} min!`);
+    showToast(`🚀 x${multiplier} for ${minutes} min!`);
     
     // Возвращаем обратно через N минут
     setTimeout(() => {
@@ -4266,7 +4266,7 @@ function shareReferral() {
         showToast(tr('toasts.linkNotLoaded'), true);
         return;
     }
-    const shareText = `?? ${t('friends.shareText')}`;
+    const shareText = `🔥 ${t('friends.shareText')}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(linkText)}&text=${encodeURIComponent(shareText)}`, '_blank');
 }
 
@@ -4890,7 +4890,7 @@ async function initTonWalletBridge() {
                     if (tonWalletState.verified) {
                         showToast(t('toasts.tonWalletConnected'), false, {
                             title: t('toasts.walletConnectedTitle'),
-                            icon: '??',
+                            icon: '✨',
                             side: 'right',
                             key: 'ton:connected',
                             cooldownMs: 4000
@@ -5467,7 +5467,7 @@ function showEnergyRecoveryModal() {
             <h3>? Energy is empty!</h3>
             <p>Watch an ad and restore energy to maximum</p>
             <button class="btn-primary" onclick="recoverEnergyWithAd()" ${cooldownRemainingMs > 0 ? 'disabled' : ''}>
-                ${cooldownRemainingMs > 0 ? `? Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}` : '?? Restore to max'}
+                ${cooldownRemainingMs > 0 ? `⏳ Cooldown ${formatCooldownClock(cooldownRemainingMs / 1000)}` : '⚡ Restore to max'}
             </button>
             <button class="btn-secondary" onclick="closeEnergyRecoveryModal()">
                 ? Wait
@@ -5679,7 +5679,7 @@ function showBoostIndicator() {
     if (energyContainer) {
         const indicator = document.createElement('div');
         indicator.className = 'mega-boost-indicator';
-        indicator.innerHTML = '?? MEGA BOOST ACTIVE ??';
+        indicator.innerHTML = '🚀 MEGA BOOST ACTIVE';
         energyContainer.appendChild(indicator);
     }
 }
@@ -6249,8 +6249,8 @@ async function playWheel() {
                 const isWinMessage = data.message?.includes('won');
                 
                 resultEl.textContent = isWinMessage
-                    ? `?? Landed on ${landedNumber}. ${data.message || 'You won'}`
-                    : `?? Landed on ${landedNumber}. ${data.message || 'You lost'}`;
+                    ? `🎯 Landed on ${landedNumber}. ${data.message || 'You won'}`
+                    : `🎯 Landed on ${landedNumber}. ${data.message || 'You lost'}`;
                 
                 if (isWinMessage) {
                     createConfetti();
@@ -6373,18 +6373,18 @@ function setSlotSymbol(slotEl, value) {
     if (!slotEl) return;
     const symbolEl = slotEl.querySelector('.slot-symbol');
     const symbolMap = {
-        CH: '??',
-        LM: '??',
-        OR: '??',
-        '77': '7??',
-        DM: '??',
-        ST: '?',
-        '??': '??',
-        '??': '??',
-        '??': '??',
-        '7??': '7??',
-        '??': '??',
-        '?': '?'
+        CH: '🍒',
+        LM: '🍋',
+        OR: '🍊',
+        '77': '7️⃣',
+        DM: '💎',
+        ST: '⭐',
+        '🍒': '🍒',
+        '🍋': '🍋',
+        '🍊': '🍊',
+        '7️⃣': '7️⃣',
+        '💎': '💎',
+        '⭐': '⭐'
     };
     const resolved = symbolMap[value] || value;
     if (symbolEl) symbolEl.textContent = resolved;
@@ -7654,3 +7654,4 @@ window.unlockSkinFromDetail = unlockSkinFromDetail;
 window.selectSkinFromDetail = selectSkinFromDetail;
 window.connectTonWallet = connectTonWallet;
 window.disconnectTonWallet = disconnectTonWallet;
+

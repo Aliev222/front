@@ -68,7 +68,7 @@
 
 .nav-bar .nav-item.active {
   color: var(--nav-text-active);
-  background: rgba(255,255,255,0.08);
+  background: transparent;
   filter: none;
   box-shadow: none;
   border: 0;

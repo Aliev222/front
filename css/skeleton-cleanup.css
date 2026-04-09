@@ -433,13 +433,13 @@ body.modal-open .side-actions {
 
 .upgrade-panel {
   position: fixed !important;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 90px) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   max-width: 430px !important;
   width: min(calc(100% - 20px), 430px) !important;
   height: 78px !important;
-  border-radius: 40px 40px 10px 10px !important;
+  border-radius: 50px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -513,13 +513,13 @@ body.modal-open .side-actions {
 
 .nav-bar {
   position: fixed !important;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   max-width: 430px !important;
   width: min(calc(100% - 20px), 430px) !important;
-  height: 78px !important;
-  border-radius: 10px 10px 40px 40px !important;
+  height: 80px !important;
+  border-radius: 50px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-around !important;
@@ -533,7 +533,7 @@ body.modal-open .side-actions {
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
+  gap: 8px !important;
   min-width: 60px !important;
   padding: 8px !important;
   border-radius: 29px !important;
@@ -545,10 +545,9 @@ body.modal-open .side-actions {
 }
 
 .nav-bar .nav-item.active {
-  background: var(--tone-10) !important;
-  color: var(--color-text-inverse) !important;
-  box-shadow:
-    0 12px 26px rgba(0, 144, 204, 0.28) !important;
+  background: transparent !important;
+  color: var(--color-text) !important;
+  box-shadow: none !important;
 }
 
 .nav-bar .nav-item.nav-item-wallet::before,
@@ -575,7 +574,7 @@ body.modal-open .side-actions {
 }
 
 .nav-bar .nav-item.active span:last-child {
-  color: var(--tone-10-contrast) !important;
+  color: inherit !important;
 }
 
 .nav-bar .nav-icon-img-wrap {
