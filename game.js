@@ -83,7 +83,12 @@ const CONFIG = {
     CLICK_BATCH_INTERVAL: 1000,
     ENERGY_RECHARGE_INTERVAL: 1000,
     PASSIVE_INCOME_INTERVAL: 60000,
-    CACHE_TTL: 30000
+    CACHE_TTL: 30000,
+    ENERGY_SYNC_INTERVAL_MS: 60000,
+    ENERGY_SYNC_INTERVAL_LITE_MS: 90000,
+    ONLINE_HEARTBEAT_INTERVAL_MS: 60000,
+    ONLINE_COUNT_REFRESH_INTERVAL_MS: 60000,
+    CRASH_SYNC_INTERVAL_MS: 1200
 };
 
 window.CONFIG = CONFIG;
@@ -3027,11 +3032,12 @@ function startPerfectEnergySystem() {
     State.temp.syncTimer = setInterval(() => {
         if (!userId) return;
         syncEnergyWithServer();
-    }, isLitePerformanceMode() ? 20000 : 15000);
+    }, isLitePerformanceMode() ? CONFIG.ENERGY_SYNC_INTERVAL_LITE_MS : CONFIG.ENERGY_SYNC_INTERVAL_MS);
 }
 
 async function syncEnergyWithServer() {
     if (!userId) return;
+    if (document.hidden) return;
 
     // SUPPRESSION: Do not sync if there is active tapping or a batch in flight.
     // - pendingEnergySpend > 0: Local taps are pending; server energy is stale (too high).
@@ -5279,12 +5285,12 @@ function startOnlinePresence() {
     updateOnlineCounterVisibility();
     if (!onlineHeartbeatTimer) {
         sendOnlineHeartbeat();
-        onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, 25000);
+        onlineHeartbeatTimer = setInterval(sendOnlineHeartbeat, CONFIG.ONLINE_HEARTBEAT_INTERVAL_MS);
     }
     if (!canSeeOnlineCounter()) return;
     if (!onlineCountTimer) {
         refreshOnlineCount();
-        onlineCountTimer = setInterval(refreshOnlineCount, 15000);
+        onlineCountTimer = setInterval(refreshOnlineCount, CONFIG.ONLINE_COUNT_REFRESH_INTERVAL_MS);
     }
 }
 
@@ -6464,7 +6470,7 @@ async function syncCrashGhostRound() {
 function startCrashGhostTracking() {
     stopCrashGhostTracking();
     syncCrashGhostRound();
-    crashGhostState.interval = setInterval(syncCrashGhostRound, 300);
+    crashGhostState.interval = setInterval(syncCrashGhostRound, CONFIG.CRASH_SYNC_INTERVAL_MS);
 }
 
 function finalizeCrashGhostRound(result = {}) {
