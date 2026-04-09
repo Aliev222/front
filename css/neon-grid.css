@@ -3,16 +3,16 @@
 
 /* START: Neon Grid */
 
-.game-container::before {
+body:not(.night-mode) .game-container::before {
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(118, 228, 255, 0.18) 0%, rgba(118, 228, 255, 0) 56%),
-    linear-gradient(180deg, #05122e 0%, #031029 40%, #020b1f 100%) !important;
+    radial-gradient(120% 90% at 50% -10%, rgba(93, 217, 255, 0.18) 0%, rgba(93, 217, 255, 0) 56%),
+    linear-gradient(180deg, #eef8ff 0%, #e4f2ff 42%, #daeaff 100%) !important;
   box-shadow:
-    inset 0 80px 140px rgba(0, 0, 0, 0.28),
-    inset 0 -80px 120px rgba(0, 0, 0, 0.24) !important;
+    inset 0 60px 110px rgba(255, 255, 255, 0.22),
+    inset 0 -70px 100px rgba(170, 210, 240, 0.2) !important;
 }
 
-.game-container::after {
+body:not(.night-mode) .game-container::after {
   content: "";
   position: fixed;
   top: 50px;
@@ -22,12 +22,12 @@
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(114, 218, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(114, 218, 255, 0.12) 1px, transparent 1px),
-    radial-gradient(70% 45% at 50% 8%, rgba(145, 236, 255, 0.18), rgba(145, 236, 255, 0));
+    linear-gradient(rgba(78, 184, 228, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78, 184, 228, 0.15) 1px, transparent 1px),
+    radial-gradient(70% 45% at 50% 8%, rgba(108, 214, 255, 0.22), rgba(108, 214, 255, 0));
   background-size: 34px 34px, 34px 34px, 100% 100%;
   background-position: center top, center top, center top;
-  opacity: 0.55;
+  opacity: 0.52;
 }
 
 body.night-mode .game-container::before {
@@ -45,4 +45,3 @@ body.night-mode .game-container::after {
 }
 
 /* END: Neon Grid */
-
