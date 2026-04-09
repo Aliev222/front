@@ -22,6 +22,10 @@
                                 completed: !!task.completed
                             });
                         });
+                    const hasCompleted = deps.SOCIAL_TASKS.some((task) => deps.State.tasks.social?.[task.id]?.completed);
+                    if (hasCompleted && typeof deps.setCompletedSocialTasksCollapsed === 'function') {
+                        deps.setCompletedSocialTasksCollapsed(true);
+                    }
                     deps.persistSocialTasksState();
                 };
 
@@ -157,6 +161,9 @@
                     started: false,
                     completed: true
                 });
+                if (typeof deps.setCompletedSocialTasksCollapsed === 'function') {
+                    deps.setCompletedSocialTasksCollapsed(true);
+                }
                 deps.persistSocialTasksState();
 
                 if (typeof response.coins === 'number') {

@@ -3967,13 +3967,20 @@ function persistSocialTasksState() {
 }
 
 function isCompletedSocialTasksCollapsed() {
-    return localStorage.getItem(SOCIAL_COMPLETED_COLLAPSED_KEY) === '1';
+    const raw = localStorage.getItem(SOCIAL_COMPLETED_COLLAPSED_KEY);
+    // Default to collapsed so completed tasks stay closed unless user expands manually.
+    if (raw === null) return true;
+    return raw === '1';
 }
 
 function toggleCompletedSocialTasks() {
     const nextValue = isCompletedSocialTasksCollapsed() ? '0' : '1';
     localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, nextValue);
     renderVideoTasks();
+}
+
+function setCompletedSocialTasksCollapsed(collapsed = true) {
+    localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, collapsed ? '1' : '0');
 }
 
 rebirthDomain = window.SpiritRebirthDomain.createRebirthDomain({
@@ -3999,6 +4006,7 @@ socialTasksDomain = window.SpiritSocialTasksDomain.createSocialTasksDomain({
     tg,
     persistSocialTasksState,
     isCompletedSocialTasksCollapsed,
+    setCompletedSocialTasksCollapsed,
     renderVideoTasks,
     showToast,
     tr,
@@ -5216,18 +5224,36 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
     if (subtitleEl) subtitleEl.textContent = tr('games.leagueLeaderboard', { league: meta.label });
 
     if (list) {
+        const normalizeUsername = (raw) => String(raw || '').replace(/^@+/, '').trim();
         const buildAvatar = (entry) => {
             const displayLevel = Number(entry?.display_level || 1);
-            const avatarUrl = `${CONFIG.API_URL}/api/avatar/${Number(entry?.user_id || 0)}`;
+            const uid = Number(entry?.user_id || 0);
+            const uname = normalizeUsername(entry?.username);
+            const tgPhotoUrl = (uid > 0 && Number(userId) === uid)
+                ? String(tg?.initDataUnsafe?.user?.photo_url || '')
+                : '';
+            const usernameAvatarUrl = uname ? `https://t.me/i/userpic/320/${uname}.jpg` : '';
+            const proxyAvatarUrl = `${CONFIG.API_URL}/api/avatar/${uid}`;
+            const primaryAvatarUrl = tgPhotoUrl || usernameAvatarUrl || proxyAvatarUrl;
+            const fallbackAvatarUrl = primaryAvatarUrl === proxyAvatarUrl ? '' : proxyAvatarUrl;
             return `
                 <img
                     class="event-avatar-img"
-                    src="${avatarUrl}"
+                    src="${primaryAvatarUrl}"
+                    data-fallback-src="${fallbackAvatarUrl}"
                     alt="Player avatar"
                     loading="lazy"
                     referrerpolicy="no-referrer"
                     style="width:100%;height:100%;object-fit:cover;border-radius:12px;"
-                    onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"
+                    onerror="
+                        if (this.dataset.fallbackTried !== '1' && this.dataset.fallbackSrc) {
+                            this.dataset.fallbackTried = '1';
+                            this.src = this.dataset.fallbackSrc;
+                        } else {
+                            this.style.display='none';
+                            if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';
+                        }
+                    "
                 />
                 <span class="event-avatar-fallback" style="display:none;">${displayLevel}</span>
             `;
