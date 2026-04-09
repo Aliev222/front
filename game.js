@@ -3958,6 +3958,7 @@ const VIDEO_TASKS = [
 ];
 
 const SOCIAL_COMPLETED_COLLAPSED_KEY = 'socialCompletedCollapsed';
+const FORCE_COLLAPSE_COMPLETED_SOCIAL_TASKS = true;
 
 function persistSocialTasksState() {
     const payload = {};
@@ -3968,6 +3969,7 @@ function persistSocialTasksState() {
 }
 
 function isCompletedSocialTasksCollapsed() {
+    if (FORCE_COLLAPSE_COMPLETED_SOCIAL_TASKS) return true;
     const raw = localStorage.getItem(SOCIAL_COMPLETED_COLLAPSED_KEY);
     // Default to collapsed so completed tasks stay closed unless user expands manually.
     if (raw === null) return true;
@@ -3975,12 +3977,21 @@ function isCompletedSocialTasksCollapsed() {
 }
 
 function toggleCompletedSocialTasks() {
+    if (FORCE_COLLAPSE_COMPLETED_SOCIAL_TASKS) {
+        localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, '1');
+        renderVideoTasks();
+        return;
+    }
     const nextValue = isCompletedSocialTasksCollapsed() ? '0' : '1';
     localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, nextValue);
     renderVideoTasks();
 }
 
 function setCompletedSocialTasksCollapsed(collapsed = true) {
+    if (FORCE_COLLAPSE_COMPLETED_SOCIAL_TASKS) {
+        localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, '1');
+        return;
+    }
     localStorage.setItem(SOCIAL_COMPLETED_COLLAPSED_KEY, collapsed ? '1' : '0');
 }
 

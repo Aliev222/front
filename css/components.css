@@ -2350,6 +2350,10 @@ body.night-mode .social-completed-block {
   margin-bottom: 0;
 }
 
+.social-completed-block.is-collapsed .social-completed-list {
+  display: none !important;
+}
+
 .social-completed-list .social-task-card {
   padding: var(--space-3) !important;
 }
