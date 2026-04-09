@@ -5205,17 +5205,12 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
     if (list) {
         const buildAvatar = (entry) => {
             const displayLevel = Number(entry?.display_level || 1);
-            const usernameRaw = String(entry?.username || '').trim();
-            if (!usernameRaw) {
-                return `<span class="event-avatar-fallback">${displayLevel}</span>`;
-            }
-            const safeUsername = usernameRaw.replace(/^@+/, '');
-            const avatarUrl = `https://t.me/i/userpic/320/${encodeURIComponent(safeUsername)}.jpg`;
+            const avatarUrl = `${CONFIG.API_URL}/api/avatar/${Number(entry?.user_id || 0)}`;
             return `
                 <img
                     class="event-avatar-img"
                     src="${avatarUrl}"
-                    alt="@${safeUsername}"
+                    alt="Player avatar"
                     loading="lazy"
                     referrerpolicy="no-referrer"
                     style="width:100%;height:100%;object-fit:cover;border-radius:12px;"
