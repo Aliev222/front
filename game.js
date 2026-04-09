@@ -3166,6 +3166,24 @@ async function sendClickBatch() {
     await clickDomain.sendClickBatch();
 }
 
+async function waitForClickBatchSettle(timeoutMs = 2500) {
+    const startedAt = Date.now();
+    while (State.temp.clickBatchInFlight) {
+        if (Date.now() - startedAt >= timeoutMs) {
+            return false;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return true;
+}
+
+async function syncCoinsBeforeUpgrade() {
+    if (State.temp.clickBuffer > 0) {
+        await clickDomain.sendClickBatch({ force: true });
+    }
+    await waitForClickBatchSettle(2500);
+}
+
 function buildTapInputContext(e) {
     const target = (e && e.target && e.target.closest) ? e.target : null;
     if (target && target.closest(
@@ -3722,6 +3740,7 @@ async function upgradeBoost(type, internal = false) {
     if (!internal) upgradeInProgress = true;
     
     try {
+        await syncCoinsBeforeUpgrade();
         const result = await API.post('/api/upgrade', {
             user_id: userId,
             boost_type: type
@@ -3815,6 +3834,7 @@ async function upgradeAll(internal = false) {
             return;
         }
 
+        await syncCoinsBeforeUpgrade();
         nextUpgradeRequestAt = Date.now() + UPGRADE_REQUEST_GAP_MS;
         const result = await API.post('/api/upgrade-all', {
             user_id: userId,
