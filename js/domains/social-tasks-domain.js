@@ -13,16 +13,30 @@
             if (!deps.userId()) return;
 
             try {
-                const tasks = await deps.API.get(`/api/tasks/${deps.userId()}`);
-                tasks
-                    .filter((task) => deps.SOCIAL_TASKS.some((socialTask) => socialTask.id === task.id))
-                    .forEach((task) => {
-                        deps.StateActions.patchSocialTask(task.id, {
-                            started: false,
-                            completed: !!task.completed
+                const applyTasks = (tasks) => {
+                    (Array.isArray(tasks) ? tasks : [])
+                        .filter((task) => deps.SOCIAL_TASKS.some((socialTask) => socialTask.id === task.id))
+                        .forEach((task) => {
+                            deps.StateActions.patchSocialTask(task.id, {
+                                started: false,
+                                completed: !!task.completed
+                            });
                         });
-                    });
-                deps.persistSocialTasksState();
+                    deps.persistSocialTasksState();
+                };
+
+                const endpoint = `/api/tasks/${deps.userId()}`;
+                const tasks = deps.API.cachedGet
+                    ? await deps.API.cachedGet(endpoint, {
+                        ttlMs: 45_000,
+                        onFresh: (freshTasks) => {
+                            applyTasks(freshTasks);
+                            deps.renderVideoTasks();
+                        }
+                    })
+                    : await deps.API.get(endpoint);
+
+                applyTasks(tasks);
             } catch (err) {
                 if (deps.DEBUG) console.warn('Social tasks sync failed', err);
             }
@@ -135,6 +149,9 @@
                     user_id: deps.userId(),
                     task_id: taskId
                 });
+                if (deps.API?.invalidateCached) {
+                    deps.API.invalidateCached(`/api/tasks/${deps.userId()}`);
+                }
 
                 deps.StateActions.patchSocialTask(taskId, {
                     started: false,

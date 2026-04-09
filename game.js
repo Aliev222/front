@@ -2031,6 +2031,13 @@ const API = window.SpiritApi.createApiClient({
     ensureApiSession,
     hasTelegramInitData: !!telegramInitData
 });
+
+async function apiGetCached(endpoint, options = {}) {
+    if (API && typeof API.cachedGet === 'function') {
+        return API.cachedGet(endpoint, options);
+    }
+    return API.get(endpoint);
+}
 clickDomain = window.SpiritClickDomain.createClickDomain({
     store: Store,
     state: State,
@@ -2358,8 +2365,16 @@ async function loadUserData() {
 async function loadPrices() {
     if (!userId) return;
     try {
-        const prices = await API.get(`/api/upgrade-prices/${userId}`);
-        State.game.prices = { ...State.game.prices, ...prices };
+        const endpoint = `/api/upgrade-prices/${userId}`;
+        const applyPrices = (prices) => {
+            State.game.prices = { ...State.game.prices, ...(prices || {}) };
+            updateUI();
+        };
+        const prices = await apiGetCached(endpoint, {
+            ttlMs: 60_000,
+            onFresh: (freshPrices) => applyPrices(freshPrices)
+        });
+        applyPrices(prices);
     } catch (err) {
         console.error('Failed to load prices:', err);
     }
@@ -2891,24 +2906,32 @@ function renderDailyRewardsModal() {
 async function loadDailyRewardStatus() {
     if (!userId) return;
     try {
-        const response = await API.get(`/api/daily-reward/status/${userId}`);
-        State.daily.claimedDays = response.claimed_days || 0;
-        State.daily.claimAvailable = !!response.claim_available;
-        State.daily.loaded = true;
-        State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
-        applyBoostStateFromPayload({
-            daily_infinite_energy_active: !!response.infinite_energy_active,
-            daily_infinite_energy_expires_at: response.infinite_energy_expires_at || null
+        const endpoint = `/api/daily-reward/status/${userId}`;
+        const applyDailyStatus = (response = {}) => {
+            State.daily.claimedDays = response.claimed_days || 0;
+            State.daily.claimAvailable = !!response.claim_available;
+            State.daily.loaded = true;
+            State.daily.nextDay = response.next_day || Math.min(State.daily.claimedDays + 1, DAILY_REWARD_MAX_DAYS);
+            applyBoostStateFromPayload({
+                daily_infinite_energy_active: !!response.infinite_energy_active,
+                daily_infinite_energy_expires_at: response.infinite_energy_expires_at || null
+            });
+            State.skins.data.forEach((skin) => {
+                if (skin.requirement?.type === 'daily') {
+                    skin.requirement.current = State.daily.claimedDays || 0;
+                }
+            });
+            renderDailyRewardButton();
+            renderDailyRewardsModal();
+            renderSkins();
+            updateCollectionProgress();
+        };
+
+        const response = await apiGetCached(endpoint, {
+            ttlMs: 30_000,
+            onFresh: (freshResponse) => applyDailyStatus(freshResponse)
         });
-        State.skins.data.forEach((skin) => {
-            if (skin.requirement?.type === 'daily') {
-                skin.requirement.current = State.daily.claimedDays || 0;
-            }
-        });
-        renderDailyRewardButton();
-        renderDailyRewardsModal();
-        renderSkins();
-        updateCollectionProgress();
+        applyDailyStatus(response);
     } catch (err) {
         if (DEBUG) console.warn('Daily reward status failed', err);
         State.daily.loaded = false;
@@ -2946,6 +2969,10 @@ async function claimDailyReward() {
 
         if (response.infinite_energy_expires_at) {
             State.daily.infiniteEnergyExpiresAt = response.infinite_energy_expires_at;
+        }
+
+        if (API?.invalidateCached && userId) {
+            API.invalidateCached(`/api/daily-reward/status/${userId}`);
         }
 
         updateUI();
@@ -3684,6 +3711,14 @@ async function upgradeBoost(type, internal = false) {
             State.game.prices.multitap = result.next_cost || 0;
             State.game.prices.profit = result.next_cost || 0;
             State.game.prices.energy = result.next_cost || 0;
+            if (API?.setCached && userId) {
+                API.setCached(`/api/upgrade-prices/${userId}`, {
+                    global: State.game.prices.global || 0,
+                    multitap: State.game.prices.multitap || 0,
+                    profit: State.game.prices.profit || 0,
+                    energy: State.game.prices.energy || 0
+                });
+            }
             trackAchievementProgress('upgrades', 1);
             
         if (result.profit_per_tap) State.game.profitPerTap = result.profit_per_tap;
@@ -3776,6 +3811,14 @@ async function upgradeAll(internal = false) {
             State.game.prices.multitap = result.next_cost;
             State.game.prices.profit = result.next_cost;
             State.game.prices.energy = result.next_cost;
+            if (API?.setCached && userId) {
+                API.setCached(`/api/upgrade-prices/${userId}`, {
+                    global: State.game.prices.global || 0,
+                    multitap: State.game.prices.multitap || 0,
+                    profit: State.game.prices.profit || 0,
+                    energy: State.game.prices.energy || 0
+                });
+            }
         }
         State.game.profitPerTap = result.profit_per_tap ?? State.game.profitPerTap;
         State.game.profitPerHour = result.profit_per_hour ?? State.game.profitPerHour;
@@ -3983,7 +4026,15 @@ async function loadVideoTasks() {
 
     Promise.allSettled([
         loadSocialTasksStatus(),
-        userId ? API.get(`/api/video-tasks/status/${userId}`) : Promise.resolve(null)
+        userId
+            ? apiGetCached(`/api/video-tasks/status/${userId}`, {
+                ttlMs: 45_000,
+                onFresh: (freshVideoStatus) => {
+                    tasksEventsDomain.applyVideoTaskStatus(freshVideoStatus);
+                    renderVideoTasks();
+                }
+            })
+            : Promise.resolve(null)
     ]).then(([socialResult, videoResult]) => {
         if (videoResult.status === 'fulfilled' && videoResult.value) {
             tasksEventsDomain.applyVideoTaskStatus(videoResult.value);
@@ -4118,6 +4169,9 @@ async function watchVideoForTask(taskId) {
 
         const response = await claimAdActionWithRetry(() => claimVideoReward(task, adSessionId));
         console.log(`AD_TRACE_TASK_CLAIM_END taskId=${taskId} coins=${response?.coins}`);
+        if (API?.invalidateCached && userId) {
+            API.invalidateCached(`/api/video-tasks/status/${userId}`);
+        }
 
         if (typeof response?.coins === 'number') {
             applyNonClickCoinsSnapshot('watchVideoForTask', response);
@@ -4166,21 +4220,28 @@ async function loadReferralData() {
         const linkEl = document.getElementById('referral-link');
         if (linkEl) linkEl.textContent = link;
 
-        const data = await API.get(`/api/referral-data/${userId}`);
-        
-        document.getElementById('referral-count').textContent = data.count || 0;
-        document.getElementById('referral-earnings').textContent = data.earnings || 0;
-        
-        State.skins.friendsInvited = data.count || 0;
-        handleReferralToast(State.skins.friendsInvited);
-        State.skins.data.forEach((skin) => {
-            if (skin.requirement?.type === 'friends') {
-                skin.requirement.current = State.skins.friendsInvited || 0;
-            }
+        const endpoint = `/api/referral-data/${userId}`;
+        const applyReferralData = (data = {}) => {
+            document.getElementById('referral-count').textContent = data.count || 0;
+            document.getElementById('referral-earnings').textContent = data.earnings || 0;
+            
+            State.skins.friendsInvited = data.count || 0;
+            handleReferralToast(State.skins.friendsInvited);
+            State.skins.data.forEach((skin) => {
+                if (skin.requirement?.type === 'friends') {
+                    skin.requirement.current = State.skins.friendsInvited || 0;
+                }
+            });
+            renderSkins();
+            updateCollectionProgress();
+            checkAchievements();
+        };
+
+        const data = await apiGetCached(endpoint, {
+            ttlMs: 60_000,
+            onFresh: (freshData) => applyReferralData(freshData)
         });
-        renderSkins();
-        updateCollectionProgress();
-        checkAchievements();
+        applyReferralData(data);
     } catch (err) {
         console.error('Referral error:', err);
     }
@@ -5196,8 +5257,15 @@ function renderEventResults(players = [], season = null) {
 
 async function loadEventResults(league) {
     try {
-        const response = await API.get(`/api/weekly-tournament/results/${league}?limit=50`);
-        renderEventResults(response?.players || [], response?.season || null);
+        const endpoint = `/api/weekly-tournament/results/${league}?limit=50`;
+        const applyResults = (response) => {
+            renderEventResults(response?.players || [], response?.season || null);
+        };
+        const response = await apiGetCached(endpoint, {
+            ttlMs: 45_000,
+            onFresh: (freshResponse) => applyResults(freshResponse)
+        });
+        applyResults(response);
     } catch (err) {
         console.error('Event results error:', err);
         renderEventResults([], null);
@@ -5206,7 +5274,16 @@ async function loadEventResults(league) {
 
 async function fetchTournamentOverview() {
     if (!userId) return null;
-    const overview = await API.get(`/api/weekly-tournament/overview/${userId}`);
+    const endpoint = `/api/weekly-tournament/overview/${userId}`;
+    const overview = await apiGetCached(endpoint, {
+        ttlMs: 25_000,
+        onFresh: (freshOverview) => {
+            if (!freshOverview?.success) return;
+            renderPendingTonWalletNotice(freshOverview?.pending_ton_notice || null);
+            renderEventOverview(freshOverview);
+            updateOnlineCounterVisibility();
+        }
+    });
     return overview?.success ? overview : null;
 }
 
@@ -5227,8 +5304,15 @@ async function selectEventLeague(league) {
         const resultsList = document.getElementById('event-results-list');
         if (list) list.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
         if (resultsList) resultsList.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
-        const response = await API.get(`/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`);
-        renderEventLeaderboard(response?.players || [], eventSelectedLeague);
+        const endpoint = `/api/weekly-tournament/leaderboard/${eventSelectedLeague}?limit=10`;
+        const applyLeaderboard = (response) => {
+            renderEventLeaderboard(response?.players || [], eventSelectedLeague);
+        };
+        const response = await apiGetCached(endpoint, {
+            ttlMs: 25_000,
+            onFresh: (freshResponse) => applyLeaderboard(freshResponse)
+        });
+        applyLeaderboard(response);
         loadEventResults(eventSelectedLeague).catch((err) => {
             console.error('Event results error:', err);
             renderEventResults([], null);

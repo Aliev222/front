@@ -9,7 +9,54 @@
             hasTelegramInitData
         } = deps;
 
-        return {
+        const API_CACHE_PREFIX = 'spirit_api_cache:v1:';
+
+        function buildCacheKey(endpoint) {
+            return `${API_CACHE_PREFIX}${endpoint}`;
+        }
+
+        function readCached(endpoint, maxStaleMs = 24 * 60 * 60 * 1000) {
+            try {
+                const raw = localStorage.getItem(buildCacheKey(endpoint));
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                const ts = Number(parsed?.ts || 0);
+                if (!ts) return null;
+                if (Date.now() - ts > maxStaleMs) return null;
+                return { ts, data: parsed?.data };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function writeCached(endpoint, data) {
+            try {
+                localStorage.setItem(
+                    buildCacheKey(endpoint),
+                    JSON.stringify({ ts: Date.now(), data })
+                );
+            } catch (_) {}
+        }
+
+        function removeCached(endpoint) {
+            try {
+                localStorage.removeItem(buildCacheKey(endpoint));
+            } catch (_) {}
+        }
+
+        function removeCachedByPrefix(endpointPrefix) {
+            try {
+                const fullPrefix = buildCacheKey(endpointPrefix);
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(fullPrefix)) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            } catch (_) {}
+        }
+
+        const apiClient = {
             async request(endpoint, options = {}, retries = 2, authRetry = true) {
                 const startedAt = performance.now();
                 const controller = new AbortController();
@@ -53,10 +100,60 @@
             get(endpoint) {
                 return this.request(endpoint);
             },
+            async cachedGet(endpoint, options = {}) {
+                const {
+                    ttlMs = 30_000,
+                    maxStaleMs = 24 * 60 * 60 * 1000,
+                    forceRefresh = false,
+                    onFresh = null
+                } = options || {};
+
+                const cached = readCached(endpoint, maxStaleMs);
+                const hasCached = !!cached;
+                const isFresh = hasCached && (Date.now() - cached.ts <= Number(ttlMs || 0));
+
+                const fetchFresh = async () => {
+                    const fresh = await this.request(endpoint);
+                    writeCached(endpoint, fresh);
+                    return fresh;
+                };
+
+                if (hasCached && !forceRefresh) {
+                    if (!isFresh) {
+                        fetchFresh()
+                            .then((fresh) => {
+                                if (typeof onFresh === 'function') {
+                                    onFresh(fresh, { fromCache: false });
+                                }
+                            })
+                            .catch((err) => {
+                                debugError('api', `cached refresh fail GET ${endpoint}`, err);
+                            });
+                    }
+                    return cached.data;
+                }
+
+                const fresh = await fetchFresh();
+                if (typeof onFresh === 'function') {
+                    onFresh(fresh, { fromCache: false });
+                }
+                return fresh;
+            },
+            setCached(endpoint, data) {
+                writeCached(endpoint, data);
+            },
+            invalidateCached(endpoint) {
+                removeCached(endpoint);
+            },
+            invalidateCachedPrefix(endpointPrefix) {
+                removeCachedByPrefix(endpointPrefix);
+            },
             post(endpoint, data, options = {}) {
                 return this.request(endpoint, { ...options, method: 'POST', body: JSON.stringify(data) });
             }
         };
+
+        return apiClient;
     }
 
     global.SpiritApi = {
