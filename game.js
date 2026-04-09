@@ -4633,6 +4633,7 @@ let eventOverviewCache = null;
 let eventHubTab = 'rules';
 let prizePoolDrawerOpen = false;
 const EVENT_LEAGUE_ORDER = ['bronze', 'silver', 'gold', 'diamond'];
+const EVENT_LEAGUE_PRIORITY = { bronze: 1, silver: 2, gold: 3, diamond: 4 };
 const EVENT_LEAGUE_META = {
     bronze: { label: { en: 'Bronze', ru: 'Бронза' }, range: { en: 'Lvl 1-32', ru: 'Ур. 1-32' }, className: 'bronze' },
     silver: { label: { en: 'Silver', ru: 'Серебро' }, range: { en: 'Lvl 33-65', ru: 'Ур. 33-65' }, className: 'silver' },
@@ -4655,6 +4656,14 @@ function deriveEventLeague(level) {
     if (numericLevel >= 66) return 'gold';
     if (numericLevel >= 33) return 'silver';
     return 'bronze';
+}
+
+function resolveCurrentPlayerLeague(dbLeague) {
+    const fromDb = String(dbLeague || '').toLowerCase();
+    const fromLevel = deriveEventLeague(getDisplayLevel(State.game.level) || 1);
+    const dbPriority = EVENT_LEAGUE_PRIORITY[fromDb] || 0;
+    const levelPriority = EVENT_LEAGUE_PRIORITY[fromLevel] || 0;
+    return levelPriority > dbPriority ? fromLevel : (fromDb || fromLevel);
 }
 
 function switchEventHubTab(tab = 'leaderboard') {
@@ -5139,7 +5148,7 @@ function renderPrizePoolDrawer(data) {
     }
 
     const player = data?.player || null;
-    const league = player?.league || deriveEventLeague(getDisplayLevel(State.game.level) || 1);
+    const league = resolveCurrentPlayerLeague(player?.league);
     const meta = getEventLeagueMeta(league);
 
     if (amountEl) amountEl.textContent = formatUsdFromCents(data?.payout_fund_cents || 0);
@@ -5155,7 +5164,7 @@ function renderPrizePoolDrawer(data) {
 function renderEventOverview(data) {
     eventOverviewCache = data || null;
     const player = data?.player || null;
-    const league = player?.league || deriveEventLeague(getDisplayLevel(State.game.level) || 1);
+    const league = resolveCurrentPlayerLeague(player?.league);
     const meta = getEventLeagueMeta(league);
     const fundNano = Number(
         data?.payout_fund_nano ??
@@ -5194,12 +5203,34 @@ function renderEventLeaderboard(players = [], league = 'bronze') {
     if (subtitleEl) subtitleEl.textContent = tr('games.leagueLeaderboard', { league: meta.label });
 
     if (list) {
+        const buildAvatar = (entry) => {
+            const displayLevel = Number(entry?.display_level || 1);
+            const usernameRaw = String(entry?.username || '').trim();
+            if (!usernameRaw) {
+                return `<span class="event-avatar-fallback">${displayLevel}</span>`;
+            }
+            const safeUsername = usernameRaw.replace(/^@+/, '');
+            const avatarUrl = `https://t.me/i/userpic/320/${encodeURIComponent(safeUsername)}.jpg`;
+            return `
+                <img
+                    class="event-avatar-img"
+                    src="${avatarUrl}"
+                    alt="@${safeUsername}"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                    style="width:100%;height:100%;object-fit:cover;border-radius:12px;"
+                    onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';"
+                />
+                <span class="event-avatar-fallback" style="display:none;">${displayLevel}</span>
+            `;
+        };
+
         const visible = Array.isArray(players) ? players.slice(0, 10) : [];
         list.innerHTML = visible.length
             ? visible.map((entry) => `
                 <div class="leaderboard-item leaderboard-item-rank-${entry.rank} ${Number(entry.user_id) === Number(userId) ? 'current-player' : ''}">
                     <span class="player-rank">${entry.rank}</span>
-                    <div class="player-avatar event-rank-badge ${meta.className}">${(entry.display_level || 1)}</div>
+                    <div class="player-avatar event-rank-badge ${meta.className}">${buildAvatar(entry)}</div>
                     <span class="player-name">${entry.username ? `@${entry.username}` : t('common.player')}</span>
                     <span class="player-score">${formatNumber(entry.score || 0)}</span>
                 </div>
@@ -5279,11 +5310,17 @@ async function fetchTournamentOverview() {
         ttlMs: 25_000,
         onFresh: (freshOverview) => {
             if (!freshOverview?.success) return;
+            if (!eventSelectedLeague) {
+                eventSelectedLeague = resolveCurrentPlayerLeague(freshOverview?.player?.league);
+            }
             renderPendingTonWalletNotice(freshOverview?.pending_ton_notice || null);
             renderEventOverview(freshOverview);
             updateOnlineCounterVisibility();
         }
     });
+    if (overview?.success && !eventSelectedLeague) {
+        eventSelectedLeague = resolveCurrentPlayerLeague(overview?.player?.league);
+    }
     return overview?.success ? overview : null;
 }
 
