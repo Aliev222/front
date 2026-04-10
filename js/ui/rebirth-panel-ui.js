@@ -1,5 +1,10 @@
 (function initSpiritRebirthPanelUiModule(global) {
     function createRebirthPanelUi() {
+        function forceDisplay(node, shown) {
+            if (!node) return;
+            node.style.setProperty('display', shown ? 'flex' : 'none', 'important');
+        }
+
         function render(viewModel = {}) {
             const panel = document.querySelector('[data-ui="rebirth-panel"], #rebirth-panel');
             const mainUpgradePanel = document.querySelector('[data-ui="main-upgrade-panel"]');
@@ -12,10 +17,8 @@
             const hasRequiredDisplayLevel = Number.isFinite(displayedLevel) ? displayedLevel >= 101 : true;
             const effectiveVisible = Boolean(viewModel.visible && hasRequiredDisplayLevel);
 
-            panel.style.display = effectiveVisible ? '' : 'none';
-            if (mainUpgradePanel) {
-                mainUpgradePanel.style.display = effectiveVisible ? 'none' : '';
-            }
+            forceDisplay(panel, effectiveVisible);
+            forceDisplay(mainUpgradePanel, !effectiveVisible);
 
             const actionBtn = document.querySelector('[data-ui="rebirth-action-btn"], #rebirth-action-btn');
             if (!actionBtn) return;
