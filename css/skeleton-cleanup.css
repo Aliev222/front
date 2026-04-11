@@ -76,6 +76,22 @@ body.night-mode .space-bg {
   -webkit-backdrop-filter: blur(18px) !important;
 }
 
+body:not(.night-mode) .top-meta-bar,
+body:not(.night-mode) .control-btn,
+body:not(.night-mode) .control-btns,
+body:not(.night-mode) .stat-pill,
+body:not(.night-mode) .side-action-btn,
+body:not(.night-mode) .upgrade-panel,
+body:not(.night-mode) .nav-bar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(235, 244, 255, 0.86)) !important;
+  border: 1px solid rgba(140, 166, 201, 0.34) !important;
+  box-shadow:
+    0 12px 22px rgba(21, 51, 92, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(124, 154, 190, 0.16) !important;
+}
+
 .top-meta-bar {
   position: fixed;
   top: 0;
@@ -175,6 +191,31 @@ body.night-mode .space-bg {
   transition: transform var(--duration-fast) var(--ease-bounce),
               box-shadow var(--duration-fast) var(--ease-smooth),
               background var(--duration-fast) var(--ease-smooth);
+}
+
+body:not(.night-mode) .control-btn,
+body:not(.night-mode) .control-btns,
+body:not(.night-mode) .stat-pill,
+body:not(.night-mode) .side-action-btn,
+body:not(.night-mode) .upgrade-panel,
+body:not(.night-mode) .nav-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+body:not(.night-mode) .control-btn::before,
+body:not(.night-mode) .control-btns::before,
+body:not(.night-mode) .stat-pill::before,
+body:not(.night-mode) .side-action-btn::before,
+body:not(.night-mode) .upgrade-panel::before,
+body:not(.night-mode) .nav-bar::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 52%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
 .control-btns {
   width: 40px;
@@ -503,6 +544,12 @@ body.modal-open .side-actions {
   font-weight: 700 !important;
   color: var(--tone-10-contrast) !important;
   box-shadow: 0 10px 22px rgba(16, 54, 125, 0.24) !important;
+}
+
+body:not(.night-mode) .upgrade-panel-btn {
+  box-shadow:
+    0 9px 20px rgba(16, 54, 125, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44) !important;
 }
 
 .upgrade-coin-icon {
