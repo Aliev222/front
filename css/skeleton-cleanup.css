@@ -207,8 +207,7 @@ body:not(.night-mode) .control-btn::before,
 body:not(.night-mode) .control-btns::before,
 body:not(.night-mode) .stat-pill::before,
 body:not(.night-mode) .side-action-btn::before,
-body:not(.night-mode) .upgrade-panel::before,
-body:not(.night-mode) .nav-bar::before {
+body:not(.night-mode) .upgrade-panel::before {
   content: "";
   position: absolute;
   inset: 1px 1px auto 1px;
@@ -216,6 +215,10 @@ body:not(.night-mode) .nav-bar::before {
   border-radius: inherit;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
   pointer-events: none;
+}
+
+body:not(.night-mode) .nav-bar::before {
+  content: none !important;
 }
 .control-btns {
   width: 40px;
