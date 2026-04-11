@@ -61,6 +61,11 @@ body.night-mode .space-bg {
   z-index: -1;
 }
 
+body:not(.night-mode) .game-container::before,
+body:not(.night-mode) .game-container::after {
+  top: 0 !important;
+}
+
 .top-meta-bar,
 .control-btn,
 .control-btns,
@@ -387,17 +392,50 @@ body:not(.night-mode) .nav-bar::before {
   cursor: pointer !important;
   transition: transform var(--duration-fast) var(--ease-bounce),
               filter var(--duration-fast) var(--ease-smooth) !important;
-  box-shadow: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -16px 34px rgba(8, 27, 58, 0.3) !important;
   backdrop-filter: blur(18px) !important;
   -webkit-backdrop-filter: blur(18px) !important;
-  background: var(--glass-bg) !important;
+  background:
+    radial-gradient(85% 70% at 50% 42%, rgba(118, 216, 255, 0.2), rgba(118, 216, 255, 0) 65%),
+    radial-gradient(110% 95% at 50% 84%, rgba(8, 27, 58, 0.46), rgba(8, 27, 58, 0) 68%),
+    var(--glass-bg) !important;
   border: 1px solid var(--glass-border) !important;
 }
 
-.click-button::before,
+body:not(.night-mode) .tap-button-container {
+  padding: 6px 0;
+  overflow: visible;
+}
+
+body:not(.night-mode) .click-button {
+  width: clamp(190px, 64vw, 300px) !important;
+  height: clamp(190px, 64vw, 300px) !important;
+  max-width: clamp(190px, 64vw, 300px) !important;
+  max-height: clamp(190px, 64vw, 300px) !important;
+  min-width: clamp(190px, 58vw, 300px) !important;
+  min-height: clamp(190px, 58vw, 300px) !important;
+  background:
+    radial-gradient(95% 86% at 50% 30%, #ffffff 0%, #f5f9ff 62%, #e7eef8 100%) !important;
+  border: 1px solid rgba(150, 174, 205, 0.62) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 14px 28px rgba(108, 132, 167, 0.2),
+    0 0 34px rgba(56, 144, 225, 0.14) !important;
+}
+
 .click-button-core-glow,
 .click-button-halo,
 .click-button-press-ring {
+  display: none !important;
+}
+
+.click-button::before,
+.click-button::after {
   display: none !important;
 }
 
@@ -418,10 +456,13 @@ body:not(.night-mode) .nav-bar::before {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain !important;
+  position: relative !important;
+  z-index: 3 !important;
   pointer-events: none !important;
   transform: translateY(0) !important;
   filter: drop-shadow(0 10px 18px rgba(16, 54, 125, 0.16)) !important;
 }
+
 
 .side-actions {
   display: flex;
@@ -584,8 +625,11 @@ body:not(.night-mode) .upgrade-panel-btn {
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  min-width: 60px !important;
-  padding: 8px !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: 20% !important;
+  padding: 6px 4px !important;
+  box-sizing: border-box !important;
   border-radius: 29px !important;
   border: 0 !important;
   background: transparent !important;

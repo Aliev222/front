@@ -1,5 +1,7 @@
 ﻿// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
-window.API_URL = 'https://ryoho.onrender.com';
+window.API_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://127.0.0.1:8001'
+    : 'https://ryoho.onrender.com';
 window.recoveryInterval = null;
 
 'use strict';
@@ -836,6 +838,42 @@ const SOCIAL_TASKS = [
         verifyMode: 'unavailable'
     }
 ];
+const ENABLE_CPA_TASKS = false;
+const CPA_TASKS = ENABLE_CPA_TASKS ? [
+    {
+        id: 'cpa_reg_offer_1',
+        name: 'Partner Offer A',
+        icon: 'ID',
+        image: 'imgg/coin.png',
+        colorClass: 'cpa',
+        link: 'https://example.com/cpa-offer-1',
+        reward: 120000,
+        rewardLabel: '+120,000 coins',
+        title: 'Register in Partner Offer A'
+    },
+    {
+        id: 'cpa_reg_offer_2',
+        name: 'Partner Offer B',
+        icon: 'ID',
+        image: 'imgg/coin.png',
+        colorClass: 'cpa',
+        link: 'https://example.com/cpa-offer-2',
+        reward: 180000,
+        rewardLabel: '+180,000 coins',
+        title: 'Register in Partner Offer B'
+    },
+    {
+        id: 'cpa_reg_offer_3',
+        name: 'Partner Offer C',
+        icon: 'ID',
+        image: 'imgg/coin.png',
+        colorClass: 'cpa',
+        link: 'https://example.com/cpa-offer-3',
+        reward: 250000,
+        rewardLabel: '+250,000 coins',
+        title: 'Register in Partner Offer C'
+    }
+] : [];
 
 function normalizeOwnedSkinIds(owned = []) {
     const validIds = new Set(getLocalSkins().map((skin) => skin.id));
@@ -4068,6 +4106,7 @@ socialTasksDomain = window.SpiritSocialTasksDomain.createSocialTasksDomain({
     StateActions,
     API,
     SOCIAL_TASKS,
+    CPA_TASKS,
     userId: () => userId,
     tg,
     persistSocialTasksState,
@@ -4095,6 +4134,10 @@ function renderSocialTasksMarkup() {
 
 function startSocialTask(taskId) {
     return socialTasksDomain.startSocialTask(taskId);
+}
+
+function startCpaTask(taskId) {
+    return socialTasksDomain.startCpaTask(taskId);
 }
 
 async function claimSocialTask(taskId) {
@@ -7766,6 +7809,7 @@ window.openDailyRewards = openDailyRewards;
 window.claimDailyReward = claimDailyReward;
 window.watchVideoForTask = watchVideoForTask;
 window.startSocialTask = startSocialTask;
+window.startCpaTask = startCpaTask;
 window.claimSocialTask = claimSocialTask;
 window.toggleCompletedSocialTasks = toggleCompletedSocialTasks;
 window.checkBoostStatus = checkBoostStatus;

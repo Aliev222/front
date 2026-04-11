@@ -13,7 +13,7 @@
 
             requestAnimationFrame(() => {
                 if (!deps.State.temp.tapPool) {
-                    const poolSize = deps.isLitePerformanceMode() ? 4 : 6;
+                    const poolSize = deps.isLitePerformanceMode() ? 20 : 36;
                     deps.store.set('temp.tapPool', Array.from({ length: poolSize }, () => {
                         const el = document.createElement('div');
                         el.className = 'tap-effect-global';
@@ -41,15 +41,28 @@
                 effect.style.top = `${clientY}px`;
                 effect.style.transform = 'translate(-50%, -50%)';
                 effect.style.position = 'fixed';
-                effect.style.color = tapColor;
-                effect.style.fontSize = isAutoTap ? '22px' : '28px';
-                effect.style.fontWeight = isAutoTap ? '700' : 'bold';
-                effect.style.textShadow = `0 0 10px ${tapGlow}`;
-                effect.textContent = ghostBoostActive ? `+${previewGain} 🪽` : (boostVisualActive ? `+${previewGain} ⚡` : `+${previewGain}`);
                 effect.style.animation = 'none';
                 effect.style.opacity = '1';
-                effect.offsetWidth;
-                effect.style.animation = isAutoTap ? 'tapFloatAuto 0.42s ease-out forwards' : 'tapFloat 0.55s ease-out forwards';
+
+                if (!isAutoTap) {
+                    effect.className = 'tap-effect-global tap-effect-ton';
+                    effect.textContent = '';
+                    effect.style.removeProperty('color');
+                    effect.style.removeProperty('font-size');
+                    effect.style.removeProperty('font-weight');
+                    effect.style.removeProperty('text-shadow');
+                    effect.offsetWidth;
+                    effect.style.animation = 'tapTonHopDrop 1.5s linear forwards';
+                } else {
+                    effect.className = 'tap-effect-global';
+                    effect.style.color = tapColor;
+                    effect.style.fontSize = '22px';
+                    effect.style.fontWeight = '700';
+                    effect.style.textShadow = `0 0 10px ${tapGlow}`;
+                    effect.textContent = `+${previewGain}`;
+                    effect.offsetWidth;
+                    effect.style.animation = 'tapFloatAuto 0.42s ease-out forwards';
+                }
 
                 if (clickButton && !isAutoTap) {
                     clickButton.classList.remove('is-pressed');

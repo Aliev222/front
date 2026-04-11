@@ -289,6 +289,18 @@ body.ghost-boost-active .energy-bar-bg,
   will-change: transform, opacity;
 }
 
+.tap-effect-ton {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-image: url('../imgg/click.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  text-shadow: none;
+  box-shadow: 0 4px 8px rgba(16, 54, 125, 0.24);
+}
+
 @keyframes tapFloat {
   0%   { opacity: 0; transform: translate(-50%, -35%) scale(0.86); }
   16%  { opacity: 1; transform: translate(-50%, -65%) scale(1); }
@@ -301,6 +313,17 @@ body.ghost-boost-active .energy-bar-bg,
   18%  { opacity: 0.92; transform: translate(-50%, -62%) scale(0.96); }
   72%  { opacity: 0.9; transform: translate(-50%, -118%) scale(1.02); }
   100% { opacity: 0; transform: translate(-50%, -152%) scale(0.94); }
+}
+
+@keyframes tapTonHopDrop {
+  0%   { opacity: 1; transform: translate(-50%, -50%) translateY(0) scale(1); }
+  6%   { opacity: 1; transform: translate(-50%, -50%) translateY(-36px) scale(1.04); }
+  10%  { opacity: 1; transform: translate(-50%, -50%) translateY(-36px) scale(1.04); }
+  16%  { opacity: 1; transform: translate(-50%, -50%) translateY(4px) scale(0.99); }
+  28%  { opacity: 1; transform: translate(-50%, -50%) translateY(88px) scale(0.96); }
+  40%  { opacity: 0.96; transform: translate(-50%, -50%) translateY(176px) scale(0.93); }
+  52%  { opacity: 0; transform: translate(-50%, -50%) translateY(250px) scale(0.9); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translateY(250px) scale(0.9); }
 }
 
 /* ── Auto Clicker Pulse ───────────────────────────────── */

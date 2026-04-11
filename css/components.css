@@ -2304,6 +2304,55 @@ body.night-mode .social-task-card.social-tiktok .social-task-brand {
   color: #fff !important;
 }
 
+.tasks-cpa-block {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.tasks-cpa-title {
+  font-size: var(--fs-xs);
+  font-weight: 900;
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tasks-cpa-subtitle {
+  font-size: var(--fs-sm);
+  color: var(--color-text-dim);
+}
+
+.tasks-cpa-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.social-task-card.social-cpa .social-task-brand,
+.social-task-card.social-cpa .task-reward-pill-simple {
+  color: #1b7dcb !important;
+}
+
+.social-action.social-cpa {
+  background: linear-gradient(135deg, #1e8adf, #4ab4ff) !important;
+  color: #fff !important;
+}
+
+.social-task-card.is-pending .social-task-dot {
+  background: #f39c12;
+  box-shadow: 0 0 10px rgba(243, 156, 18, 0.45);
+}
+
+.social-action.social-cpa.is-pending {
+  background: linear-gradient(135deg, #98a6ba, #aeb8c7) !important;
+  box-shadow: none !important;
+}
+
+.social-task-card.is-rejected .social-task-dot {
+  background: #e74c3c;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.45);
+}
+
 .social-completed-block {
   margin-top: var(--space-3);
   padding: var(--space-3);
