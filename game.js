@@ -92,6 +92,8 @@ const CONFIG = {
     CACHE_TTL: 30000,
     ENERGY_SYNC_INTERVAL_MS: 60000,
     ENERGY_SYNC_INTERVAL_LITE_MS: 90000,
+    USER_FULL_SYNC_INTERVAL_MS: 30000,
+    USER_FULL_SYNC_INTERVAL_LITE_MS: 45000,
     ONLINE_HEARTBEAT_INTERVAL_MS: 120000,
     ONLINE_COUNT_REFRESH_INTERVAL_MS: 120000,
     CRASH_SYNC_INTERVAL_MS: 1200
@@ -3191,7 +3193,8 @@ async function fullSyncWithServer() {
         } else {
             applyServerEnergySnapshot(data);
         }
-        
+
+        Store.set('temp.lastFullSyncAtMs', Date.now());
         updateUI();
     } catch (e) {
         console.error('Full sync error:', e);
@@ -3314,11 +3317,25 @@ function queueTapFeedback({
 
 // ==================== СИНХРОНИЗАЦИЯ ====================
 let syncTimer = null;
-const SYNC_INTERVAL = 15000;
+const SYNC_INTERVAL = 30000;
+
+function getFullSyncMinIntervalMs() {
+    return isLitePerformanceMode()
+        ? Math.max(10000, Number(CONFIG.USER_FULL_SYNC_INTERVAL_LITE_MS || 45000))
+        : Math.max(8000, Number(CONFIG.USER_FULL_SYNC_INTERVAL_MS || SYNC_INTERVAL));
+}
 
 async function forceSync() {
+    const nowMs = Date.now();
+    const minFullSyncIntervalMs = getFullSyncMinIntervalMs();
+    const lastFullSyncAtMs = Number(State.temp.lastFullSyncAtMs || 0);
+
     if (State.temp.clickBuffer > 0) {
         await sendClickBatch();
+    }
+
+    if (nowMs - lastFullSyncAtMs < minFullSyncIntervalMs) {
+        return;
     }
 
     await fullSyncWithServer();
@@ -3326,7 +3343,7 @@ async function forceSync() {
 
 function startSync() {
     if (syncTimer) clearInterval(syncTimer);
-    syncTimer = setInterval(forceSync, SYNC_INTERVAL);
+    syncTimer = setInterval(forceSync, getFullSyncMinIntervalMs());
 }
 
 // ==================== СКИНЫ ====================
